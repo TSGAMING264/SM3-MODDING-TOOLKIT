@@ -1,16 +1,6 @@
-<p align="center">
-  <img src="docs/images/sm3_collectors_edition_cover.jpg" alt="SM3 Collector's Edition cover art" width="360">
-</p>
-
-<p align="center">
-  <img src="docs/images/sm3_black_suit_wallpaper.jpg" alt="SM3 black suit wallpaper" width="850">
-</p>
+![image](https://raw.githubusercontent.com/TSGAMING264/SM3-MODDING-TOOLKIT/main/docs/images/sm3_collectors_edition_cover.jpg)
 
 # SM3 MODDING TOOLKIT
-
-<p align="center">
-  <img src="sm3_toolkit/assets/tsgaming264_profile.png" alt="TSGAMING264" width="160">
-</p>
 
 **Created by TSGAMING264**
 
@@ -19,6 +9,8 @@ SM3 MODDING TOOLKIT is an unofficial fan-made **Spider-Man 3 PC** modding toolki
 This project is still in a **beta / release-candidate phase**. A lot of work still needs to be done. I am really hoping more people can help with Spider-Man 3 modding and research. I wanted Spider-Man 3 to get more mod support, and at least I was able to contribute something useful to the community.
 
 **GitHub media note:** the images at the top are README presentation artwork only. They are not required for the tool to run and are not extracted from game pack files.
+
+![image](https://raw.githubusercontent.com/TSGAMING264/SM3-MODDING-TOOLKIT/main/docs/images/sm3_black_suit_wallpaper.jpg)
 
 ## What This Tool Includes
 
