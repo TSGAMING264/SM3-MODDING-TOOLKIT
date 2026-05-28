@@ -1,0 +1,13 @@
+{
+  "schema": "SM3_ANIM_SWAP_RELEASE_PRESET_v1",
+  "tool": "SM3_ANIMATION_SWAPPER_RELEASE_v1_0",
+  "name": "SLOW_SWING_SAFE_TEST",
+  "status": "SAFE_FIRST_SWING_TEST",
+  "risk": "LOW_MEDIUM",
+  "pairs": [
+    [
+      "sm3slowswing270",
+      "sm3slowswing180"
+    ]
+  ]
+}

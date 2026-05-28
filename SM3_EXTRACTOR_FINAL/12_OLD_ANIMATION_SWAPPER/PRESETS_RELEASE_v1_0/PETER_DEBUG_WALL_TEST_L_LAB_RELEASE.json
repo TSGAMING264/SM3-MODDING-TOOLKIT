@@ -1,0 +1,14 @@
+{
+  "schema": "SM3_ANIM_SWAP_RELEASE_PRESET_v1",
+  "tool": "SM3_ANIMATION_SWAPPER_RELEASE_v1_0",
+  "name": "PETER_DEBUG_WALL_TEST_L",
+  "status": "TOOL_PASS_LIKELY_SAFE",
+  "risk": "MEDIUM_HIGH",
+  "target_pack": "CH_PETER.PCPACK",
+  "pairs": [
+    [
+      "sm3toa_dan1horcrtwhl",
+      "smrwallatck_test_l"
+    ]
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "SM3_ANIM_SWAP_RELEASE_PRESET_v1",
+  "tool": "SM3_ANIMATION_SWAPPER_RELEASE_v1_0",
+  "name": "BLACK_SUIT_COMBAT_BETA",
+  "status": "PROMISING",
+  "risk": "LOW_MEDIUM",
+  "target_pack": "CH_BLACKSUIT.PCPACK",
+  "pairs": [
+    [
+      "sm3ddgatck3hl_v2",
+      "smratckpun2kneelnch"
+    ]
+  ]
+}

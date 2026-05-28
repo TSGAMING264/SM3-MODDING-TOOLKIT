@@ -1,0 +1,8 @@
+SM3 Modding Toolkit v5.2.10 - How To Use Tab
+
+- Added a new How To Use tab after Old Animation Swapper and before About / Info.
+- About / Info remains the last tab.
+- How To Use explains every visible release tool and main option.
+- Added clear notes that Tex Swapper is experimental and not a full pack viewer.
+- Added clear notes that Old Animation Swapper is experimental, requires same-size/component-compatible swaps, and cannot inject Xbox animations without a compatible PC destination slot.
+- Scanned for local user/real-name/path leaks.

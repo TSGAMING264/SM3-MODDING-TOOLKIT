@@ -1,0 +1,229 @@
+﻿SM3 ANIMATION SWAPPER - HOW TO USE
+============================================================
+
+1. OPEN THE TOOL
+============================================================
+
+Open:
+
+SM3 ANIMATION SWAPPER.bat
+
+Optional:
+Run the shortcut creator if you want a desktop shortcut:
+
+CREATE_DESKTOP_SHORTCUT_SM3_ANIMATION_SWAPPER.bat
+
+
+============================================================
+2. PICK PACK A - YOUR PC DESTINATION PACK
+============================================================
+
+Pack A is the PC pack you want to modify.
+
+Choose one clean PC pack, for example:
+
+CH_SPIDERMAN.PCPACK
+CH_BLACKSUIT.PCPACK
+CH_PETER.PCPACK
+CH_PLAYERGOBLIN.PCPACK
+
+Important:
+Pack A can also be a previously patched PC pack if you want to add more changes later.
+
+Example:
+
+First patch:
+Clean CH_SPIDERMAN.PCPACK -> patched copy
+
+Follow-up patch:
+Load the patched copy as Pack A -> apply another preset
+
+
+============================================================
+3. PICK YOUR XBOX PACK FOLDER
+============================================================
+
+Click the Xbox Pack Folder button.
+
+Choose the folder that contains your Xbox .XEPACK source packs.
+
+These are normal pack files, not ZIP files.
+
+Expected Xbox Pack Folder contents:
+
+CH_SPIDERMAN.XEPACK
+CH_BLACKSUIT.XEPACK
+CH_PETER.XEPACK
+CH_PLAYERGOBLIN.XEPACK
+CH_SPIDERMAN_RVB.XEPACK
+CH_RVBBLACK.XEPACK
+
+The tool will read the XEPACK files from the folder.
+
+
+============================================================
+4. PACK B / SOURCE SIDE
+============================================================
+
+Pack B is the source side.
+
+You can use:
+
+- Xbox XEPACK file from the Xbox Pack Folder
+- manually selected source pack
+- another PC pack
+- a previously patched PC pack
+
+For normal release presets, the tool usually uses the correct source based on the preset/source you select.
+
+
+============================================================
+5. LOAD / VERIFY PACKS
+============================================================
+
+After Pack A and Pack B/source are selected, click:
+
+LOAD / VERIFY PACKS
+
+The tool should show the animation lists for Pack A and Pack B.
+
+If you picked the wrong pack, use:
+
+Clear Pack A
+Clear Pack B
+Clear Xbox Pack Folder
+Clear All Pack Inputs
+
+
+============================================================
+6. OPEN RELEASE PRESET CENTER
+============================================================
+
+Click:
+
+RELEASE PRESET CENTER
+
+Pick a preset.
+
+Good first preset:
+
+RVB_RED_COMBAT_RESTORED_5PACK
+
+This is the most stable release preset.
+
+
+============================================================
+7. USE MULTI SELECTION CENTER IF NEEDED
+============================================================
+
+Click:
+
+MULTI SELECTION CENTER
+
+Use this when you want to add several preset rows together or manage selected swaps more easily.
+
+The tool blocks same-name/no-change rows.
+
+Example of blocked no-change row:
+
+gobairturbo <- gobairturbo
+
+That would patch the same animation back into itself, so the tool correctly blocks it.
+
+
+============================================================
+8. PATCH A NEW COPY
+============================================================
+
+When ready, click the patch button.
+
+The tool should save a NEW patched PC copy.
+
+Important:
+Do not overwrite your clean original pack.
+
+Always keep backups.
+
+
+============================================================
+9. INSTALL THE PATCHED PACK
+============================================================
+
+After the new patched pack is created:
+
+1. Back up your original game pack.
+2. Rename the patched copy if needed.
+3. Put it in your Spider-Man 3 PC packs folder.
+4. Test in-game.
+
+Example game folder:
+
+Your Spider-Man 3 PC packs folder
+
+
+============================================================
+BEST FIRST TEST
+============================================================
+
+Start with:
+
+Pack A:
+CH_SPIDERMAN.PCPACK
+
+Xbox Pack Folder:
+folder containing the Xbox .XEPACK files
+
+Preset:
+RVB_RED_COMBAT_RESTORED_5PACK
+
+Output:
+new patched CH_SPIDERMAN copy
+
+This is the safest main release preset.
+
+
+============================================================
+IMPORTANT SAFETY NOTES
+============================================================
+
+- Put the Xbox .XEPACK files directly inside the Xbox Pack Folder.
+- Do not overwrite your original PC packs.
+- Use clean PC packs for first-time patching.
+- Use Clear Pack buttons if you select the wrong pack.
+- Same-name/no-change presets are blocked.
+
+
+============================================================
+BOTTOM LINE
+============================================================
+
+Pack A = PC pack you want to change.
+
+Xbox Pack Folder = folder with Xbox .XEPACK source packs.
+
+Preset Center = choose animation preset.
+
+Multi Selection Center = manage multiple selected swaps.
+
+Patch = save a new PC pack copy.
+============================================================
+
+
+MESSAGE FROM TSGAMING264
+============================================================
+
+I really wanted this game to get some more mod support. Hopefully you all like and enjoy the tool.
+
+Support my YouTube channel. Drop a like on the breakdown video whenever it is released.
+
+I will try to make a video of me using this tool. I know these text examples might not be the best at explaining everything, but the tool works and is simple to use.
+
+Join my Discord, and follow my pages below.
+
+LINKS
+============================================================
+Discord: https://discord.com/invite/57pm3eUUQK
+YouTube: https://youtube.com/@tsgaming264?si=xOL9EJYQ-ZfFf7fj
+X / Twitter: https://x.com/tsgaming0416?s=21
+Instagram: https://www.instagram.com/tsgaming0416?igsh=aGRjM29pcmR6aXh4&utm_source=qr
+Reddit: https://www.reddit.com/u/TSGAMING264/s/IJogsEHNtp

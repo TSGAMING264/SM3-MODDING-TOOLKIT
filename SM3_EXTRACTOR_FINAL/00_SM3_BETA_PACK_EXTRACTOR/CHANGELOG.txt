@@ -1,0 +1,20 @@
+v2.27 - Dark Extract Button
+- Changed EXTRACT PACK button from bright blue to dark slate/blue.
+- Kept Megacity-style dark UI.
+- No backend/extraction behavior changed.
+
+v2.26 Megacity Theme Release UI
+- Recolored the standalone beta extractor to match the SM3 Megacity Tool dark UI palette.
+- Changed the main extraction button from green RUN EXTRACTION to blue EXTRACT PACK.
+- Kept clean WOS-style release UI and hidden research/dev controls.
+- No backend extraction-byte behavior changed from v2.25.
+
+v2.25 Clean Release Beta
+- Rebuilt the beta extractor as a standalone clean release-style UI.
+- Removed visible research/dev controls from the beta front end.
+- Removed Route Handler Research GUI launcher from the beta package.
+- Removed layout lab / lock map / GPT bundle buttons from the main beta UI.
+- Kept simple WOS-style options: Force, Quiet, Index, APK.
+- Kept List Contents, one big RUN EXTRACTION button, Open Output, and Open Pack Browse.
+- Removed the visible Open Reports workflow from the release UI and clean temporary reports after use.
+- Backend remains the proven SM3 route-handler extractor. Original PCPACKs are never modified.

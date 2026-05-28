@@ -1,0 +1,40 @@
+============================================================
+THE TEX SWAPPER CREATOR SAFE v1.1 - SMALL HOW TO USE
+============================================================
+
+1. Open RUN_THE_TEX_SWAPPER_CREATOR_SAFE.bat.
+
+2. Click Browse PCPACK and select a clean Spider-Man 3 PC pack.
+   Examples: CH_SPIDERMAN.PCPACK or CH_BLACKSUIT.PCPACK.
+
+3. Click Build Preview.
+   This scans the pack and loads the texture target list.
+
+4. Common workflows:
+
+   A) Export reference DDS files
+      Click EXPORT ALL DDS.
+      Edit the exported DDS/images externally, then reimport later.
+
+   B) Fast one-file patch
+      Click ONE FILE AUTO: File First -> Patch.
+      Pick one DDS/image.
+      If it exactly matches a target, it patches directly.
+      If not, choose the target and the tool converts it into that target format.
+
+   C) Selected target convert
+      Select a texture target in the list.
+      Click SELECTED CONVERT: Image/DDS -> Target Format.
+      Pick a replacement image/DDS and save a new PCPACK copy.
+
+   D) Folder reimport
+      Put final named DDS files in a folder.
+      Use REIMPORT ALL DDS FOLDER -> ONE PACK or SMART REIMPORT.
+
+5. Recovery options:
+   RESTORE: All TEX from Clean Original Pack restores all textures from a clean original pack.
+   BUGCHECK scans targets if something acts wrong.
+
+6. Safety rule:
+   Always patch to a NEW PCPACK copy. Do not overwrite your only original pack.
+============================================================

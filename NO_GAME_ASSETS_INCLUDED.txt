@@ -1,0 +1,10 @@
+NO GAME ASSETS INCLUDED
+
+This source package does not include:
+- Spider-Man 3 PCPACK files
+- PCAPK/APKF game archives
+- extracted textures/models/animations
+- Spider-Man 3 executable files
+- copyrighted Activision/Treyarch/Marvel/Sony game content
+
+The toolkit source is provided for review/build purposes only.

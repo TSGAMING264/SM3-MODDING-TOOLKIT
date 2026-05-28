@@ -1,0 +1,14 @@
+Hi,
+
+Thank you for checking the file.
+
+The detections are most likely PyInstaller heuristic false positives. The tool is written in Python/Tkinter, and the Windows release build bundles the Python runtime and support files so users can run it without installing Python manually.
+
+I have prepared a clean source-code review package for Nexus. It includes the full Python source, requirements.txt, PyInstaller spec, build instructions, manifest/checksums, and review notes. It does not include any Spider-Man 3 game files, PCPACK/PCAPK/APKF files, extracted game assets, or copyrighted game content.
+
+The tool is intended to work on user-selected local files. It does not intentionally modify original game packs directly; extraction is read/output only, texture patching writes copies, and animation swapping is guarded by same-size/layout compatibility checks.
+
+Source/review package:
+[insert GitHub private repo link or uploaded source ZIP link]
+
+Thank you for reviewing it.

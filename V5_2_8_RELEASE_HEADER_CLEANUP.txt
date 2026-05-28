@@ -1,0 +1,7 @@
+SM3 Modding Toolkit v5.2.8 - Release Header Cleanup
+
+- Removed visible test/update label from the main window title/header.
+- Window title now shows only SM3 MODDING TOOLKIT.
+- Header subtitle now says: Created by TSGAMING264. Spider-Man 3 PC modding toolkit.
+- Version/build details remain available through About / Info.
+- No backend behavior changed.
