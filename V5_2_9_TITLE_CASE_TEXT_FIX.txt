@@ -1,6 +1,0 @@
-SM3 MODDING TOOLKIT v5.2.9 - TITLE CASE TEXT FIX
-
-- Fixed lowercase visible header wording.
-- Header now says: Spider-Man 3 PC Modding Toolkit.
-- Home/About wording now uses Modding Toolkit / Modding Research title casing where visible.
-- No backend/tool behavior changed.

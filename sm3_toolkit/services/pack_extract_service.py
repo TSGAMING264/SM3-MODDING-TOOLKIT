@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SM3 PC Route Handler Extractor v2.24 - Beta Pack Extractor Flow
-Created for TSGAMING264 research workflow.
+Created for TSGAMING264 public toolkit source.
 
 Purpose:
 - Spider-Man 3 PC only. WOS is not a target.
@@ -48,8 +48,8 @@ APKF_MAGIC = b"APKF"
 NCH_MAGIC = b"NCH\x00"
 PACK_EXTS = {".pcpack", ".pcapk", ".apkf", ".bin"}
 ZIP_EXTS = {".zip"}
-REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip"
-SLIM_REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip"
+REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip"
+SLIM_REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip"
 
 # v2.11: controlled payload extraction test set. These are not for scanning again;
 # they are the first safe payload-output proof set after full-folder route/probe PASS.
@@ -2828,15 +2828,15 @@ def _norm_path_variants(path_value: Any) -> List[str]:
     return sorted([v for v in variants if v], key=len, reverse=True)
 
 
-def sanitize_report_text_for_gpt(text: str, out_dir: Optional[Path] = None, extra_roots: Optional[List[Path]] = None) -> str:
-    """Sanitize report text before it is written into Send-To-GPT bundles.
+def sanitize_report_text_for_diagnostic_bundle(text: str, out_dir: Optional[Path] = None, extra_roots: Optional[List[Path]] = None) -> str:
+    """Sanitize report text before it is written into diagnostic report bundles.
 
     v2.12 privacy fix:
     - local absolute Windows paths become LOCAL_PATH_REDACTED/<filename when obvious>
     - container sandbox paths are redacted
     - output-folder absolute paths are replaced with OUTPUT_ROOT
 
-    This is intentionally applied only to the GPT report bundles. The local reports on
+    This is intentionally applied only to the diagnostic report bundles. The local reports on
     the user's PC can keep full paths so Open Output/Open Reports still works.
     """
     if not text:
@@ -2883,13 +2883,13 @@ def _zip_report_file_sanitized(zf: zipfile.ZipFile, path: Path, arcname: str, ou
     """Write a report file into a zip, sanitizing text report content when possible."""
     if _is_text_report_file(path):
         text = path.read_text(encoding="utf-8", errors="replace")
-        zf.writestr(arcname, sanitize_report_text_for_gpt(text, out_dir=out_dir))
+        zf.writestr(arcname, sanitize_report_text_for_diagnostic_bundle(text, out_dir=out_dir))
     else:
         zf.write(path, arcname)
 
 
-def build_send_to_gpt_report_zip(out_dir: Path, log=print) -> Path:
-    """Create a compact diagnostic zip with the reports GPT needs.
+def build_diagnostic_report_zip(out_dir: Path, log=print) -> Path:
+    """Create a compact diagnostic zip with the reports support diagnostics need.
 
     This intentionally excludes extracted payload folders so the user can send diagnostics
     without uploading huge game-resource dumps. It includes master reports plus each
@@ -3129,7 +3129,7 @@ def build_send_to_gpt_report_zip(out_dir: Path, log=print) -> Path:
             _zip_report_file_sanitized(zf, path, arcname, out_dir)
             manifest_rows.append({"arcname": arcname, "source_rel": rel_to_out(path), "size_bytes": size, "reason": reason, "sanitized_in_bundle": _is_text_report_file(path)})
         except Exception as exc:
-            skipped_rows.append({"path": sanitize_report_text_for_gpt(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
+            skipped_rows.append({"path": sanitize_report_text_for_diagnostic_bundle(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
 
     def csv_bytes(rows: List[Dict[str, Any]]) -> bytes:
         sio = io.StringIO()
@@ -3145,11 +3145,11 @@ def build_send_to_gpt_report_zip(out_dir: Path, log=print) -> Path:
                 writer.writerow(row)
         else:
             sio.write("note\nno rows\n")
-        return sanitize_report_text_for_gpt(sio.getvalue(), out_dir=out_dir).encode("utf-8")
+        return sanitize_report_text_for_diagnostic_bundle(sio.getvalue(), out_dir=out_dir).encode("utf-8")
 
     with zipfile.ZipFile(report_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         readme = [
-            f"{TOOL_NAME} {TOOL_VERSION} - Send-To-GPT Report Bundle",
+            f"{TOOL_NAME} {TOOL_VERSION} - Diagnostic Report Bundle",
             f"Created: {_dt.datetime.now().isoformat(timespec='seconds')}",
             "",
             "Purpose:",
@@ -3161,15 +3161,15 @@ def build_send_to_gpt_report_zip(out_dir: Path, log=print) -> Path:
             "- 00_MASTER_REPORTS summary/index/error reports",
             "- CSV_TARGET_* reports when a pack-list CSV/text file was used",
             "- Each pack's 00_REPORTS route summary, probe JSON, outer rows, APKF summaries, parse errors, and handler actions",
-            "- v2.9 resource browse indexes, resource pack matrix, TEX/MESH/MAT/ANIM/CVX/UNKNOWN top-pack reports, and slim GPT bundle",
-            "- GPT_REPORT_MANIFEST.csv listing exactly what was included",
-            "- GPT_REPORT_SKIPPED_FILES.csv listing anything skipped by size/safety rules",
+            "- v2.9 resource browse indexes, resource pack matrix, TEX/MESH/MAT/ANIM/CVX/UNKNOWN top-pack reports, and slim diagnostic bundle",
+            "- DIAGNOSTIC_REPORT_MANIFEST.csv listing exactly what was included",
+            "- DIAGNOSTIC_REPORT_SKIPPED_FILES.csv listing anything skipped by size/safety rules",
             "",
             "How to use:",
-            "Send this zip to GPT instead of the full extraction output when troubleshooting handlers.",
-            "If GPT asks for one specific pack later, send that pack's 00_REPORTS folder or the original test pack separately.",
+            "Share this zip for support diagnostics instead of the full extraction output when troubleshooting handlers.",
+            "If support asks for one specific pack later, review that pack's generated diagnostics from your local output folder.",
         ]
-        zf.writestr("README_SEND_TO_GPT.txt", "\n".join(readme) + "\n")
+        zf.writestr("README_DIAGNOSTIC_REPORT.txt", "\n".join(readme) + "\n")
 
         if master.exists():
             for p in sorted(master.iterdir(), key=lambda x: x.name.lower()):
@@ -3188,10 +3188,10 @@ def build_send_to_gpt_report_zip(out_dir: Path, log=print) -> Path:
                 max_bytes = 512 * 1024 if p.name == "STRING_SAMPLES.csv" else None
                 add_file(zf, p, f"PER_PACK_REPORTS/{safe_pack}/00_REPORTS/{p.name}", "per_pack_report", max_bytes=max_bytes)
 
-        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this Send-To-GPT bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
+        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this diagnostic report bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
         zf.writestr("SANITIZED_REPORT_PATHS.json", json.dumps({"enabled": True, "version_added": "v2.12", "bundle_only": True, "placeholders": ["OUTPUT_ROOT", "LOCAL_PATH_REDACTED", "SANDBOX_PATH_REDACTED"]}, indent=2))
-        zf.writestr("GPT_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
-        zf.writestr("GPT_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
+        zf.writestr("DIAGNOSTIC_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
+        zf.writestr("DIAGNOSTIC_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
         summary_obj = {
             "tool": TOOL_NAME,
             "version": TOOL_VERSION,
@@ -3203,19 +3203,19 @@ def build_send_to_gpt_report_zip(out_dir: Path, log=print) -> Path:
             "zip_name": report_zip.name,
             "note": "Full report bundle only. No extracted payload folders are included. A smaller slim bundle is also created for whole-folder review.",
         }
-        zf.writestr("GPT_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
-        zf.writestr("GPT_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
+        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
+        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
 
-    log(f"Send-To-GPT report bundle written: {report_zip}")
+    log(f"Diagnostic report bundle written: {report_zip}")
     return report_zip
 
 
 
-def build_send_to_gpt_report_zip_slim(out_dir: Path, log=print) -> Path:
+def build_diagnostic_report_zip_slim(out_dir: Path, log=print) -> Path:
     """Create a smaller full-folder diagnostic zip.
 
     v2.9 purpose:
-    The full Send-To-GPT bundle is useful for deep debugging, but whole-folder runs can
+    The full diagnostic report bundle is useful for deep debugging, but whole-folder runs can
     include tens of thousands of report files. The slim bundle keeps the proof-level
     master reports and small per-pack summaries/counts, while excluding large per-pack
     browse indexes/hint CSVs unless they contain errors.
@@ -3370,7 +3370,7 @@ def build_send_to_gpt_report_zip_slim(out_dir: Path, log=print) -> Path:
             _zip_report_file_sanitized(zf, path, arcname, out_dir)
             manifest_rows.append({"arcname": arcname, "source_rel": rel_to_out(path), "size_bytes": size, "reason": reason, "sanitized_in_bundle": _is_text_report_file(path)})
         except Exception as exc:
-            skipped_rows.append({"path": sanitize_report_text_for_gpt(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
+            skipped_rows.append({"path": sanitize_report_text_for_diagnostic_bundle(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
 
     def csv_bytes(rows: List[Dict[str, Any]]) -> bytes:
         sio = io.StringIO()
@@ -3386,16 +3386,16 @@ def build_send_to_gpt_report_zip_slim(out_dir: Path, log=print) -> Path:
                 writer.writerow(row)
         else:
             sio.write("note\nno rows\n")
-        return sanitize_report_text_for_gpt(sio.getvalue(), out_dir=out_dir).encode("utf-8")
+        return sanitize_report_text_for_diagnostic_bundle(sio.getvalue(), out_dir=out_dir).encode("utf-8")
 
     with zipfile.ZipFile(report_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         readme = [
-            f"{TOOL_NAME} {TOOL_VERSION} - SLIM Send-To-GPT Report Bundle",
+            f"{TOOL_NAME} {TOOL_VERSION} - SLIM Diagnostic Report Bundle",
             f"Created: {_dt.datetime.now().isoformat(timespec='seconds')}",
             "",
             "Purpose:",
             "This is the smaller full-folder review zip. Send this first for PASS/FAIL and dashboard checks.",
-            "Send the full SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip only when deep per-pack debugging is needed.",
+            "Use the full SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip only when deep per-pack debugging is needed.",
             "v2.12 privacy: text reports in this bundle are sanitized so local Windows/container paths are replaced with safe placeholders.",
             "",
             "Included:",
@@ -3406,7 +3406,7 @@ def build_send_to_gpt_report_zip_slim(out_dir: Path, log=print) -> Path:
             "- Full per-pack RESOURCE_BROWSE_INDEX.csv/html and large hint CSVs",
             "- Extracted payload folders/raw game dumps",
         ]
-        zf.writestr("README_SEND_TO_GPT_SLIM.txt", "\n".join(readme) + "\n")
+        zf.writestr("README_DIAGNOSTIC_REPORT_SLIM.txt", "\n".join(readme) + "\n")
 
         if master.exists():
             for p in sorted(master.iterdir(), key=lambda x: x.name.lower()):
@@ -3422,10 +3422,10 @@ def build_send_to_gpt_report_zip_slim(out_dir: Path, log=print) -> Path:
                     continue
                 add_file(zf, p, f"PER_PACK_REPORTS/{safe_pack}/00_REPORTS/{p.name}", "per_pack_slim_report")
 
-        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this Send-To-GPT bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
+        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this diagnostic report bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
         zf.writestr("SANITIZED_REPORT_PATHS.json", json.dumps({"enabled": True, "version_added": "v2.12", "bundle_only": True, "placeholders": ["OUTPUT_ROOT", "LOCAL_PATH_REDACTED", "SANDBOX_PATH_REDACTED"]}, indent=2))
-        zf.writestr("GPT_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
-        zf.writestr("GPT_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
+        zf.writestr("DIAGNOSTIC_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
+        zf.writestr("DIAGNOSTIC_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
         summary_obj = {
             "tool": TOOL_NAME,
             "version": TOOL_VERSION,
@@ -3435,12 +3435,12 @@ def build_send_to_gpt_report_zip_slim(out_dir: Path, log=print) -> Path:
             "included_file_count": len(manifest_rows),
             "skipped_file_count": len(skipped_rows),
             "zip_name": report_zip.name,
-            "note": "Slim report bundle only. Send the full bundle if GPT asks for deep per-pack browse indexes.",
+            "note": "Slim report bundle only. Send the full bundle if support asks for deep per-pack browse indexes.",
         }
-        zf.writestr("GPT_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
-        zf.writestr("GPT_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
+        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
+        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
 
-    log(f"SLIM Send-To-GPT report bundle written: {report_zip}")
+    log(f"SLIM Diagnostic report bundle written: {report_zip}")
     return report_zip
 
 
@@ -3872,7 +3872,7 @@ def write_master_resource_index_reports(reports: Path, master_rows: List[Dict[st
     write_csv(reports / "MASTER_RESOURCE_NAVIGATION_INDEX.csv", nav_index_rows)
     write_csv(reports / "MASTER_DEPENDENCY_NAVIGATION_INDEX.csv", dep_nav_rows)
     css = "body{font-family:Segoe UI,Arial,sans-serif;margin:24px;background:#111;color:#eee}a{color:#8cc8ff}table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid #444;padding:6px;font-size:12px}th{background:#222}.note{color:#bbb}.card{display:inline-block;background:#181b22;border:1px solid #333;border-radius:10px;padding:10px;margin:6px}.num{font-size:20px;font-weight:bold}"
-    html = ["<!doctype html><html><head><meta charset='utf-8'><title>SM3 Master Pack Browse Index</title>", f"<style>{css}</style></head><body>", f"<h1>SM3 Master Pack Browse Index - {TOOL_VERSION}</h1>", "<p class='note'>Open a per-pack dashboard for easier TEX/MESH/MAT/ANIM/resource dependency browsing. Paths in GPT bundles are sanitized placeholders.</p>"]
+    html = ["<!doctype html><html><head><meta charset='utf-8'><title>SM3 Master Pack Browse Index</title>", f"<style>{css}</style></head><body>", f"<h1>SM3 Master Pack Browse Index - {TOOL_VERSION}</h1>", "<p class='note'>Open a per-pack dashboard for easier TEX/MESH/MAT/ANIM/resource dependency browsing. Paths in diagnostic bundles are sanitized placeholders.</p>"]
     html.append("<h2>Resource Totals</h2>")
     for key in ['TEX','MESH','MAT','ANIM','CVX','SKEL','ASKL','SANM','MORH','UNKNOWN']:
         html.append(f"<div class='card'><div>{_html.escape(key)}</div><div class='num'>{type_counts.get(key,0)}</div></div>")
@@ -3932,7 +3932,7 @@ def write_master_resource_index_reports(reports: Path, master_rows: List[Dict[st
         "- MASTER_RESOURCE_DEPENDENCY_HINTS.csv = v2.21 starter dependency map for MESH/MAT/ANIM/TEX/SKEL/ASKL linking.",
         "- MASTER_TEX_METADATA_SUMMARY.csv, MASTER_TEX_* counts, MASTER_TEX_REVIEW_QUEUE.csv, MASTER_TEX_REVIEW_TRIAGE.csv, and MASTER_TEX_DDS_EXPORT_CANDIDATES.csv = TEX metadata/DDS export/review overview",
         "- MASTER_TEX_SWIZZLE_REVIEW_QUEUE.csv and MASTER_TEX_LAYOUT_CANDIDATES.csv = v2.18 layout/swizzle visual-review queues",
-        "- SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
+        "- SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
         "",
         "Important:",
         "These are conservative metadata hints and browse indexes. TEX metadata is guessed by descriptor/payload-size matching; full TEX decode/export is still a later phase.",
@@ -4146,8 +4146,8 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
     processed = len(master_rows)
     route_counts = Counter(str(r.get("route") or "UNKNOWN") for r in master_rows)
     mode_rows = [
-        {"mode": "Release Mode", "audience": "normal daily use", "recommended_actions": "Full Folder Reports-Only, Payload Test Preset, Open Master Dashboard, Open Pack Browse Index, Send Slim GPT Bundle", "avoid_by_default": "research_full, layout-lab-all, giant full-game payload dumps"},
-        {"mode": "Research Mode", "audience": "deep reverse engineering", "recommended_actions": "TEX Layout/Swizzle Lab, Layout Lock Map, full GPT bundle, per-pack dependency navigation, component_only/research_full on selected packs", "avoid_by_default": "applying layout guesses globally without visual confirmation"},
+        {"mode": "Release Mode", "audience": "normal daily use", "recommended_actions": "Full Folder Reports-Only, Payload Test Preset, Open Master Dashboard, Open Pack Browse Index, Create Slim Diagnostic Bundle", "avoid_by_default": "research_full, layout-lab-all, giant full-game payload dumps"},
+        {"mode": "Advanced Mode", "audience": "advanced parser review", "recommended_actions": "TEX Layout/Swizzle Lab, Layout Lock Map, full diagnostic bundle, per-pack dependency navigation, component_only/research_full on selected packs", "avoid_by_default": "applying layout guesses globally without visual confirmation"},
     ]
     write_csv(reports / "MASTER_WORKFLOW_MODES.csv", mode_rows)
 
@@ -4156,8 +4156,8 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
         {"button_or_file": "PAYLOAD EXTRACTION TEST PRESET", "when_to_use": "Proof that extraction output writes useful files", "expected_output": "MASTER_PAYLOAD_EXTRACTION_VALIDATION PASS for main route families"},
         {"button_or_file": "PAYLOAD TEST + TEX LAYOUT LAB", "when_to_use": "When DDS images look tiled/swizzled and need visual candidates", "expected_output": "06_TEX_LAYOUT_LAB folders with linear/morton/tile candidate DDS files"},
         {"button_or_file": "Layout lock CSV/JSON", "when_to_use": "After visually confirming the best layout for a texture", "expected_output": "TEX_LAYOUT_LOCK_APPLIED rows and locked DDS layout mode"},
-        {"button_or_file": "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip", "when_to_use": "Default bundle to send for GPT review", "expected_output": "Small sanitized report zip"},
-        {"button_or_file": "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip", "when_to_use": "Only when deep per-pack HTML/CSV debugging is needed", "expected_output": "Large sanitized report zip with more per-pack files"},
+        {"button_or_file": "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip", "when_to_use": "Default bundle for diagnostic review", "expected_output": "Small sanitized report zip"},
+        {"button_or_file": "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip", "when_to_use": "Only when deep per-pack HTML/CSV debugging is needed", "expected_output": "Large sanitized report zip with more per-pack files"},
     ]
     write_csv(reports / "MASTER_WORKFLOW_SHORTCUTS.csv", shortcut_rows)
 
@@ -4195,7 +4195,7 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
         "3. Open Master Dashboard / Pack Browse Index - review high-level results first.",
         "4. Use TEX Layout/Swizzle Lab only when images look tiled/swizzled.",
         "5. Save/import a Layout Lock Map only after visual confirmation.",
-        "6. Send the SLIM GPT bundle first; send the full bundle only for deep debugging.",
+        "6. Use the slim diagnostic bundle first; use the full bundle only for deep debugging.",
         "",
         "Release Mode mindset:",
         "- Prefer smart_browse.",
@@ -4203,8 +4203,8 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
         "- Avoid layout-lab-all unless you really need it.",
         "- Avoid full-game payload dumps until selected packs are proven.",
         "",
-        "Research Mode mindset:",
-        "- Use layout lab, lock maps, component_only, and full GPT bundle for focused packs.",
+        "Advanced Mode mindset:",
+        "- Use layout lab, lock maps, component_only, and full diagnostic bundle for focused packs.",
         "- Do not auto-apply swizzle/layout globally.",
         "- Original PCPACKs are never modified.",
         "",
@@ -4396,7 +4396,7 @@ def write_master_dashboard_reports(reports: Path, master_rows: List[Dict[str, An
         "- MASTER_RESOURCE_DEPENDENCY_HINTS.csv = v2.21 starter dependency map for MESH/MAT/ANIM/TEX/SKEL/ASKL linking.",
         "- MASTER_TEX_METADATA_SUMMARY.csv, MASTER_TEX_* counts, MASTER_TEX_REVIEW_QUEUE.csv, MASTER_TEX_REVIEW_TRIAGE.csv, and MASTER_TEX_DDS_EXPORT_CANDIDATES.csv = TEX metadata/DDS export/review overview",
         "- MASTER_TEX_SWIZZLE_REVIEW_QUEUE.csv and MASTER_TEX_LAYOUT_CANDIDATES.csv = v2.18 layout/swizzle visual-review queues",
-        "- SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
+        "- SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
         "- MASTER_BROWSE_OUTPUT_GUIDE.txt",
     ]
     (reports / "MASTER_ROUTE_DASHBOARD.txt").write_text("\n".join(dashboard_lines) + "\n", encoding="utf-8")
@@ -4698,8 +4698,8 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
             "MASTER_TEX_LOW_CONFIDENCE_BY_PACK.csv",
             "Review actions and priorities for low/medium TEX metadata rows",
         ],
-        "sanitized_gpt_bundle_update_v2_12": [
-            "Text reports inside Send-To-GPT bundles are sanitized before zipping",
+        "sanitized_diagnostic_bundle_update_v2_12": [
+            "Text reports inside diagnostic report bundles are sanitized before zipping",
             "Local absolute paths are replaced with OUTPUT_ROOT/LOCAL_PATH_REDACTED/SANDBOX_PATH_REDACTED placeholders",
             "Local on-disk reports remain unchanged for Open Output/Open Reports usability",
         ],
@@ -4737,7 +4737,7 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
             "PER_PACK_REPORT_INDEX.csv",
             "MASTER_APKF_PARSE_ERRORS.csv",
             "PACKS_WITH_ERRORS_OR_PARSE_WARNINGS.csv",
-            "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip",
+            "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip",
             "CSV_TARGET_REQUESTS.csv",
             "CSV_TARGET_MATCHES.csv",
             "CSV_TARGET_MISSING.csv",
@@ -4780,7 +4780,7 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
         "- MASTER_EXTRACTION_READINESS.csv / MASTER_PAYLOAD_TEST_CANDIDATES.csv = v2.10 extraction readiness plan",
         "- MASTER_PAYLOAD_EXTRACTION_VALIDATION.csv/txt/json = v2.11 actual payload-output validation",
         "- MASTER_RECOMMENDED_WORKFLOW.txt/html and workflow shortcut CSVs = v2.23 daily-use/release-mode guide",
-        "- SANITIZED_REPORT_PATHS_README.txt/json inside GPT bundles = v2.12 path privacy cleanup",
+        "- SANITIZED_REPORT_PATHS_README.txt/json inside diagnostic bundles = v2.12 path privacy cleanup",
         "- TEX_METADATA_HINTS.csv and MASTER_TEX_METADATA_SUMMARY.csv = v2.15 TEX metadata parser reports",
         "- MASTER_FILETYPE_METADATA_PRIORITY.csv / MASTER_CVX_UNKNOWN_REVIEW_QUEUE.csv = v2.10 metadata parser priorities",
         "",
@@ -4796,7 +4796,7 @@ def clean_release_report_artifacts(out_dir: Path, log=print) -> Dict[str, Any]:
 
     The backend still builds temporary metadata while extracting so the UI can list
     contents, but release users should not get 00_REPORTS, 00_MASTER_REPORTS,
-    or Send-To-GPT bundles in their output folder.
+    or diagnostic report bundles in their output folder.
     """
     removed: List[str] = []
     failed: List[Dict[str, str]] = []
@@ -4810,7 +4810,7 @@ def clean_release_report_artifacts(out_dir: Path, log=print) -> Dict[str, Any]:
             if p.exists():
                 targets.append(p)
         targets.extend(sorted(out_dir.glob("*/00_REPORTS"), key=lambda p: str(p).lower()))
-        for pattern in ["SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE*.zip", "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE*.json", "GPT_REPORT_*.csv", "GPT_REPORT_*.txt"]:
+        for pattern in ["*REPORT_BUNDLE*.zip", "*REPORT_BUNDLE*.json", "DIAGNOSTIC_REPORT_*.csv", "DIAGNOSTIC_REPORT_*.txt"]:
             targets.extend(sorted(out_dir.glob(pattern), key=lambda p: str(p).lower()))
         seen: set[str] = set()
         unique_targets: List[Path] = []

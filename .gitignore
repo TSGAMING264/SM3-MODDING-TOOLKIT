@@ -1,9 +1,17 @@
 __pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
 *.pyd
 build/
 dist/
+output/
+outputs/
+reports/
+temp/
+tmp/
+cache/
+logs/
 *.spec.bak
 *.log
 *.tmp
@@ -11,6 +19,12 @@ dist/
 _SM3_LIST_PREVIEW/
 SM3_EXTRACT_OUTPUT/
 PATCHED*/
+[Ss]end-[Tt]o-[Gg][Pp][Tt]*/
+[Gg][Pp][Tt]*/
+*_REPORT_BUNDLE*
+*_TEST_OUTPUT*
+*_EXTRACTED*
+*_REBUILD_OUTPUT*
 *_PATCH_LOG.*
 *_ANIM_SWAP_LOG.*
 *_REPORT.*
@@ -27,6 +41,14 @@ PATCHED*/
 *.PS3PACK
 *.ps3pack
 *.pak
+*.dds
+*.DDS
+*_DUMP*.png
+*_DUMP*.PNG
+*_EXTRACTED*.png
+*_EXTRACTED*.PNG
+*_TEST*.png
+*_TEST*.PNG
 *.zip.tmp
 
 # Built release/output files

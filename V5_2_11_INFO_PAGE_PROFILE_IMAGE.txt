@@ -1,7 +1,0 @@
-SM3 Modding Toolkit v5.2.11 - Info Page Profile Image
-
-- Added the uploaded TSGAMING264 profile image to the About / Info page.
-- Image is stored at sm3_toolkit/assets/tsgaming264_profile.png.
-- About / Info content remains restored from the v5.0 reference.
-- Home still opens first; About / Info remains the last tab.
-- No tool backend behavior changed.
