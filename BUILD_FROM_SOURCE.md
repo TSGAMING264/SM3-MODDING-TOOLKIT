@@ -1,67 +1,118 @@
 # Build From Source
 
-This guide is for Nexus reviewers and users who want to verify the EXE build.
+This guide builds the two applications included in the official SM3 Toolkit package:
 
-## 1. Install Python
+- SM3 Toolkit v5.2.182
+- SM3 Audio Separator v1.0.3
 
-Install Python 3.10 or newer from python.org. During install, enable the option to add Python to PATH.
+They remain separate applications and must not be merged into one EXE or runtime folder.
 
-Verify:
+## 1. Requirements
+
+- Windows 10 or Windows 11, 64-bit
+- Python 3.10 or newer with Tkinter enabled
+- A current `pip`
+- Enough free disk space for the Audio Separator's Torch/Demucs build environment
+
+Verify Python:
 
 ```powershell
 py -3 --version
 ```
 
-## 2. Install Dependencies
+## 2. Build The Main Toolkit
 
-From this source folder:
-
-```powershell
-py -3 -m pip install -r requirements.txt
-```
-
-## 3. Run From Source
+From the repository root:
 
 ```powershell
-py -3 SM3_TOOLS.py
-```
-
-The main window should open as `SM3 MODDING TOOLKIT` and show these tabs:
-
-1. Home
-2. Pack Extractor
-3. Hex Viewer
-4. Tex Swapper
-5. Texture Folder Viewer
-6. Old Animation Swapper
-
-Home is selected first with `tabs.select(0)`.
-
-## 4. Build The EXE
-
-```powershell
-py -3 -m PyInstaller SM3_MODDING_TOOLKIT.spec --clean --noconfirm
+py -3 -m venv .venv-toolkit
+.\.venv-toolkit\Scripts\python -m pip install --upgrade pip
+.\.venv-toolkit\Scripts\python -m pip install -r requirements.txt
+.\.venv-toolkit\Scripts\python -m PyInstaller SM3_MODDING_TOOLKIT.spec --clean --noconfirm
 ```
 
 Expected output:
 
 ```text
-dist/SM3 MODDING TOOLKIT.exe
+dist/SM3 Toolkit/SM3 Toolkit.exe
+dist/SM3 Toolkit/Toolkit Runtime/
 ```
 
-The spec file uses the Animation Swapper icon from `SM3_EXTRACTOR_FINAL/12_OLD_ANIMATION_SWAPPER/SM3_ANIMATION_SWAPPER.ico`.
+Run from source without building:
 
-v5.2 is organized as one app package under `sm3_toolkit/`, with UI tabs in `sm3_toolkit/tabs/` and backend services in `sm3_toolkit/services/`.
+```powershell
+.\.venv-toolkit\Scripts\python SM3_TOOLS.py
+```
 
-## 5. Why PyInstaller Can Flag
+## 3. Build The Audio Separator
 
-PyInstaller bundles the Python runtime, application code, Tkinter files, and dependencies into a single Windows executable. Some automated scanners mark bundled Python EXEs as suspicious even when the source code is clean. This package includes the full tool source so the build can be reviewed and reproduced.
+Use a separate environment so the large Demucs/Torch dependencies remain isolated:
 
-## 6. Content Notice
+```powershell
+py -3 -m venv .venv-audio
+.\.venv-audio\Scripts\python -m pip install --upgrade pip
+.\.venv-audio\Scripts\python -m pip install -r SM3_AUDIO_SEPARATOR/requirements.txt
+Push-Location SM3_AUDIO_SEPARATOR
+..\.venv-audio\Scripts\python -m PyInstaller SM3_AUDIO_SEPARATOR.spec --clean --noconfirm
+Pop-Location
+```
 
-No Spider-Man 3 game files, PCPACK files, Xbox files, extracted game assets, or copyrighted game content are included in this source package.
+Expected output:
 
+```text
+SM3_AUDIO_SEPARATOR/dist/SM3 Audio Separator/SM3 Audio Separator.exe
+SM3_AUDIO_SEPARATOR/dist/SM3 Audio Separator/Audio Runtime/
+```
 
-## v5.2.10
+Run from source without building:
 
-How To Use tab added after Old Animation Swapper. About / Info remains the last tab.
+```powershell
+.\.venv-audio\Scripts\python SM3_AUDIO_SEPARATOR/SM3_AUDIO_SEPARATOR.py
+```
+
+## 4. Assemble The Public Folder
+
+Create one release folder with this layout:
+
+```text
+SM3 Toolkit/
+  SM3 Toolkit.exe
+  SM3 Audio Separator.exe
+  Toolkit Runtime/
+  Audio Runtime/
+  Dependencies/
+    VC_redist.x64.exe
+```
+
+Copy the two EXEs and their matching runtime folders from the two PyInstaller outputs. Do not merge the runtime folders.
+
+Download the full current x64 Visual C++ Redistributable from Microsoft's official permalink:
+
+```text
+https://aka.ms/vc14/vc_redist.x64.exe
+```
+
+Verify its Microsoft Authenticode signature before release. Do not substitute a small third-party downloader.
+
+## 5. Demucs Model Downloads
+
+The Audio Separator includes Demucs and its runtime but intentionally excludes model weights. On the first separation with a selected model, the application displays a download notice and downloads the required model. Internet access is required until that first model download finishes.
+
+## 6. Runtime Checks
+
+From the assembled release folder:
+
+```powershell
+& '.\SM3 Toolkit.exe' --verify-runtime
+& '.\SM3 Audio Separator.exe' --verify-runtime
+```
+
+Both commands should return exit code `0`.
+
+## 7. Why PyInstaller Can Flag
+
+PyInstaller bundles Python, Tkinter, and native dependencies. Some scanners heuristically flag unsigned bundled-Python applications, especially utilities that inspect and copy binary files. This repository provides the complete source and build specifications so the release can be reviewed and reproduced.
+
+## 8. Content Notice
+
+No original Spider-Man 3 game files, copied packs, extracted game assets, copyrighted game content, or Demucs model weights are included in this repository.

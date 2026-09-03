@@ -5,7 +5,7 @@ from typing import Dict, List
 
 LANGUAGE_NAMES = (
     "English",
-    "Arabic",
+    "العربية (Arabic)",
     "Português (Brazil)",
     "Filipino",
     "Türkçe",
@@ -14,6 +14,13 @@ LANGUAGE_NAMES = (
     "Español",
     "Italiano",
     "日本語",
+    "한국어",
+    "Русский",
+    "中文",
+    "Nederlands",
+    "Polski",
+    "Svenska",
+    "हिन्दी",
 )
 DEFAULT_LANGUAGE = "English"
 
@@ -24,7 +31,12 @@ TAB_KEYS = (
     "hex_viewer",
     "tex_swapper",
     "texture_folder_viewer",
+    "mat_editor",
+    "model_viewer",
+    "new_animation_swapper",
     "old_animation_swapper",
+    "sound_editor",
+    "pcpack_rebuild_lab",
     "how_to_use",
     "about_info",
 )
@@ -33,44 +45,62 @@ TAB_KEYS = (
 TEXT: Dict[str, Dict[str, str]] = {
     "English": {
         "language_label": "Language",
+        "theme_label": "Theme",
         "header_meta": "Created by TSGAMING264. Spider-Man 3 PC Modding Toolkit.",
         "status_language": "Language set to English.",
         "tab.home": "Home",
         "tab.pack_extractor": "Pack Extractor",
-        "tab.hex_viewer": "Hex Viewer",
+        "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.apkf_rebuilder_dev": "APKF Rebuilder DEV",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.mat_editor": "MAT Editor",
         "tab.tex_swapper": "Tex Swapper",
         "tab.texture_folder_viewer": "Texture Folder Viewer",
+        "tab.new_animation_swapper": "New Animation Swapper",
         "tab.old_animation_swapper": "Old Animation Swapper",
+        "tab.sound_editor": "Sound Editor",
+        "tab.model_viewer": "Model Viewer",
         "tab.how_to_use": "How To Use",
         "tab.about_info": "About / Info",
-        "home_subtitle": "Spider-Man 3 PC Modding Research and Testing Toolkit. v5.2.13 release candidate with Nexus source review cleanup, no public Pack Extractor report leftovers, direct integrated tabs, and multilingual guide pages.",
+        "home_subtitle": "Spider-Man 3 PC Modding Toolkit release UI for pack extraction, rebuild checks, texture workflows, Hex/Text viewing, and animation swap workflows.",
         "home_body": "\n".join([
             "SM3 MODDING TOOLKIT",
-            "Created by TSGAMING264",
             "",
-            "This Toolkit is for Spider-Man 3 PC Modding Research and Testing. It is still in beta and some features may be experimental or unfinished.",
+            "A Spider-Man 3 PC modding toolkit for clean pack extraction, texture workflows, pack rebuild checks, Hex/Text viewing, texture previewing, and animation swap testing.",
             "",
-            "Visible tabs:",
+            "Recommended release workflow:",
+            "1. Use Pack Extractor to list or extract one pack at a time.",
+            "2. Use Texture Folder Viewer only to preview and label texture folders.",
+            "3. Use MAT Editor for extracted SM3 .mat shader-float editing and safe modified MAT output.",
+            "4. Use Tex Swapper for edit-ready DDS export, editor-safe reimport, and patched PCPACK output.",
+            "5. Use New Animation Swapper for the cleaner NAS CSV / PC-slot animation patch route.",
+            "6. Use Old Animation Swapper only when you need its legacy/manual workflow.",
+            "7. Use Sound Editor for fixed-slot audio replacement or Music Replacement Mode (dialogue stem + new music).",
+            "8. Use Model Viewer to inspect native Spider-Man 3 .mesh geometry only; it is view-only and does not import other game/model formats.",
+            "9. Use PCPACK Rebuild Lab for conservative rebuild checks from a clean original pack and clean extracted folder.",
+            "10. Use Hex/Text for read-only inspection or exported copies; original files are not edited directly.",
+            "",
+            "Visible release tabs:",
             "- Home: start page and workflow summary.",
-            "- Pack Extractor: inspect and extract pack contents without modifying the original pack.",
-            "- Hex Viewer: read-only file viewing with offset navigation, page navigation, and search.",
-            "- Tex Swapper: scan textures, export DDS, validate exact replacement DDS files, and patch new PCPACK copies.",
-            "- Texture Folder Viewer: browse and preview DDS/PNG/JPG/TGA/HDR folders when Pillow supports the format.",
-            "- Old Animation Swapper: load Pack A, choose Pack B/source/Xbox folder, use release presets or manual rows, and patch a new PC copy.",
-            "- How To Use: detailed workflow and safety guide for every release tab.",
-            "- About / Info: beta notice, credits, links, and disclaimer.",
+            "- Pack Extractor: one-pack PC extraction plus experimental one-pack Xbox source extraction.",
+            "- PCPACK Rebuild Lab: release-mode rebuild checks and verify/review tools.",
+            "- Hex/Text: read-only hex/text viewing with export-copy options.",
+            "- MAT Editor: SM3-native extracted .mat inspection/editing with shader profiles, float controls, reset, backup, and modified-copy output.",
+            "- Tex Swapper: edit-ready texture export/reimport and new patched PCPACK output.",
+            "- Texture Folder Viewer: preview and category labels only; no reports are created.",
+            "- New Animation Swapper: numbered PC-slot/NAS CSV animation patch workflow.",
+            "- Old Animation Swapper: legacy manual/preset animation workflow that still writes new PC pack copies.",
+            "- Sound Editor: scans aligned PCSSB FSB3 slots, supports direct replacement, and can mix an isolated dialogue stem with new music before writing a same-size PCSSB.",
+            "- Model Viewer: view-only native Spider-Man 3 .mesh geometry viewer with section visibility, orbit/pan/zoom, solid/wireframe and fixed camera views.",
+            "- How To Use: release-safe workflow guide.",
+            "- About / Info: credits, links, safety notes, and disclaimer.",
             "",
             "Safety:",
-            "- Original packs are not modified directly.",
-            "- Pack Extractor removes temporary report folders and report zip bundles after release actions.",
-            "- Tex Swapper is experimental; DDS replacements should match width, height, format, mip count, and payload size.",
-            "- Old Animation Swapper is experimental; safe swaps require an existing PC destination slot with matching source payload size/layout.",
-            "- Always back up your files before patching, replacing, or testing anything.",
-            "- No Spider-Man 3 game files are included with this tool.",
-            "",
-            "Language support:",
-            "- Use the Language option in the top bar to switch the main guide pages.",
-            "- Technical button names stay stable so tutorials and modding instructions still match the tool.",
+            "- Original game packs are never modified directly.",
+            "- Patch/extract to new folders and keep backups.",
+            "- Use Tex Swapper for texture editing; Pack Extractor DDS previews are raw preview/recovery files.",
+            "- Xbox files are source-only. The experimental Xbox extractor does not patch Xbox or PC packs.",
+            "- No Spider-Man 3 game files are included with this toolkit.",
         ]),
         "how_intro": "Detailed guide for every release tab, including experimental Tex Swapper and Old Animation Swapper safety rules.",
         "how_local": "\n".join([
@@ -91,30 +121,33 @@ TEXT: Dict[str, Dict[str, str]] = {
             "- Back up original files.",
             "- Do not force unsupported swaps or texture replacements.",
         ]),
-        "about_subtitle": "Spider-Man 3 PC Modding Toolkit - beta release information, credits, links, safety notes, and language support.",
+        "about_subtitle": "Spider-Man 3 PC Modding Toolkit release information, credits, links, safety notes, and language support.",
         "about_body": "\n".join([
             "SM3 MODDING TOOLKIT",
-            "Created by TSGAMING264",
             "",
-            "A Spider-Man 3 PC Modding Toolkit built to help with pack extraction, texture work, texture viewing, hex viewing, and animation swapping.",
+            "A fan-made Spider-Man 3 PC modding toolkit for pack extraction, texture workflows, texture folder previewing, Hex/Text viewing, rebuild checks, and animation swap workflows.",
             "",
-            "This tool is still in a beta phase and is not finished yet. Some features may be incomplete, experimental, or still being improved.",
+            "Release safety notes",
+            "- Original game packs are never modified directly.",
+            "- The toolkit writes extracted folders, preview files, or new patched pack copies depending on the tab.",
+            "- Keep backups before replacing anything in your game folder.",
+            "- Experimental tools are marked clearly and should be tested carefully.",
             "",
             "Special Thanks / Inspiration",
             "",
             "Huge shoutout to Devryx and the developers behind WOS Toolkit. Their work helped inspire the style and direction of this toolkit.",
             "",
-            "- Devryx - Developer & reverse engineer of WOS Toolkit",
-            "- Haruse - Developer & reverse engineer of WOS Addon",
-            "- Kirbystealer - Developer & reverse engineer connected to ExWOS",
-            "- UndeadFrankie - Developer & reverse engineer of DR2 Tool",
-            "- Arc - Developer & reverse engineer connected to WOS tooling",
+            "- Devryx - WOS Toolkit developer",
+            "- Haruse - WOS Addon developer",
+            "- Kirbystealer - ExWOS contributor",
+            "- UndeadFrankie - DR2 Tool developer",
+            "- ArchiverOfTriviality - WOSTweaks contributor",
             "",
             "Disclaimer",
             "",
             "This is an unofficial fan-made modding tool. It is not affiliated with Activision, Treyarch, Marvel, Sony, or any official Spider-Man game developer or publisher.",
             "",
-            "No game files are included with this tool. Back up original files before patching, replacing, or testing anything.",
+            "No game files are included with this tool.",
             "",
             "Language support note: the main guide pages and tab labels can change language. Deep technical tool buttons stay stable for tutorial compatibility.",
         ]),
@@ -255,7 +288,10 @@ TEXT: Dict[str, Dict[str, str]] = {
         "status_language": "Sprache auf Deutsch gestellt.",
         "tab.home": "Start",
         "tab.pack_extractor": "Pack Extractor",
-        "tab.hex_viewer": "Hex Viewer",
+        "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.apkf_rebuilder_dev": "APKF Rebuilder DEV",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.mat_editor": "MAT Editor",
         "tab.tex_swapper": "Tex Swapper",
         "tab.texture_folder_viewer": "Texturen",
         "tab.old_animation_swapper": "Alter Anim Swapper",
@@ -402,7 +438,7 @@ TEXT["Filipino"] = {
     "status_language": "Wika ay Filipino na.",
     "tab.home": "Home",
     "tab.pack_extractor": "Pack Extractor",
-    "tab.hex_viewer": "Hex Viewer",
+    "tab.hex_viewer": "Hex/Text",
     "tab.tex_swapper": "Tex Swapper",
     "tab.texture_folder_viewer": "Texture Viewer",
     "tab.old_animation_swapper": "Old Animation Swapper",
@@ -464,7 +500,7 @@ TEXT["Türkçe"] = {
     "status_language": "Dil Türkçe olarak ayarlandi.",
     "tab.home": "Ana Sayfa",
     "tab.pack_extractor": "Pack Extractor",
-    "tab.hex_viewer": "Hex Viewer",
+    "tab.hex_viewer": "Hex/Text",
     "tab.tex_swapper": "Tex Swapper",
     "tab.texture_folder_viewer": "Doku Görüntüleyici",
     "tab.old_animation_swapper": "Eski Anim Swapper",
@@ -585,7 +621,7 @@ TEXT["日本語"] = {
     "status_language": "言語を日本語に変更しました。",
     "tab.home": "ホーム",
     "tab.pack_extractor": "Pack Extractor",
-    "tab.hex_viewer": "Hex Viewer",
+    "tab.hex_viewer": "Hex/Text",
     "tab.tex_swapper": "Tex Swapper",
     "tab.texture_folder_viewer": "テクスチャ表示",
     "tab.old_animation_swapper": "Animation Swapper",
@@ -620,9 +656,560 @@ TEXT["日本語"] = {
 }
 
 
+
+# v5.2.91: make sure every visible main tab has a localized label.
+# Technical buttons still stay stable for tutorial compatibility.
+_TAB_TRANSLATION_PATCHES = {
+    "English": {
+        "theme_label": "Theme",
+    },
+    "Español": {
+        "theme_label": "Tema",
+        "tab.pcpack_rebuild_lab": "Rebuild Lab",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.new_animation_swapper": "Nuevo Animation Swapper",
+    },
+    "Português (Brazil)": {
+        "theme_label": "Tema",
+        "tab.pack_extractor": "Extrator de Packs",
+        "tab.pcpack_rebuild_lab": "Rebuild Lab",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.mat_editor": "MAT Editor",
+        "tab.tex_swapper": "Tex Swapper",
+        "tab.texture_folder_viewer": "Visualizador de Texturas",
+        "tab.new_animation_swapper": "Novo Animation Swapper",
+        "tab.old_animation_swapper": "Old Animation Swapper",
+        "tab.about_info": "Sobre / Info",
+    },
+    "Filipino": {
+        "theme_label": "Tema",
+        "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.new_animation_swapper": "New Animation Swapper",
+        "tab.about_info": "About / Info",
+    },
+    "Türkçe": {
+        "theme_label": "Tema",
+        "tab.home": "Ana Sayfa",
+        "tab.pack_extractor": "Pack Çıkarıcı",
+        "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.apkf_rebuilder_dev": "APKF Rebuilder DEV",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.mat_editor": "MAT Editor",
+        "tab.tex_swapper": "Tex Swapper",
+        "tab.texture_folder_viewer": "Doku Görüntüleyici",
+        "tab.new_animation_swapper": "Yeni Animation Swapper",
+        "tab.old_animation_swapper": "Eski Animation Swapper",
+        "tab.how_to_use": "Nasıl Kullanılır",
+        "tab.about_info": "Hakkında / Info",
+    },
+    "Français": {
+        "theme_label": "Thème",
+        "tab.home": "Accueil",
+        "tab.pack_extractor": "Extracteur Pack",
+        "tab.pcpack_rebuild_lab": "Rebuild Lab",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.mat_editor": "MAT Editor",
+        "tab.tex_swapper": "Tex Swapper",
+        "tab.texture_folder_viewer": "Visionneuse Textures",
+        "tab.new_animation_swapper": "Nouveau Animation Swapper",
+        "tab.old_animation_swapper": "Ancien Animation Swapper",
+        "tab.how_to_use": "Mode d'emploi",
+        "tab.about_info": "À propos / Info",
+    },
+    "Deutsch": {
+        "theme_label": "Theme",
+        "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.apkf_rebuilder_dev": "APKF Rebuilder DEV",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.new_animation_swapper": "Neuer Animation Swapper",
+    },
+    "Italiano": {
+        "theme_label": "Tema",
+        "tab.home": "Home",
+        "tab.pack_extractor": "Estrattore Pack",
+        "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.apkf_rebuilder_dev": "APKF Rebuilder DEV",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.mat_editor": "MAT Editor",
+        "tab.tex_swapper": "Tex Swapper",
+        "tab.texture_folder_viewer": "Visualizzatore Texture",
+        "tab.new_animation_swapper": "Nuovo Animation Swapper",
+        "tab.old_animation_swapper": "Vecchio Animation Swapper",
+        "tab.how_to_use": "Come Usare",
+        "tab.about_info": "Info",
+    },
+    "Arabic": {
+        "theme_label": "المظهر",
+        "tab.home": "الرئيسية",
+        "tab.pack_extractor": "استخراج الحزم",
+        "tab.pcpack_rebuild_lab": "مختبر إعادة البناء",
+        "tab.hex_viewer": "Hex/Text",
+        "tab.mat_editor": "MAT Editor",
+        "tab.tex_swapper": "Tex Swapper",
+        "tab.texture_folder_viewer": "عارض الصور",
+        "tab.new_animation_swapper": "تبديل الحركات الجديد",
+        "tab.old_animation_swapper": "تبديل الحركات القديم",
+        "tab.how_to_use": "طريقة الاستخدام",
+        "tab.about_info": "معلومات",
+    },
+    "日本語": {
+        "theme_label": "テーマ",
+        "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.new_animation_swapper": "新 Animation Swapper",
+    },
+}
+for _lang, _values in _TAB_TRANSLATION_PATCHES.items():
+    if _lang in TEXT:
+        TEXT[_lang].update(_values)
+
+
+
+# v5.2.175: WOS-style language coverage with SM3 live switching.
+# Display names mirror the WOS Toolkit language picker, while aliases keep
+# compatibility with older SM3 settings/labels.
+LANGUAGE_ALIASES = {
+    "Arabic": "العربية (Arabic)",
+    "Spanish": "Español",
+    "French": "Français",
+    "German": "Deutsch",
+    "Portuguese": "Português (Brazil)",
+    "Korean": "한국어",
+    "Russian": "Русский",
+    "Chinese": "中文",
+    "Dutch": "Nederlands",
+    "Polish": "Polski",
+    "Swedish": "Svenska",
+    "Hindi": "हिन्दी",
+}
+
+# Reuse the existing Arabic translation under the WOS-style display name.
+if "Arabic" in TEXT:
+    TEXT["العربية (Arabic)"] = dict(TEXT["Arabic"])
+
+# Complete visible release-tab coverage in the original SM3 locales.
+_EXISTING_RELEASE_PATCHES = {
+    "Español": {
+        "tab.mat_editor": "Editor MAT",
+        "tab.model_viewer": "Visor de Modelos",
+        "tab.sound_editor": "Editor de Sonido",
+        "full_theme_label": "TEMA COMPLETO",
+    },
+    "Français": {
+        "tab.model_viewer": "Visionneuse Modèle",
+        "tab.sound_editor": "Éditeur Audio",
+        "full_theme_label": "THÈME COMPLET",
+    },
+    "Deutsch": {
+        "tab.model_viewer": "Modellanzeige",
+        "tab.sound_editor": "Sound-Editor",
+        "full_theme_label": "VOLLES THEME",
+    },
+    "Português (Brazil)": {
+        "tab.model_viewer": "Visualizador de Modelos",
+        "tab.sound_editor": "Editor de Áudio",
+        "full_theme_label": "TEMA COMPLETO",
+    },
+    "Filipino": {
+        "tab.model_viewer": "Model Viewer",
+        "tab.sound_editor": "Sound Editor",
+        "full_theme_label": "BUONG TEMA",
+    },
+    "Türkçe": {
+        "tab.model_viewer": "Model Görüntüleyici",
+        "tab.sound_editor": "Ses Editörü",
+        "full_theme_label": "TAM TEMA",
+    },
+    "Italiano": {
+        "tab.model_viewer": "Visualizzatore Modelli",
+        "tab.sound_editor": "Editor Audio",
+        "full_theme_label": "TEMA COMPLETO",
+    },
+    "日本語": {
+        "tab.model_viewer": "モデルビューア",
+        "tab.sound_editor": "サウンドエディタ",
+        "full_theme_label": "フルテーマ",
+    },
+    "العربية (Arabic)": {
+        "tab.model_viewer": "عارض النماذج",
+        "tab.sound_editor": "محرر الصوت",
+        "full_theme_label": "المظهر الكامل",
+    },
+    "English": {"full_theme_label": "FULL THEME"},
+}
+for _lang, _values in _EXISTING_RELEASE_PATCHES.items():
+    TEXT.setdefault(_lang, {}).update(_values)
+
+_EXTRA_LANGUAGE_TEXT = {
+    "한국어": {
+        "language_label": "언어", "theme_label": "테마", "full_theme_label": "전체 테마",
+        "header_meta": "TSGAMING264 제작. Spider-Man 3 PC 모딩 툴킷.",
+        "status_language": "언어가 한국어로 설정되었습니다.",
+        "tab.home": "홈", "tab.pack_extractor": "팩 추출기", "tab.hex_viewer": "Hex/Text",
+        "tab.tex_swapper": "Tex Swapper", "tab.texture_folder_viewer": "텍스처 폴더 뷰어",
+        "tab.mat_editor": "MAT Editor", "tab.model_viewer": "모델 뷰어",
+        "tab.new_animation_swapper": "새 Animation Swapper", "tab.old_animation_swapper": "기존 Animation Swapper",
+        "tab.sound_editor": "사운드 에디터", "tab.pcpack_rebuild_lab": "PCPACK 리빌드 랩",
+        "tab.how_to_use": "사용 방법", "tab.about_info": "정보",
+        "home_subtitle": "Spider-Man 3 PC 팩, 텍스처, MAT, 모델, 애니메이션 및 오디오 작업을 위한 모딩 툴킷입니다.",
+        "home_body": "SM3 MODDING TOOLKIT\n\n팩 추출, TEX/DDS 작업, MAT 편집, 모델 보기, 애니메이션 교체, 오디오 교체 및 PCPACK 검증을 지원합니다.\n\n원본 게임 파일을 직접 수정하지 말고 항상 백업을 유지하세요.",
+        "how_intro": "각 릴리스 탭의 사용 방법과 안전 수칙입니다.",
+        "how_local": "언어 가이드 - 한국어\n\n탭, 주요 버튼, 섹션 제목과 표 머리글이 즉시 번역됩니다. PCPACK, TEX, DDS, MAT, ANIM, XESM3 같은 기술 용어는 튜토리얼 호환성을 위해 유지됩니다.",
+        "about_subtitle": "릴리스 정보, 크레딧, 안전 수칙 및 언어 지원.",
+        "about_body": "SM3 MODDING TOOLKIT\nTSGAMING264 제작\n\nSpider-Man 3 PC용 비공식 팬 모딩 툴입니다. 게임 파일은 포함되지 않습니다.\n\n선택한 언어는 저장되며 다음 실행 때 자동으로 복원됩니다.",
+    },
+    "Русский": {
+        "language_label": "Язык", "theme_label": "Тема", "full_theme_label": "ПОЛНАЯ ТЕМА",
+        "header_meta": "Создано TSGAMING264. Инструментарий моддинга Spider-Man 3 PC.",
+        "status_language": "Язык установлен: Русский.",
+        "tab.home": "Главная", "tab.pack_extractor": "Распаковщик", "tab.hex_viewer": "Hex/Text",
+        "tab.tex_swapper": "Tex Swapper", "tab.texture_folder_viewer": "Просмотр текстур",
+        "tab.mat_editor": "MAT Editor", "tab.model_viewer": "Просмотр моделей",
+        "tab.new_animation_swapper": "Новый Animation Swapper", "tab.old_animation_swapper": "Старый Animation Swapper",
+        "tab.sound_editor": "Редактор звука", "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.how_to_use": "Как использовать", "tab.about_info": "О программе",
+        "home_subtitle": "Инструментарий моддинга Spider-Man 3 PC для паков, текстур, MAT, моделей, анимаций и звука.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nПоддерживает распаковку, TEX/DDS, MAT, просмотр моделей, замену анимаций, звук и проверку PCPACK.\n\nНе изменяйте оригинальные файлы игры напрямую и храните резервные копии.",
+        "how_intro": "Руководство по вкладкам релиза и правила безопасной работы.",
+        "how_local": "ЯЗЫКОВОЕ РУКОВОДСТВО - РУССКИЙ\n\nВкладки, основные кнопки, заголовки разделов и таблиц переводятся сразу. Технические термины PCPACK, TEX, DDS, MAT, ANIM и XESM3 сохраняются для совместимости с руководствами.",
+        "about_subtitle": "Информация о релизе, авторы, безопасность и поддержка языков.",
+        "about_body": "SM3 MODDING TOOLKIT\nСоздано TSGAMING264\n\nНеофициальный фанатский инструмент для моддинга Spider-Man 3 PC. Файлы игры не включены.\n\nВыбранный язык сохраняется и восстанавливается при следующем запуске.",
+    },
+    "中文": {
+        "language_label": "语言", "theme_label": "主题", "full_theme_label": "完整主题",
+        "header_meta": "由 TSGAMING264 制作。Spider-Man 3 PC 模组工具包。",
+        "status_language": "语言已设置为中文。",
+        "tab.home": "主页", "tab.pack_extractor": "包提取器", "tab.hex_viewer": "Hex/Text",
+        "tab.tex_swapper": "Tex Swapper", "tab.texture_folder_viewer": "纹理文件夹查看器",
+        "tab.mat_editor": "MAT 编辑器", "tab.model_viewer": "模型查看器",
+        "tab.new_animation_swapper": "新动画替换器", "tab.old_animation_swapper": "旧动画替换器",
+        "tab.sound_editor": "声音编辑器", "tab.pcpack_rebuild_lab": "PCPACK 重建实验室",
+        "tab.how_to_use": "使用方法", "tab.about_info": "关于 / 信息",
+        "home_subtitle": "用于 Spider-Man 3 PC 包、纹理、MAT、模型、动画和音频工作的模组工具包。",
+        "home_body": "SM3 MODDING TOOLKIT\n\n支持包提取、TEX/DDS、MAT 编辑、模型查看、动画替换、音频替换和 PCPACK 验证。\n\n请勿直接修改原始游戏文件，并始终保留备份。",
+        "how_intro": "所有发布标签页的使用说明和安全规则。",
+        "how_local": "语言指南 - 中文\n\n标签页、主要按钮、分区标题和表格标题会即时翻译。PCPACK、TEX、DDS、MAT、ANIM、XESM3 等技术名称会保留，以兼容教程。",
+        "about_subtitle": "发布信息、致谢、安全说明和语言支持。",
+        "about_body": "SM3 MODDING TOOLKIT\n由 TSGAMING264 制作\n\n这是非官方的 Spider-Man 3 PC 粉丝模组工具，不包含游戏文件。\n\n所选语言会保存，并在下次启动时自动恢复。",
+    },
+    "Nederlands": {
+        "language_label": "Taal", "theme_label": "Thema", "full_theme_label": "VOLLEDIG THEMA",
+        "header_meta": "Gemaakt door TSGAMING264. Spider-Man 3 PC Modding Toolkit.",
+        "status_language": "Taal ingesteld op Nederlands.",
+        "tab.home": "Start", "tab.pack_extractor": "Pack Extractor", "tab.hex_viewer": "Hex/Text",
+        "tab.tex_swapper": "Tex Swapper", "tab.texture_folder_viewer": "Texturemap Viewer",
+        "tab.mat_editor": "MAT Editor", "tab.model_viewer": "Model Viewer",
+        "tab.new_animation_swapper": "Nieuwe Animation Swapper", "tab.old_animation_swapper": "Oude Animation Swapper",
+        "tab.sound_editor": "Geluidseditor", "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.how_to_use": "Gebruiksaanwijzing", "tab.about_info": "Over / Info",
+        "home_subtitle": "Spider-Man 3 PC modding toolkit voor packs, textures, MAT, modellen, animaties en audio.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nOndersteunt pack-extractie, TEX/DDS, MAT-bewerking, modelweergave, animaties, audio en PCPACK-controle.\n\nBewerk originele gamebestanden nooit direct en bewaar back-ups.",
+        "how_intro": "Handleiding en veiligheidsregels voor alle release-tabs.",
+        "how_local": "TAALGIDS - NEDERLANDS\n\nTabs, belangrijke knoppen, sectiekoppen en tabelkoppen worden direct vertaald. Technische namen zoals PCPACK, TEX, DDS, MAT, ANIM en XESM3 blijven gelijk voor tutorialcompatibiliteit.",
+        "about_subtitle": "Release-info, credits, veiligheid en taalondersteuning.",
+        "about_body": "SM3 MODDING TOOLKIT\nGemaakt door TSGAMING264\n\nEen onofficiële fan-made moddingtool voor Spider-Man 3 PC. Er worden geen gamebestanden meegeleverd.\n\nDe gekozen taal wordt onthouden voor de volgende start.",
+    },
+    "Polski": {
+        "language_label": "Język", "theme_label": "Motyw", "full_theme_label": "PEŁNY MOTYW",
+        "header_meta": "Stworzone przez TSGAMING264. Zestaw narzędzi do modowania Spider-Man 3 PC.",
+        "status_language": "Język ustawiono na Polski.",
+        "tab.home": "Start", "tab.pack_extractor": "Ekstraktor Paczek", "tab.hex_viewer": "Hex/Text",
+        "tab.tex_swapper": "Tex Swapper", "tab.texture_folder_viewer": "Przeglądarka Tekstur",
+        "tab.mat_editor": "MAT Editor", "tab.model_viewer": "Przeglądarka Modeli",
+        "tab.new_animation_swapper": "Nowy Animation Swapper", "tab.old_animation_swapper": "Stary Animation Swapper",
+        "tab.sound_editor": "Edytor Dźwięku", "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.how_to_use": "Jak Używać", "tab.about_info": "O programie",
+        "home_subtitle": "Zestaw narzędzi do modowania Spider-Man 3 PC: paczki, tekstury, MAT, modele, animacje i audio.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nObsługuje ekstrakcję paczek, TEX/DDS, MAT, podgląd modeli, animacje, audio i weryfikację PCPACK.\n\nNie modyfikuj bezpośrednio oryginalnych plików gry i zachowuj kopie zapasowe.",
+        "how_intro": "Instrukcja wszystkich zakładek wydania i zasady bezpieczeństwa.",
+        "how_local": "PRZEWODNIK JĘZYKOWY - POLSKI\n\nZakładki, główne przyciski, nagłówki sekcji i tabel są tłumaczone natychmiast. Nazwy techniczne PCPACK, TEX, DDS, MAT, ANIM i XESM3 pozostają bez zmian dla zgodności z poradnikami.",
+        "about_subtitle": "Informacje o wydaniu, autorzy, bezpieczeństwo i obsługa języków.",
+        "about_body": "SM3 MODDING TOOLKIT\nStworzone przez TSGAMING264\n\nNieoficjalne fanowskie narzędzie do modowania Spider-Man 3 PC. Pliki gry nie są dołączone.\n\nWybrany język jest zapisywany i przywracany przy następnym uruchomieniu.",
+    },
+    "Svenska": {
+        "language_label": "Språk", "theme_label": "Tema", "full_theme_label": "FULLT TEMA",
+        "header_meta": "Skapad av TSGAMING264. Spider-Man 3 PC Modding Toolkit.",
+        "status_language": "Språket är inställt på Svenska.",
+        "tab.home": "Hem", "tab.pack_extractor": "Packextraktor", "tab.hex_viewer": "Hex/Text",
+        "tab.tex_swapper": "Tex Swapper", "tab.texture_folder_viewer": "Texturmappsvisare",
+        "tab.mat_editor": "MAT Editor", "tab.model_viewer": "Modellvisare",
+        "tab.new_animation_swapper": "Ny Animation Swapper", "tab.old_animation_swapper": "Gammal Animation Swapper",
+        "tab.sound_editor": "Ljudredigerare", "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.how_to_use": "Så använder du", "tab.about_info": "Om / Info",
+        "home_subtitle": "Spider-Man 3 PC modding toolkit för pack, texturer, MAT, modeller, animationer och ljud.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nStöder packextraktion, TEX/DDS, MAT-redigering, modellvisning, animationer, ljud och PCPACK-verifiering.\n\nÄndra aldrig originalfiler direkt och behåll säkerhetskopior.",
+        "how_intro": "Guide och säkerhetsregler för alla releaseflikar.",
+        "how_local": "SPRÅKGUIDE - SVENSKA\n\nFlikar, huvudknappar, avsnittsrubriker och tabellrubriker översätts direkt. Tekniska namn som PCPACK, TEX, DDS, MAT, ANIM och XESM3 behålls för kompatibilitet med guider.",
+        "about_subtitle": "Releaseinfo, credits, säkerhet och språkstöd.",
+        "about_body": "SM3 MODDING TOOLKIT\nSkapad av TSGAMING264\n\nEtt inofficiellt fan-skapat moddingverktyg för Spider-Man 3 PC. Inga spelfiler ingår.\n\nValt språk sparas och återställs nästa gång programmet startar.",
+    },
+    "हिन्दी": {
+        "language_label": "भाषा", "theme_label": "थीम", "full_theme_label": "पूरा थीम",
+        "header_meta": "TSGAMING264 द्वारा बनाया गया। Spider-Man 3 PC Modding Toolkit।",
+        "status_language": "भाषा हिन्दी पर सेट की गई।",
+        "tab.home": "होम", "tab.pack_extractor": "पैक एक्सट्रैक्टर", "tab.hex_viewer": "Hex/Text",
+        "tab.tex_swapper": "Tex Swapper", "tab.texture_folder_viewer": "टेक्सचर फ़ोल्डर व्यूअर",
+        "tab.mat_editor": "MAT Editor", "tab.model_viewer": "मॉडल व्यूअर",
+        "tab.new_animation_swapper": "नया Animation Swapper", "tab.old_animation_swapper": "पुराना Animation Swapper",
+        "tab.sound_editor": "साउंड एडिटर", "tab.pcpack_rebuild_lab": "PCPACK Rebuild Lab",
+        "tab.how_to_use": "कैसे उपयोग करें", "tab.about_info": "जानकारी",
+        "home_subtitle": "Spider-Man 3 PC के packs, textures, MAT, models, animations और audio के लिए modding toolkit।",
+        "home_body": "SM3 MODDING TOOLKIT\n\nPack extraction, TEX/DDS, MAT editing, model viewing, animation swapping, audio replacement और PCPACK verification का समर्थन करता है।\n\nमूल game files को सीधे न बदलें और backup रखें।",
+        "how_intro": "सभी release tabs के लिए उपयोग गाइड और safety rules।",
+        "how_local": "LANGUAGE GUIDE - हिन्दी\n\nTabs, मुख्य buttons, section headings और table headings तुरंत translate होते हैं। PCPACK, TEX, DDS, MAT, ANIM और XESM3 जैसे technical names tutorials के लिए unchanged रहते हैं।",
+        "about_subtitle": "Release info, credits, safety notes और language support।",
+        "about_body": "SM3 MODDING TOOLKIT\nTSGAMING264 द्वारा बनाया गया\n\nSpider-Man 3 PC के लिए unofficial fan-made modding tool। Game files शामिल नहीं हैं।\n\nचुनी गई भाषा save होती है और अगली बार automatically restore होती है।",
+    },
+}
+TEXT.update(_EXTRA_LANGUAGE_TEXT)
+
+# Every language must have every release-level key. English fallback is kept only
+# as a final safety net, not as the normal path.
+for _lang in LANGUAGE_NAMES:
+    _data = TEXT.setdefault(_lang, {})
+    for _key, _value in TEXT[DEFAULT_LANGUAGE].items():
+        _data.setdefault(_key, _value)
+
+# Release-facing English explanation of the upgraded localization behavior.
+TEXT["English"]["how_local"] = "\n".join([
+    "LANGUAGE GUIDE - ENGLISH",
+    "",
+    "The language selector supports 17 languages and updates the toolkit live; no restart is required.",
+    "English is the startup language every time. Other languages activate only when you select them.",
+    "Main tabs, common buttons, nested tab names, section labels, and common table headings participate in live translation.",
+    "Technical identifiers such as PCPACK, TEX, DDS, MAT, ANIM, and XESM3 stay stable so tutorials and file-format instructions remain easy to follow.",
+])
+TEXT["English"]["about_body"] = TEXT["English"]["about_body"].replace(
+    "Language support note: the main guide pages and tab labels can change language. Deep technical tool buttons stay stable for tutorial compatibility.",
+    "Language support: 17 languages with live switching; English is always the startup language. Common UI controls translate live; technical identifiers stay stable for tutorial compatibility.",
+)
+
+
+# v5.2.178 public release wording: keep Home/About focused on user workflows and
+# release information.
+_PUBLIC_RELEASE_OVERRIDES = {
+    "English": {
+        "home_subtitle": "Start here: choose the tool that matches the Spider-Man 3 PC mod you want to make.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nSTART HERE\n1. Back up your original game files.\n2. Pick the tab that matches your job.\n3. Build/extract to a new output folder.\n4. Test one change at a time.\n\nQUICK CHOOSER\n- Extract a pack -> Pack Extractor\n- Replace/edit textures -> Tex Swapper\n- Browse exported textures -> Texture Folder Viewer\n- Edit an extracted MAT -> MAT Editor\n- View an extracted SM3 mesh -> Model Viewer\n- Normal XESM3 animation swap -> New Animation Swapper\n- PC/Xbox pack animation workflow -> Old Animation Swapper\n- Replace audio/music -> Sound Editor\n- Rebuild or verify a PCPACK -> PCPACK Rebuild Lab\n- Inspect bytes/text -> Hex/Text\n\nNEW USER?\nOpen How To Use. The complete step-by-step guide and demonstrations are built directly into the toolkit.\n\nAPPEARANCE\nFULL THEME applies the selected palette through the whole UI. Leave it unchecked for the original theme flow.\n\nLANGUAGE\n17 languages are available. Changes apply live. English is restored automatically on the next launch.\n\nNo Spider-Man 3 game assets are included with this toolkit.",
+        "how_intro": "Step-by-step release guide with the full instructions and demonstrations built directly into the toolkit.",
+        "about_subtitle": "Creator and community credits, release information, language support, and disclaimer.",
+        "about_body": "SM3 MODDING TOOLKIT\nCreated by TSGAMING264\n\nPUBLIC RELEASE INFO\n- Fan-made toolkit for Spider-Man 3 PC modding workflows.\n- Includes pack, texture, MAT, model-viewing, animation, sound, rebuild, and Hex/Text tools.\n- 17-language live localization with English locked as the startup default.\n- FULL THEME is optional; leave it off for the original theme flow.\n- Keep backups and test new output files before replacing anything in your game folder.\n\nThe detailed creator/community credits are shown above.\n\nDISCLAIMER\nThis is an unofficial fan-made modding tool and is not affiliated with Activision, Treyarch, Marvel, Sony, or any official Spider-Man game developer or publisher.\n\nNo Spider-Man 3 game files are included.",
+    },
+    "Español": {
+        "home_subtitle": "Empieza aquí: elige la herramienta que corresponda al mod de Spider-Man 3 PC que quieres crear.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nINICIO RÁPIDO\n- Extraer un pack -> Pack Extractor\n- Editar/reemplazar texturas -> Tex Swapper\n- Ver carpetas de texturas -> Texture Folder Viewer\n- Editar MAT -> MAT Editor\n- Ver un mesh SM3 -> Model Viewer\n- Cambiar animaciones con XESM3 -> New Animation Swapper\n- Flujo de packs PC/Xbox -> Old Animation Swapper\n- Reemplazar audio -> Sound Editor\n- Reconstruir/verificar PCPACK -> PCPACK Rebuild Lab\n- Inspeccionar bytes/texto -> Hex/Text\n\nHaz copias de seguridad, trabaja con salidas nuevas y prueba un cambio a la vez. How To Use incluye todos los pasos y ejemplos directamente dentro de la herramienta.",
+        "how_intro": "Guía paso a paso con todas las instrucciones y ejemplos integrados en la herramienta.",
+        "about_subtitle": "Créditos, información pública de la versión, idiomas y aviso legal.",
+        "about_body": "SM3 MODDING TOOLKIT\nCreado por TSGAMING264\n\nHerramienta fan-made no oficial para modding de Spider-Man 3 PC. Incluye soporte de 17 idiomas con cambio en vivo. Mantén copias de seguridad y prueba las salidas nuevas antes de reemplazar archivos del juego.\n\nLos créditos completos aparecen arriba.\n\nNo se incluyen archivos del juego.",
+    },
+    "Français": {
+        "home_subtitle": "Commencez ici : choisissez l'outil correspondant au mod Spider-Man 3 PC que vous voulez créer.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nCHOIX RAPIDE\n- Extraire un pack -> Pack Extractor\n- Modifier/remplacer des textures -> Tex Swapper\n- Parcourir des textures -> Texture Folder Viewer\n- Modifier un MAT -> MAT Editor\n- Voir un mesh SM3 -> Model Viewer\n- Swap d'animation XESM3 -> New Animation Swapper\n- Workflow packs PC/Xbox -> Old Animation Swapper\n- Remplacer l'audio -> Sound Editor\n- Reconstruire/vérifier PCPACK -> PCPACK Rebuild Lab\n- Inspecter octets/texte -> Hex/Text\n\nGardez des sauvegardes et testez un changement à la fois. How To Use contient directement toutes les étapes et tous les exemples dans l’outil.",
+        "how_intro": "Guide étape par étape avec toutes les instructions et tous les exemples intégrés à l’outil.",
+        "about_subtitle": "Crédits, informations publiques, langues et avertissement.",
+        "about_body": "SM3 MODDING TOOLKIT\nCréé par TSGAMING264\n\nOutil de modding fan-made non officiel pour Spider-Man 3 PC. Prend en charge 17 langues avec changement instantané. Gardez des sauvegardes et testez les nouveaux fichiers avant de remplacer des fichiers du jeu.\n\nLes crédits complets sont affichés ci-dessus.\n\nAucun fichier du jeu n'est inclus.",
+    },
+    "Deutsch": {
+        "home_subtitle": "Hier starten: Wähle das Werkzeug für den Spider-Man 3 PC Mod, den du erstellen möchtest.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nSCHNELLAUSWAHL\n- Pack entpacken -> Pack Extractor\n- Texturen bearbeiten/ersetzen -> Tex Swapper\n- Texturordner ansehen -> Texture Folder Viewer\n- MAT bearbeiten -> MAT Editor\n- SM3-Mesh ansehen -> Model Viewer\n- XESM3-Animationsswap -> New Animation Swapper\n- PC/Xbox-Pack-Workflow -> Old Animation Swapper\n- Audio ersetzen -> Sound Editor\n- PCPACK neu bauen/prüfen -> PCPACK Rebuild Lab\n- Bytes/Text prüfen -> Hex/Text\n\nBackups behalten und immer nur eine Änderung testen. How To Use enthält alle Schritte und Beispiele direkt im Werkzeug.",
+        "how_intro": "Schritt-für-Schritt-Anleitung mit allen Anweisungen und Beispielen direkt im Werkzeug.",
+        "about_subtitle": "Credits, öffentliche Release-Informationen, Sprachen und Hinweis.",
+        "about_body": "SM3 MODDING TOOLKIT\nErstellt von TSGAMING264\n\nInoffizielles fan-made Modding-Tool für Spider-Man 3 PC. 17 Sprachen mit Live-Umschaltung. Backups behalten und neue Ausgaben testen, bevor Spieldateien ersetzt werden.\n\nDie vollständigen Credits stehen oben.\n\nKeine Spieldateien enthalten.",
+    },
+    "Português (Brazil)": {
+        "home_subtitle": "Comece aqui: escolha a ferramenta certa para o mod de Spider-Man 3 PC que você quer criar.",
+        "home_body": "SM3 MODDING TOOLKIT\n\nESCOLHA RÁPIDA\n- Extrair pack -> Pack Extractor\n- Editar/substituir texturas -> Tex Swapper\n- Ver pasta de texturas -> Texture Folder Viewer\n- Editar MAT -> MAT Editor\n- Ver mesh SM3 -> Model Viewer\n- Troca de animação XESM3 -> New Animation Swapper\n- Fluxo de packs PC/Xbox -> Old Animation Swapper\n- Substituir áudio -> Sound Editor\n- Reconstruir/verificar PCPACK -> PCPACK Rebuild Lab\n- Inspecionar bytes/texto -> Hex/Text\n\nMantenha backups e teste uma alteração por vez. How To Use inclui todas as etapas e exemplos diretamente dentro da ferramenta.",
+        "how_intro": "Guia passo a passo com todas as instruções e exemplos integrados à ferramenta.",
+        "about_subtitle": "Créditos, informações públicas da versão, idiomas e aviso legal.",
+        "about_body": "SM3 MODDING TOOLKIT\nCriado por TSGAMING264\n\nFerramenta fan-made não oficial para modding de Spider-Man 3 PC. Suporta 17 idiomas com troca ao vivo. Mantenha backups e teste novos arquivos antes de substituir arquivos do jogo.\n\nOs créditos completos aparecem acima.\n\nNenhum arquivo do jogo está incluído.",
+    },
+}
+for _lang, _values in _PUBLIC_RELEASE_OVERRIDES.items():
+    TEXT.setdefault(_lang, {}).update(_values)
+
+# Languages without a hand-localized v5.2.178 public summary still receive the
+# cleaned English release text instead of older draft wording.
+for _lang in LANGUAGE_NAMES:
+    if _lang not in _PUBLIC_RELEASE_OVERRIDES:
+        TEXT[_lang]["home_subtitle"] = TEXT["English"]["home_subtitle"]
+        TEXT[_lang]["home_body"] = TEXT["English"]["home_body"]
+        TEXT[_lang]["how_intro"] = TEXT["English"]["how_intro"]
+        TEXT[_lang]["about_subtitle"] = TEXT["English"]["about_subtitle"]
+        TEXT[_lang]["about_body"] = TEXT["English"]["about_body"]
+
+
+# v5.2.179 FINAL NATIVE LANGUAGE PASS
+# These overrides are intentionally placed after older release patches so no
+# supported non-English language falls back to an English Home/About/How-To page.
+_NATIVE_TAB_LABELS = {
+    "العربية (Arabic)": ["الرئيسية","استخراج الحزم","Hex/Text","مبدّل TEX","عارض مجلد الخامات","محرر MAT","عارض النماذج","مبدّل الحركات الجديد","مبدّل الحركات القديم","محرر الصوت","إعادة بناء PCPACK","طريقة الاستخدام","حول الأداة"],
+    "Português (Brazil)": ["Início","Extrator de Pacotes","Hex/Text","Trocador TEX","Pasta de Texturas","Editor MAT","Visualizador de Modelos","Novo Trocador de Animações","Trocador Antigo","Editor de Áudio","Reconstrução PCPACK","Como Usar","Sobre"],
+    "Filipino": ["Simula","Tagakuha ng Pack","Hex/Text","Palit TEX","Folder ng Texture","Patnugot MAT","Tingin ng Modelo","Bagong Palit-Animasiyon","Lumang Palit-Animasiyon","Patnugot ng Tunog","Muling Buo ng PCPACK","Paano Gamitin","Tungkol"],
+    "Türkçe": ["Ana Sayfa","Paket Çıkarıcı","Hex/Text","TEX Değiştirici","Doku Klasörü","MAT Düzenleyici","Model Görüntüleyici","Yeni Animasyon Değiştirici","Eski Animasyon Değiştirici","Ses Düzenleyici","PCPACK Yeniden Oluşturma","Nasıl Kullanılır","Hakkında"],
+    "Français": ["Accueil","Extracteur de Packs","Hex/Text","Remplacement TEX","Dossier de Textures","Éditeur MAT","Visionneuse de Modèles","Nouveau Remplacement d’Animations","Ancien Remplacement d’Animations","Éditeur Audio","Reconstruction PCPACK","Mode d’emploi","À propos"],
+    "Deutsch": ["Start","Pack-Extraktor","Hex/Text","TEX-Tauscher","Texturordner","MAT-Editor","Modellanzeige","Neuer Animationstauscher","Alter Animationstauscher","Audio-Editor","PCPACK-Neuaufbau","Anleitung","Info"],
+    "Español": ["Inicio","Extractor de Packs","Hex/Text","Cambiador TEX","Carpeta de Texturas","Editor MAT","Visor de Modelos","Nuevo Cambiador de Animaciones","Cambiador Antiguo","Editor de Sonido","Reconstrucción PCPACK","Cómo Usar","Acerca de"],
+    "Italiano": ["Home","Estrattore Pack","Hex/Text","Sostituzione TEX","Cartella Texture","Editor MAT","Visualizzatore Modelli","Nuovo Scambio Animazioni","Vecchio Scambio Animazioni","Editor Audio","Ricostruzione PCPACK","Come Usare","Informazioni"],
+    "日本語": ["ホーム","パック抽出","Hex/Text","TEX差し替え","テクスチャフォルダー","MAT編集","モデル表示","新アニメーション差し替え","旧アニメーション差し替え","サウンド編集","PCPACK再構築","使い方","情報"],
+    "한국어": ["홈","팩 추출","Hex/Text","TEX 교체","텍스처 폴더","MAT 편집","모델 보기","새 애니메이션 교체","기존 애니메이션 교체","사운드 편집","PCPACK 재구성","사용 방법","정보"],
+    "Русский": ["Главная","Распаковка паков","Hex/Text","Замена TEX","Папка текстур","Редактор MAT","Просмотр моделей","Новая замена анимаций","Старая замена анимаций","Редактор звука","Пересборка PCPACK","Как пользоваться","О программе"],
+    "中文": ["主页","资源包提取","Hex/Text","TEX 替换","纹理文件夹","MAT 编辑","模型查看","新动画替换","旧动画替换","声音编辑","PCPACK 重建","使用方法","关于"],
+    "Nederlands": ["Start","Pack-uitpakker","Hex/Text","TEX-wisselaar","Textuurmap","MAT-editor","Modelweergave","Nieuwe Animatiewisselaar","Oude Animatiewisselaar","Audio-editor","PCPACK Herbouw","Gebruiksaanwijzing","Over"],
+    "Polski": ["Start","Ekstraktor Paczek","Hex/Text","Zamiana TEX","Folder Tekstur","Edytor MAT","Przeglądarka Modeli","Nowa Zamiana Animacji","Stara Zamiana Animacji","Edytor Dźwięku","Przebudowa PCPACK","Jak Używać","O programie"],
+    "Svenska": ["Hem","Packextraktor","Hex/Text","TEX-byte","Texturmapp","MAT-redigerare","Modellvisare","Ny Animationsväxlare","Gammal Animationsväxlare","Ljudredigerare","PCPACK-ombyggnad","Så använder du","Om"],
+    "हिन्दी": ["होम","पैक एक्सट्रैक्टर","Hex/Text","TEX बदलें","टेक्सचर फ़ोल्डर","MAT संपादक","मॉडल व्यूअर","नया एनीमेशन स्वैपर","पुराना एनीमेशन स्वैपर","साउंड संपादक","PCPACK पुनर्निर्माण","कैसे उपयोग करें","जानकारी"],
+}
+
+_NATIVE_COMPACT_TABS = {
+    "العربية (Arabic)": ["الرئيسية","الحزم","Hex/Text","TEX","الخامات","MAT","النماذج","حركات جديدة","حركات قديمة","الصوت","إعادة PCPACK","الاستخدام","حول"],
+    "Português (Brazil)": ["Início","Pacotes","Hex/Text","TEX","Texturas","MAT","Modelos","Animação Nova","Animação Antiga","Áudio","PCPACK","Como Usar","Sobre"],
+    "Filipino": ["Simula","Pack","Hex/Text","TEX","Texture","MAT","Modelo","Bagong Anim","Lumang Anim","Tunog","PCPACK","Gamit","Tungkol"],
+    "Türkçe": ["Ana Sayfa","Paket","Hex/Text","TEX","Dokular","MAT","Model","Yeni Anim","Eski Anim","Ses","PCPACK","Kullanım","Hakkında"],
+    "Français": ["Accueil","Packs","Hex/Text","TEX","Textures","MAT","Modèles","Anim. Nouv.","Anim. Anc.","Audio","PCPACK","Utilisation","À propos"],
+    "Deutsch": ["Start","Packs","Hex/Text","TEX","Texturen","MAT","Modelle","Neue Anim.","Alte Anim.","Audio","PCPACK","Anleitung","Info"],
+    "Español": ["Inicio","Packs","Hex/Text","TEX","Texturas","MAT","Modelos","Anim. Nueva","Anim. Antigua","Sonido","PCPACK","Cómo Usar","Acerca"],
+    "Italiano": ["Home","Pack","Hex/Text","TEX","Texture","MAT","Modelli","Anim. Nuova","Anim. Vecchia","Audio","PCPACK","Uso","Info"],
+    "日本語": ["ホーム","パック","Hex/Text","TEX","テクスチャ","MAT","モデル","新アニメ","旧アニメ","サウンド","PCPACK","使い方","情報"],
+    "한국어": ["홈","팩","Hex/Text","TEX","텍스처","MAT","모델","새 애니","기존 애니","사운드","PCPACK","사용법","정보"],
+    "Русский": ["Главная","Паки","Hex/Text","TEX","Текстуры","MAT","Модели","Новая аним.","Старая аним.","Звук","PCPACK","Инструкция","О программе"],
+    "中文": ["主页","资源包","Hex/Text","TEX","纹理","MAT","模型","新动画","旧动画","声音","PCPACK","使用","关于"],
+    "Nederlands": ["Start","Packs","Hex/Text","TEX","Texturen","MAT","Modellen","Nieuwe anim.","Oude anim.","Audio","PCPACK","Gebruik","Over"],
+    "Polski": ["Start","Paczki","Hex/Text","TEX","Tekstury","MAT","Modele","Nowa anim.","Stara anim.","Dźwięk","PCPACK","Instrukcja","O programie"],
+    "Svenska": ["Hem","Pack","Hex/Text","TEX","Texturer","MAT","Modeller","Ny anim.","Gammal anim.","Ljud","PCPACK","Guide","Om"],
+    "हिन्दी": ["होम","पैक","Hex/Text","TEX","टेक्सचर","MAT","मॉडल","नया एनीम.","पुराना एनीम.","साउंड","PCPACK","उपयोग","जानकारी"],
+}
+
+# Fully localized public-facing summary/help pages. Technical identifiers are
+# intentionally preserved, but normal explanatory English is not reinserted.
+_NATIVE_PUBLIC = {
+"العربية (Arabic)": {
+"home_subtitle":"ابدأ من هنا: اختر الأداة المناسبة لتعديل Spider-Man 3 على الحاسوب.",
+"home_body":"SM3 MODDING TOOLKIT\n\nابدأ هنا\n1. احتفظ بنسخة احتياطية من ملفات اللعبة الأصلية.\n2. اختر الأداة المناسبة للعمل الذي تريد تنفيذه.\n3. استخرج أو أنشئ الملفات داخل مجلد إخراج جديد.\n4. اختبر تغييرًا واحدًا في كل مرة.\n\nالاختيار السريع\n- استخراج الحزم: استخراج الحزم\n- تعديل الخامات: مبدّل TEX\n- استعراض الخامات: عارض مجلد الخامات\n- تعديل MAT: محرر MAT\n- عرض mesh: عارض النماذج\n- تبديل الحركات عبر XESM3: مبدّل الحركات الجديد\n- مسار حركات PC/Xbox: مبدّل الحركات القديم\n- استبدال الصوت والموسيقى: محرر الصوت\n- إعادة بناء PCPACK والتحقق منه: إعادة بناء PCPACK\n- فحص البيانات والنص: Hex/Text\n\nلا تحتوي هذه الأداة على أي ملفات من اللعبة.",
+"how_intro":"دليل استخدام خطوة بخطوة لكل أدوات الإصدار مع قواعد الأمان.",
+"how_local":"دليل الاستخدام\n\n- احتفظ دائمًا بنسخة احتياطية.\n- اعمل على نسخ ومجلدات إخراج جديدة.\n- لا تستبدل ملفات اللعبة الأصلية مباشرة.\n- استخدم مبدّل TEX للخامات، ومبدّل الحركات للحركات، ومحرر الصوت للصوت.\n- أسماء الصيغ التقنية مثل PCPACK وTEX وDDS وMAT وANIM وXESM3 تبقى كما هي حتى لا تتعطل تعليمات التعديل.\n- اختبر كل تعديل منفردًا قبل دمج عدة تغييرات.",
+"about_subtitle":"معلومات الإصدار، الاعتمادات، دعم اللغات، وإخلاء المسؤولية.",
+"about_body":"SM3 MODDING TOOLKIT\nصنعه TSGAMING264\n\nأداة غير رسمية من صنع المعجبين لتعديل Spider-Man 3 على الحاسوب. تدعم 17 لغة مع التبديل الفوري وحفظ اللغة المختارة. احتفظ بنسخ احتياطية واختبر الملفات الجديدة قبل وضعها في مجلد اللعبة.\n\nلا تتضمن الأداة أي ملفات من اللعبة وليست تابعة لـ Activision أو Treyarch أو Marvel أو Sony."},
+"Português (Brazil)": {
+"home_subtitle":"Comece aqui: escolha a ferramenta certa para o mod de Spider-Man 3 PC que você quer criar.",
+"home_body":"SM3 MODDING TOOLKIT\n\nCOMECE AQUI\n1. Faça backup dos arquivos originais do jogo.\n2. Escolha a ferramenta correspondente ao seu trabalho.\n3. Extraia ou gere tudo em uma nova pasta de saída.\n4. Teste uma alteração por vez.\n\nESCOLHA RÁPIDA\n- Extrair pacotes: Extrator de Pacotes\n- Editar texturas: Trocador TEX\n- Navegar por texturas: Pasta de Texturas\n- Editar MAT: Editor MAT\n- Ver mesh: Visualizador de Modelos\n- Trocar animações com XESM3: Novo Trocador de Animações\n- Fluxo PC/Xbox: Trocador Antigo\n- Substituir áudio e música: Editor de Áudio\n- Reconstruir/verificar PCPACK: Reconstrução PCPACK\n- Inspecionar bytes/texto: Hex/Text\n\nNenhum arquivo do jogo está incluído.",
+"how_intro":"Guia passo a passo de todas as ferramentas da versão e regras de segurança.",
+"how_local":"GUIA DE USO\n\n- Mantenha backups.\n- Trabalhe sempre com cópias e novas pastas de saída.\n- Não altere diretamente os arquivos originais do jogo.\n- Use Trocador TEX para texturas, os trocadores de animação para animações e Editor de Áudio para som.\n- Identificadores técnicos como PCPACK, TEX, DDS, MAT, ANIM e XESM3 permanecem iguais para manter a compatibilidade com tutoriais.\n- Teste cada mod separadamente antes de combinar mudanças.",
+"about_subtitle":"Informações da versão, créditos, idiomas e aviso legal.",
+"about_body":"SM3 MODDING TOOLKIT\nCriado por TSGAMING264\n\nFerramenta fan-made não oficial para modding de Spider-Man 3 PC. Suporta 17 idiomas com troca imediata e salva sua seleção. Faça backups e teste os novos arquivos antes de colocá-los na pasta do jogo.\n\nNenhum arquivo do jogo está incluído e esta ferramenta não é afiliada à Activision, Treyarch, Marvel ou Sony."},
+"Filipino": {
+"home_subtitle":"Magsimula rito: piliin ang kasangkapang akma sa mod ng Spider-Man 3 PC na gusto mong gawin.",
+"home_body":"SM3 MODDING TOOLKIT\n\nMAGSIMULA RITO\n1. Gumawa ng backup ng orihinal na mga file ng laro.\n2. Piliin ang kasangkapang para sa gawain mo.\n3. Mag-extract o bumuo sa bagong output folder.\n4. Isang pagbabago muna ang subukan sa bawat pagkakataon.\n\nMABILIS NA PILIAN\n- Kumuha ng pack: Tagakuha ng Pack\n- Baguhin ang texture: Palit TEX\n- Tingnan ang mga texture: Folder ng Texture\n- Baguhin ang MAT: Patnugot MAT\n- Tingnan ang mesh: Tingin ng Modelo\n- Palit-animasiyon sa XESM3: Bagong Palit-Animasiyon\n- PC/Xbox na daloy: Lumang Palit-Animasiyon\n- Palitan ang tunog o musika: Patnugot ng Tunog\n- Muling buuin/suriin ang PCPACK: Muling Buo ng PCPACK\n- Suriin ang bytes/teksto: Hex/Text\n\nWalang kasamang file ng laro.",
+"how_intro":"Sunod-sunod na gabay para sa mga kasangkapan ng release at mga tuntunin sa kaligtasan.",
+"how_local":"GABAY SA PAGGAMIT\n\n- Laging magtabi ng backup.\n- Gumamit ng mga kopya at bagong output folder.\n- Huwag direktang baguhin ang orihinal na file ng laro.\n- Gamitin ang Palit TEX para sa texture, mga palit-animasiyon para sa animation, at Patnugot ng Tunog para sa audio.\n- Mananatiling pareho ang teknikal na pangalang PCPACK, TEX, DDS, MAT, ANIM at XESM3 para tugma sa mga tutorial.\n- Subukan muna nang hiwalay ang bawat mod.",
+"about_subtitle":"Impormasyon ng release, mga kredito, wika at paalala.",
+"about_body":"SM3 MODDING TOOLKIT\nGinawa ni TSGAMING264\n\nHindi opisyal na fan-made na kasangkapan para sa pagmomod ng Spider-Man 3 PC. May 17 wika, agarang pagpapalit ng wika at naaalalang pagpili. Mag-backup at subukan muna ang bagong file bago ilagay sa folder ng laro.\n\nWalang kasamang file ng laro at hindi ito kaakibat ng Activision, Treyarch, Marvel o Sony."},
+"Türkçe": {
+"home_subtitle":"Buradan başlayın: yapmak istediğiniz Spider-Man 3 PC modu için doğru aracı seçin.",
+"home_body":"SM3 MODDING TOOLKIT\n\nBURADAN BAŞLAYIN\n1. Orijinal oyun dosyalarını yedekleyin.\n2. Yapacağınız işe uygun aracı seçin.\n3. Dosyaları yeni bir çıktı klasörüne çıkarın veya oluşturun.\n4. Her seferinde tek değişiklik test edin.\n\nHIZLI SEÇİM\n- Paket çıkarmak: Paket Çıkarıcı\n- Dokuları değiştirmek: TEX Değiştirici\n- Dokuları görüntülemek: Doku Klasörü\n- MAT düzenlemek: MAT Düzenleyici\n- Mesh görüntülemek: Model Görüntüleyici\n- XESM3 animasyon değişimi: Yeni Animasyon Değiştirici\n- PC/Xbox animasyon akışı: Eski Animasyon Değiştirici\n- Ses/müzik değiştirmek: Ses Düzenleyici\n- PCPACK yeniden oluşturmak/doğrulamak: PCPACK Yeniden Oluşturma\n- Bayt/metin incelemek: Hex/Text\n\nOyun dosyaları bu araçla birlikte verilmez.",
+"how_intro":"Sürüm araçlarının tamamı için adım adım kullanım ve güvenlik kılavuzu.",
+"how_local":"KULLANIM KILAVUZU\n\n- Her zaman yedek tutun.\n- Kopyalar ve yeni çıktı klasörleri üzerinde çalışın.\n- Orijinal oyun dosyalarını doğrudan değiştirmeyin.\n- Dokular için TEX Değiştirici, animasyonlar için animasyon değiştiricileri, ses için Ses Düzenleyici kullanın.\n- PCPACK, TEX, DDS, MAT, ANIM ve XESM3 gibi teknik kimlikler eğitimlerle uyumlu kalması için değiştirilmez.\n- Değişiklikleri birleştirmeden önce her modu tek başına test edin.",
+"about_subtitle":"Sürüm bilgileri, katkılar, dil desteği ve yasal açıklama.",
+"about_body":"SM3 MODDING TOOLKIT\nTSGAMING264 tarafından oluşturuldu\n\nSpider-Man 3 PC modlama için resmi olmayan hayran yapımı araçtır. 17 dili anında değiştirir ve seçiminizi kaydeder. Oyun klasörüne dosya koymadan önce yedek alın ve yeni çıktıları test edin.\n\nOyun dosyaları dahil değildir; Activision, Treyarch, Marvel veya Sony ile bağlantılı değildir."},
+"Français": {
+"home_subtitle":"Commencez ici : choisissez l’outil adapté au mod Spider-Man 3 PC que vous voulez créer.",
+"home_body":"SM3 MODDING TOOLKIT\n\nCOMMENCEZ ICI\n1. Sauvegardez les fichiers originaux du jeu.\n2. Choisissez l’outil correspondant à votre tâche.\n3. Extrayez ou créez les fichiers dans un nouveau dossier de sortie.\n4. Testez une seule modification à la fois.\n\nCHOIX RAPIDE\n- Extraire des packs : Extracteur de Packs\n- Modifier les textures : Remplacement TEX\n- Parcourir les textures : Dossier de Textures\n- Modifier MAT : Éditeur MAT\n- Voir un mesh : Visionneuse de Modèles\n- Remplacer une animation avec XESM3 : Nouveau Remplacement d’Animations\n- Flux PC/Xbox : Ancien Remplacement d’Animations\n- Remplacer audio/musique : Éditeur Audio\n- Reconstruire/vérifier PCPACK : Reconstruction PCPACK\n- Inspecter octets/texte : Hex/Text\n\nAucun fichier du jeu n’est inclus.",
+"how_intro":"Guide pas à pas de tous les outils de la version et des règles de sécurité.",
+"how_local":"GUIDE D’UTILISATION\n\n- Conservez toujours des sauvegardes.\n- Travaillez sur des copies et de nouveaux dossiers de sortie.\n- Ne modifiez jamais directement les fichiers originaux du jeu.\n- Utilisez Remplacement TEX pour les textures, les outils d’animation pour les animations et Éditeur Audio pour le son.\n- Les identifiants techniques PCPACK, TEX, DDS, MAT, ANIM et XESM3 restent inchangés afin de rester compatibles avec les tutoriels.\n- Testez chaque mod séparément avant de combiner plusieurs modifications.",
+"about_subtitle":"Informations de version, crédits, langues et avertissement.",
+"about_body":"SM3 MODDING TOOLKIT\nCréé par TSGAMING264\n\nOutil de modding non officiel créé par des fans pour Spider-Man 3 PC. Il propose 17 langues avec changement immédiat et mémorise votre choix. Gardez des sauvegardes et testez les nouveaux fichiers avant de les placer dans le dossier du jeu.\n\nAucun fichier du jeu n’est inclus et l’outil n’est affilié ni à Activision, ni à Treyarch, ni à Marvel, ni à Sony."},
+"Deutsch": {
+"home_subtitle":"Hier starten: Wähle das passende Werkzeug für den Spider-Man-3-PC-Mod, den du erstellen möchtest.",
+"home_body":"SM3 MODDING TOOLKIT\n\nHIER STARTEN\n1. Sichere die originalen Spieldateien.\n2. Wähle das Werkzeug für deine Aufgabe.\n3. Extrahiere oder erstelle Dateien in einem neuen Ausgabeordner.\n4. Teste immer nur eine Änderung gleichzeitig.\n\nSCHNELLAUSWAHL\n- Packs entpacken: Pack-Extraktor\n- Texturen ändern: TEX-Tauscher\n- Texturen durchsuchen: Texturordner\n- MAT bearbeiten: MAT-Editor\n- Mesh anzeigen: Modellanzeige\n- XESM3-Animationstausch: Neuer Animationstauscher\n- PC/Xbox-Ablauf: Alter Animationstauscher\n- Audio/Musik ersetzen: Audio-Editor\n- PCPACK neu aufbauen/prüfen: PCPACK-Neuaufbau\n- Bytes/Text prüfen: Hex/Text\n\nEs sind keine Spieldateien enthalten.",
+"how_intro":"Schritt-für-Schritt-Anleitung für alle Release-Werkzeuge und Sicherheitsregeln.",
+"how_local":"ANLEITUNG\n\n- Immer Sicherungen aufbewahren.\n- Mit Kopien und neuen Ausgabeordnern arbeiten.\n- Originale Spieldateien niemals direkt verändern.\n- TEX-Tauscher für Texturen, Animationstauscher für Animationen und Audio-Editor für Ton verwenden.\n- Technische Bezeichner wie PCPACK, TEX, DDS, MAT, ANIM und XESM3 bleiben unverändert, damit Tutorials eindeutig bleiben.\n- Jeden Mod einzeln testen, bevor Änderungen kombiniert werden.",
+"about_subtitle":"Release-Informationen, Mitwirkende, Sprachunterstützung und Haftungshinweis.",
+"about_body":"SM3 MODDING TOOLKIT\nErstellt von TSGAMING264\n\nInoffizielles, von Fans erstelltes Modding-Werkzeug für Spider-Man 3 PC. Es unterstützt 17 Sprachen mit sofortigem Wechsel und speichert die Auswahl. Erstelle Sicherungen und teste neue Dateien, bevor du sie in den Spielordner kopierst.\n\nKeine Spieldateien enthalten; keine Verbindung zu Activision, Treyarch, Marvel oder Sony."},
+"Español": {
+"home_subtitle":"Empieza aquí: elige la herramienta adecuada para el mod de Spider-Man 3 PC que quieres crear.",
+"home_body":"SM3 MODDING TOOLKIT\n\nEMPIEZA AQUÍ\n1. Haz una copia de seguridad de los archivos originales del juego.\n2. Elige la herramienta correspondiente a tu tarea.\n3. Extrae o crea archivos en una carpeta de salida nueva.\n4. Prueba un cambio a la vez.\n\nELECCIÓN RÁPIDA\n- Extraer packs: Extractor de Packs\n- Cambiar texturas: Cambiador TEX\n- Explorar texturas: Carpeta de Texturas\n- Editar MAT: Editor MAT\n- Ver mesh: Visor de Modelos\n- Cambiar animaciones con XESM3: Nuevo Cambiador de Animaciones\n- Flujo PC/Xbox: Cambiador Antiguo\n- Reemplazar audio/música: Editor de Sonido\n- Reconstruir/verificar PCPACK: Reconstrucción PCPACK\n- Inspeccionar bytes/texto: Hex/Text\n\nNo se incluye ningún archivo del juego.",
+"how_intro":"Guía paso a paso de todas las herramientas de la versión y sus reglas de seguridad.",
+"how_local":"GUÍA DE USO\n\n- Conserva siempre copias de seguridad.\n- Trabaja con copias y carpetas de salida nuevas.\n- No modifiques directamente los archivos originales del juego.\n- Usa Cambiador TEX para texturas, los cambiadores de animaciones para animaciones y Editor de Sonido para audio.\n- Los identificadores técnicos PCPACK, TEX, DDS, MAT, ANIM y XESM3 permanecen iguales para mantener la compatibilidad con tutoriales.\n- Prueba cada mod por separado antes de combinar cambios.",
+"about_subtitle":"Información de la versión, créditos, idiomas y aviso legal.",
+"about_body":"SM3 MODDING TOOLKIT\nCreado por TSGAMING264\n\nHerramienta de modding no oficial creada por fans para Spider-Man 3 PC. Admite 17 idiomas con cambio instantáneo y guarda tu selección. Haz copias de seguridad y prueba los archivos nuevos antes de ponerlos en la carpeta del juego.\n\nNo incluye archivos del juego ni está afiliada con Activision, Treyarch, Marvel o Sony."},
+"Italiano": {
+"home_subtitle":"Inizia qui: scegli lo strumento adatto al mod di Spider-Man 3 PC che vuoi creare.",
+"home_body":"SM3 MODDING TOOLKIT\n\nINIZIA QUI\n1. Fai una copia di sicurezza dei file originali del gioco.\n2. Scegli lo strumento adatto al lavoro.\n3. Estrai o crea i file in una nuova cartella di output.\n4. Prova una modifica alla volta.\n\nSCELTA RAPIDA\n- Estrarre pack: Estrattore Pack\n- Modificare texture: Sostituzione TEX\n- Sfogliare texture: Cartella Texture\n- Modificare MAT: Editor MAT\n- Vedere mesh: Visualizzatore Modelli\n- Sostituire animazioni con XESM3: Nuovo Scambio Animazioni\n- Flusso PC/Xbox: Vecchio Scambio Animazioni\n- Sostituire audio/musica: Editor Audio\n- Ricostruire/verificare PCPACK: Ricostruzione PCPACK\n- Ispezionare byte/testo: Hex/Text\n\nNon sono inclusi file del gioco.",
+"how_intro":"Guida passo passo per tutti gli strumenti della versione e le regole di sicurezza.",
+"how_local":"GUIDA ALL’USO\n\n- Conserva sempre copie di sicurezza.\n- Lavora su copie e nuove cartelle di output.\n- Non modificare direttamente i file originali del gioco.\n- Usa Sostituzione TEX per le texture, gli strumenti di animazione per le animazioni ed Editor Audio per il suono.\n- Gli identificatori tecnici PCPACK, TEX, DDS, MAT, ANIM e XESM3 restano invariati per mantenere la compatibilità con i tutorial.\n- Prova ogni mod separatamente prima di combinare le modifiche.",
+"about_subtitle":"Informazioni sulla versione, crediti, lingue e dichiarazione legale.",
+"about_body":"SM3 MODDING TOOLKIT\nCreato da TSGAMING264\n\nStrumento di modding non ufficiale creato dai fan per Spider-Man 3 PC. Supporta 17 lingue con cambio immediato e memorizza la scelta. Conserva backup e prova i nuovi file prima di inserirli nella cartella del gioco.\n\nNessun file del gioco è incluso e lo strumento non è affiliato con Activision, Treyarch, Marvel o Sony."},
+"日本語": {
+"home_subtitle":"ここから開始：作りたい Spider-Man 3 PC MOD に合うツールを選んでください。",
+"home_body":"SM3 MODDING TOOLKIT\n\nはじめに\n1. 元のゲームファイルを必ずバックアップします。\n2. 作業内容に合うツールを選びます。\n3. 新しい出力フォルダーへ抽出または生成します。\n4. 変更は一度に1つずつテストします。\n\nクイック選択\n- パック抽出：パック抽出\n- テクスチャ変更：TEX差し替え\n- テクスチャ閲覧：テクスチャフォルダー\n- MAT編集：MAT編集\n- mesh表示：モデル表示\n- XESM3アニメーション差し替え：新アニメーション差し替え\n- PC/Xboxワークフロー：旧アニメーション差し替え\n- 音声・音楽置換：サウンド編集\n- PCPACK再構築・確認：PCPACK再構築\n- バイト・テキスト確認：Hex/Text\n\nゲームファイルは同梱されていません。",
+"how_intro":"リリース版の全ツールを安全に使うための手順ガイドです。",
+"how_local":"使い方ガイド\n\n- 必ずバックアップを保存してください。\n- コピーと新しい出力フォルダーで作業してください。\n- 元のゲームファイルを直接変更しないでください。\n- テクスチャはTEX差し替え、アニメーションは各アニメーション差し替え、音声はサウンド編集を使用します。\n- PCPACK、TEX、DDS、MAT、ANIM、XESM3 などの技術識別子は、チュートリアルとの互換性を保つため変更しません。\n- 複数の変更をまとめる前に、各MODを単独でテストしてください。",
+"about_subtitle":"リリース情報、クレジット、言語対応、免責事項。",
+"about_body":"SM3 MODDING TOOLKIT\n制作：TSGAMING264\n\nSpider-Man 3 PC 用の非公式ファン制作MODツールです。17言語を即時切り替えでき、選択した言語を保存します。ゲームフォルダーへ入れる前にバックアップを取り、新しいファイルをテストしてください。\n\nゲームファイルは含まれておらず、Activision、Treyarch、Marvel、Sony とは関係ありません。"},
+"한국어": {
+"home_subtitle":"여기서 시작하세요: 만들려는 Spider-Man 3 PC 모드에 맞는 도구를 선택하세요.",
+"home_body":"SM3 MODDING TOOLKIT\n\n시작하기\n1. 원본 게임 파일을 반드시 백업합니다.\n2. 작업에 맞는 도구를 선택합니다.\n3. 새 출력 폴더에 추출하거나 생성합니다.\n4. 변경 사항은 한 번에 하나씩 테스트합니다.\n\n빠른 선택\n- 팩 추출: 팩 추출\n- 텍스처 수정: TEX 교체\n- 텍스처 탐색: 텍스처 폴더\n- MAT 편집: MAT 편집\n- mesh 보기: 모델 보기\n- XESM3 애니메이션 교체: 새 애니메이션 교체\n- PC/Xbox 작업 흐름: 기존 애니메이션 교체\n- 오디오/음악 교체: 사운드 편집\n- PCPACK 재구성/검증: PCPACK 재구성\n- 바이트/텍스트 확인: Hex/Text\n\n게임 파일은 포함되어 있지 않습니다.",
+"how_intro":"릴리스의 모든 도구와 안전 규칙을 설명하는 단계별 사용 안내입니다.",
+"how_local":"사용 안내\n\n- 항상 백업을 보관하세요.\n- 복사본과 새 출력 폴더에서 작업하세요.\n- 원본 게임 파일을 직접 수정하지 마세요.\n- 텍스처는 TEX 교체, 애니메이션은 애니메이션 교체 도구, 오디오는 사운드 편집을 사용하세요.\n- PCPACK, TEX, DDS, MAT, ANIM, XESM3 같은 기술 식별자는 튜토리얼 호환성을 위해 그대로 유지합니다.\n- 여러 변경을 합치기 전에 각 모드를 따로 테스트하세요.",
+"about_subtitle":"릴리스 정보, 크레딧, 언어 지원 및 면책 조항.",
+"about_body":"SM3 MODDING TOOLKIT\n제작: TSGAMING264\n\nSpider-Man 3 PC용 비공식 팬 제작 모딩 도구입니다. 17개 언어를 즉시 전환하고 선택한 언어를 저장합니다. 게임 폴더에 넣기 전에 백업하고 새 파일을 테스트하세요.\n\n게임 파일은 포함되지 않으며 Activision, Treyarch, Marvel, Sony와 관련이 없습니다."},
+"Русский": {
+"home_subtitle":"Начните здесь: выберите инструмент для нужного мода Spider-Man 3 PC.",
+"home_body":"SM3 MODDING TOOLKIT\n\nНАЧАЛО РАБОТЫ\n1. Сделайте резервную копию оригинальных файлов игры.\n2. Выберите инструмент для своей задачи.\n3. Извлекайте или создавайте файлы в новой папке вывода.\n4. Проверяйте по одному изменению за раз.\n\nБЫСТРЫЙ ВЫБОР\n- Распаковка паков: Распаковка паков\n- Изменение текстур: Замена TEX\n- Просмотр текстур: Папка текстур\n- Редактирование MAT: Редактор MAT\n- Просмотр mesh: Просмотр моделей\n- Замена анимаций через XESM3: Новая замена анимаций\n- Работа PC/Xbox: Старая замена анимаций\n- Замена звука/музыки: Редактор звука\n- Пересборка/проверка PCPACK: Пересборка PCPACK\n- Просмотр байтов/текста: Hex/Text\n\nФайлы игры в комплект не входят.",
+"how_intro":"Пошаговое руководство по всем инструментам релиза и правилам безопасной работы.",
+"how_local":"РУКОВОДСТВО\n\n- Всегда храните резервные копии.\n- Работайте с копиями и новыми папками вывода.\n- Не изменяйте оригинальные файлы игры напрямую.\n- Для текстур используйте Замена TEX, для анимаций — инструменты замены анимаций, для звука — Редактор звука.\n- Технические идентификаторы PCPACK, TEX, DDS, MAT, ANIM и XESM3 остаются неизменными для совместимости с руководствами.\n- Перед объединением изменений проверяйте каждый мод отдельно.",
+"about_subtitle":"Информация о релизе, авторы, языки и отказ от ответственности.",
+"about_body":"SM3 MODDING TOOLKIT\nСоздано TSGAMING264\n\nНеофициальный фанатский инструмент для моддинга Spider-Man 3 PC. Поддерживает мгновенное переключение 17 языков и сохраняет выбранный язык. Делайте резервные копии и проверяйте новые файлы до копирования в папку игры.\n\nФайлы игры не включены; инструмент не связан с Activision, Treyarch, Marvel или Sony."},
+"中文": {
+"home_subtitle":"从这里开始：选择与你要制作的 Spider-Man 3 PC 模组相对应的工具。",
+"home_body":"SM3 MODDING TOOLKIT\n\n开始使用\n1. 先备份原始游戏文件。\n2. 根据你的工作选择对应工具。\n3. 始终提取或生成到新的输出文件夹。\n4. 每次只测试一个改动。\n\n快速选择\n- 提取资源包：资源包提取\n- 修改纹理：TEX 替换\n- 浏览纹理：纹理文件夹\n- 编辑 MAT：MAT 编辑\n- 查看 mesh：模型查看\n- 使用 XESM3 替换动画：新动画替换\n- PC/Xbox 动画流程：旧动画替换\n- 替换声音或音乐：声音编辑\n- 重建或验证 PCPACK：PCPACK 重建\n- 检查字节或文本：Hex/Text\n\n本工具不包含任何游戏文件。",
+"how_intro":"所有发布版工具的分步使用说明和安全规则。",
+"how_local":"使用指南\n\n- 始终保留备份。\n- 只在副本和新的输出文件夹中工作。\n- 不要直接修改原始游戏文件。\n- 纹理使用 TEX 替换，动画使用动画替换工具，音频使用声音编辑。\n- PCPACK、TEX、DDS、MAT、ANIM、XESM3 等技术标识保持不变，以保证教程和文件格式说明一致。\n- 合并多个改动之前，先分别测试每个模组。",
+"about_subtitle":"发布信息、致谢、语言支持和免责声明。",
+"about_body":"SM3 MODDING TOOLKIT\n由 TSGAMING264 制作\n\n这是用于 Spider-Man 3 PC 模组制作的非官方玩家工具。支持 17 种语言即时切换并保存你的选择。请先备份，并在放入游戏目录前测试新文件。\n\n本工具不包含游戏文件，也不隶属于 Activision、Treyarch、Marvel 或 Sony。"},
+"Nederlands": {
+"home_subtitle":"Begin hier: kies het juiste gereedschap voor de Spider-Man 3 PC-mod die je wilt maken.",
+"home_body":"SM3 MODDING TOOLKIT\n\nBEGIN HIER\n1. Maak een back-up van de originele gamebestanden.\n2. Kies het gereedschap voor je taak.\n3. Pak uit of bouw naar een nieuwe uitvoermap.\n4. Test steeds één wijziging tegelijk.\n\nSNEL KIEZEN\n- Packs uitpakken: Pack-uitpakker\n- Texturen wijzigen: TEX-wisselaar\n- Texturen bekijken: Textuurmap\n- MAT bewerken: MAT-editor\n- Mesh bekijken: Modelweergave\n- XESM3-animaties wisselen: Nieuwe Animatiewisselaar\n- PC/Xbox-werkwijze: Oude Animatiewisselaar\n- Audio/muziek vervangen: Audio-editor\n- PCPACK herbouwen/controleren: PCPACK Herbouw\n- Bytes/tekst bekijken: Hex/Text\n\nEr worden geen gamebestanden meegeleverd.",
+"how_intro":"Stapsgewijze handleiding voor alle release-gereedschappen en veiligheidsregels.",
+"how_local":"GEBRUIKSAANWIJZING\n\n- Bewaar altijd back-ups.\n- Werk met kopieën en nieuwe uitvoermappen.\n- Wijzig originele gamebestanden nooit rechtstreeks.\n- Gebruik TEX-wisselaar voor texturen, de animatiewisselaars voor animaties en Audio-editor voor geluid.\n- Technische aanduidingen zoals PCPACK, TEX, DDS, MAT, ANIM en XESM3 blijven ongewijzigd voor compatibiliteit met handleidingen.\n- Test iedere mod afzonderlijk voordat je wijzigingen combineert.",
+"about_subtitle":"Release-informatie, credits, talen en disclaimer.",
+"about_body":"SM3 MODDING TOOLKIT\nGemaakt door TSGAMING264\n\nOnofficiële, door fans gemaakte moddingtool voor Spider-Man 3 PC. Ondersteunt 17 talen met directe omschakeling en bewaart je keuze. Maak back-ups en test nieuwe bestanden voordat je ze in de gamemap plaatst.\n\nGeen gamebestanden inbegrepen; niet verbonden aan Activision, Treyarch, Marvel of Sony."},
+"Polski": {
+"home_subtitle":"Zacznij tutaj: wybierz narzędzie odpowiednie do moda Spider-Man 3 PC, który chcesz stworzyć.",
+"home_body":"SM3 MODDING TOOLKIT\n\nZACZNIJ TUTAJ\n1. Zrób kopię zapasową oryginalnych plików gry.\n2. Wybierz narzędzie odpowiednie do zadania.\n3. Wypakowuj lub twórz pliki w nowym folderze wyjściowym.\n4. Testuj jedną zmianę naraz.\n\nSZYBKI WYBÓR\n- Wypakowanie paczki: Ekstraktor Paczek\n- Zmiana tekstur: Zamiana TEX\n- Przeglądanie tekstur: Folder Tekstur\n- Edycja MAT: Edytor MAT\n- Podgląd mesh: Przeglądarka Modeli\n- Zamiana animacji XESM3: Nowa Zamiana Animacji\n- Przepływ PC/Xbox: Stara Zamiana Animacji\n- Zamiana dźwięku/muzyki: Edytor Dźwięku\n- Przebudowa/weryfikacja PCPACK: Przebudowa PCPACK\n- Podgląd bajtów/tekstu: Hex/Text\n\nPliki gry nie są dołączone.",
+"how_intro":"Instrukcja krok po kroku dla wszystkich narzędzi wydania i zasad bezpieczeństwa.",
+"how_local":"INSTRUKCJA\n\n- Zawsze przechowuj kopie zapasowe.\n- Pracuj na kopiach i w nowych folderach wyjściowych.\n- Nie zmieniaj bezpośrednio oryginalnych plików gry.\n- Do tekstur używaj Zamiana TEX, do animacji narzędzi zamiany animacji, a do dźwięku Edytor Dźwięku.\n- Techniczne identyfikatory PCPACK, TEX, DDS, MAT, ANIM i XESM3 pozostają bez zmian, aby zachować zgodność z poradnikami.\n- Testuj każdy mod osobno przed łączeniem zmian.",
+"about_subtitle":"Informacje o wydaniu, autorzy, języki i zastrzeżenie prawne.",
+"about_body":"SM3 MODDING TOOLKIT\nStworzone przez TSGAMING264\n\nNieoficjalne, fanowskie narzędzie do modowania Spider-Man 3 PC. Obsługuje 17 języków z natychmiastowym przełączaniem i zapisuje wybór. Rób kopie zapasowe i testuj nowe pliki przed umieszczeniem ich w folderze gry.\n\nPliki gry nie są dołączone; narzędzie nie jest powiązane z Activision, Treyarch, Marvel ani Sony."},
+"Svenska": {
+"home_subtitle":"Börja här: välj rätt verktyg för den Spider-Man 3 PC-mod du vill skapa.",
+"home_body":"SM3 MODDING TOOLKIT\n\nBÖRJA HÄR\n1. Säkerhetskopiera spelets originalfiler.\n2. Välj verktyget som passar uppgiften.\n3. Extrahera eller bygg till en ny utdatamapp.\n4. Testa en ändring i taget.\n\nSNABBVAL\n- Extrahera pack: Packextraktor\n- Ändra texturer: TEX-byte\n- Bläddra bland texturer: Texturmapp\n- Redigera MAT: MAT-redigerare\n- Visa mesh: Modellvisare\n- Byta XESM3-animation: Ny Animationsväxlare\n- PC/Xbox-flöde: Gammal Animationsväxlare\n- Ersätta ljud/musik: Ljudredigerare\n- Bygga om/verifiera PCPACK: PCPACK-ombyggnad\n- Granska byte/text: Hex/Text\n\nInga spelfiler ingår.",
+"how_intro":"Steg-för-steg-guide för alla releaseverktyg och säkerhetsregler.",
+"how_local":"ANVÄNDNINGSGUIDE\n\n- Behåll alltid säkerhetskopior.\n- Arbeta med kopior och nya utdatamappar.\n- Ändra aldrig spelets originalfiler direkt.\n- Använd TEX-byte för texturer, animationsverktygen för animationer och Ljudredigerare för ljud.\n- Tekniska identifierare som PCPACK, TEX, DDS, MAT, ANIM och XESM3 lämnas oförändrade så att guider fortsätter stämma.\n- Testa varje mod separat innan flera ändringar kombineras.",
+"about_subtitle":"Releaseinformation, medverkande, språkstöd och ansvarsfriskrivning.",
+"about_body":"SM3 MODDING TOOLKIT\nSkapad av TSGAMING264\n\nInofficiellt fan-skapat moddningsverktyg för Spider-Man 3 PC. Stöder 17 språk med direkt byte och sparar ditt val. Säkerhetskopiera och testa nya filer innan de läggs i spelmappen.\n\nInga spelfiler ingår och verktyget är inte knutet till Activision, Treyarch, Marvel eller Sony."},
+"हिन्दी": {
+"home_subtitle":"यहाँ से शुरू करें: जिस Spider-Man 3 PC मॉड को बनाना है, उसके लिए सही टूल चुनें।",
+"home_body":"SM3 MODDING TOOLKIT\n\nयहाँ से शुरू करें\n1. मूल गेम फ़ाइलों का बैकअप रखें।\n2. अपने काम के अनुसार सही टूल चुनें।\n3. फ़ाइलें हमेशा नए आउटपुट फ़ोल्डर में एक्सट्रैक्ट या बनाएँ।\n4. एक समय में एक बदलाव टेस्ट करें।\n\nत्वरित चयन\n- पैक निकालना: पैक एक्सट्रैक्टर\n- टेक्सचर बदलना: TEX बदलें\n- टेक्सचर देखना: टेक्सचर फ़ोल्डर\n- MAT संपादन: MAT संपादक\n- mesh देखना: मॉडल व्यूअर\n- XESM3 एनीमेशन बदलना: नया एनीमेशन स्वैपर\n- PC/Xbox प्रक्रिया: पुराना एनीमेशन स्वैपर\n- ऑडियो/संगीत बदलना: साउंड संपादक\n- PCPACK पुनर्निर्माण/जाँच: PCPACK पुनर्निर्माण\n- बाइट/टेक्स्ट देखना: Hex/Text\n\nइस टूल में गेम फ़ाइलें शामिल नहीं हैं।",
+"how_intro":"रिलीज़ के सभी टूल और सुरक्षा नियमों के लिए चरण-दर-चरण उपयोग गाइड।",
+"how_local":"उपयोग गाइड\n\n- हमेशा बैकअप रखें।\n- कॉपी और नए आउटपुट फ़ोल्डर पर काम करें।\n- मूल गेम फ़ाइलों को सीधे न बदलें।\n- टेक्सचर के लिए TEX बदलें, एनीमेशन के लिए एनीमेशन टूल और ऑडियो के लिए साउंड संपादक उपयोग करें।\n- PCPACK, TEX, DDS, MAT, ANIM और XESM3 जैसे तकनीकी पहचान नाम ट्यूटोरियल से मेल बनाए रखने के लिए नहीं बदलते।\n- कई बदलाव जोड़ने से पहले हर मॉड को अलग-अलग टेस्ट करें।",
+"about_subtitle":"रिलीज़ जानकारी, श्रेय, भाषा समर्थन और अस्वीकरण।",
+"about_body":"SM3 MODDING TOOLKIT\nTSGAMING264 द्वारा बनाया गया\n\nSpider-Man 3 PC मॉडिंग के लिए अनौपचारिक फैन-निर्मित टूल। 17 भाषाओं में तुरंत बदलाव करता है और आपकी चुनी भाषा सहेजता है। गेम फ़ोल्डर में नई फ़ाइल रखने से पहले बैकअप और टेस्ट करें।\n\nगेम फ़ाइलें शामिल नहीं हैं और यह Activision, Treyarch, Marvel या Sony से संबद्ध नहीं है।"},
+}
+
+# For locales where the public page above is not re-authored, retain their
+# existing localized text rather than overwriting it with English.
+for _lang, _labels in _NATIVE_TAB_LABELS.items():
+    _d = TEXT.setdefault(_lang, {})
+    for _key, _label in zip(TAB_KEYS, _labels):
+        _d[f"tab.{_key}"] = _label
+for _lang, _values in _NATIVE_PUBLIC.items():
+    TEXT.setdefault(_lang, {}).update(_values)
+
 def normalize_language(language: str | None) -> str:
     if language in LANGUAGE_NAMES:
         return str(language)
+    alias = LANGUAGE_ALIASES.get(str(language or ""))
+    if alias in LANGUAGE_NAMES:
+        return str(alias)
     return DEFAULT_LANGUAGE
 
 
@@ -639,4 +1226,13 @@ def how_to_text(language: str | None, english_detail: str) -> str:
     lang = normalize_language(language)
     if lang == DEFAULT_LANGUAGE:
         return english_detail
-    return tr(lang, "how_local") + "\n\n" + "=" * 80 + "\nREFERENCE / BUTTON NAMES IN ENGLISH\n" + "=" * 80 + "\n" + english_detail
+    # Native-language release behavior: never inject the long English guide into
+    # a non-English UI. Technical identifiers remain intact inside localized text.
+    return tr(lang, "how_local")
+
+
+def compact_tab_labels(language: str | None) -> List[str]:
+    lang = normalize_language(language)
+    if lang == DEFAULT_LANGUAGE:
+        return []
+    return list(_NATIVE_COMPACT_TABS.get(lang, tab_labels(lang)))

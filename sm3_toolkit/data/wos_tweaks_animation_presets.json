@@ -1,0 +1,527 @@
+[
+  {
+    "preset": "Perched Idle",
+    "line": 1,
+    "offset": "4444",
+    "source_out": "smridlrlx",
+    "replacement_in": "smr_mpa_sst_introidl"
+  },
+  {
+    "preset": "Perched Idle",
+    "line": 2,
+    "offset": "4E8C",
+    "source_out": "smridlrlx",
+    "replacement_in": "smr_mpa_sst_introidl"
+  },
+  {
+    "preset": "Perched Idle",
+    "line": 3,
+    "offset": "45B4",
+    "source_out": "smridlrlx",
+    "replacement_in": "smr_mpa_sst_introidl"
+  },
+  {
+    "preset": "Perched Idle",
+    "line": 4,
+    "offset": "92F4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smr_mpa_sst_introidl"
+  },
+  {
+    "preset": "Perched Idle",
+    "line": 5,
+    "offset": "CBF4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smr_mpa_sst_introidl"
+  },
+  {
+    "preset": "Perched Idle",
+    "line": 6,
+    "offset": "0F9C",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smr_mpa_sst_introidl"
+  },
+  {
+    "preset": "SM3 Peter Parker Idle",
+    "line": 1,
+    "offset": "4444",
+    "source_out": "smridlrlx",
+    "replacement_in": "sm3ppidl"
+  },
+  {
+    "preset": "SM3 Peter Parker Idle",
+    "line": 2,
+    "offset": "4E8C",
+    "source_out": "smridlrlx",
+    "replacement_in": "sm3ppidl"
+  },
+  {
+    "preset": "SM3 Peter Parker Idle",
+    "line": 3,
+    "offset": "45B4",
+    "source_out": "smridlrlx",
+    "replacement_in": "sm3ppidl"
+  },
+  {
+    "preset": "SM3 Peter Parker Idle",
+    "line": 4,
+    "offset": "0F9C",
+    "source_out": "smbidlrlx",
+    "replacement_in": "sm3ppidl"
+  },
+  {
+    "preset": "SM3 Peter Parker Idle",
+    "line": 5,
+    "offset": "CBF4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "sm3ppidl"
+  },
+  {
+    "preset": "SM3 Peter Parker Idle",
+    "line": 6,
+    "offset": "92F4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "sm3ppidl"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 1,
+    "offset": "45B4",
+    "source_out": "smridlrlx",
+    "replacement_in": "sm3idlrelax"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 2,
+    "offset": "4E8C",
+    "source_out": "smridlrlx",
+    "replacement_in": "sm3idlrelax"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 3,
+    "offset": "4444",
+    "source_out": "smridlrlx",
+    "replacement_in": "sm3idlrelaxv3"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 4,
+    "offset": "0F9C",
+    "source_out": "smbidlrlx",
+    "replacement_in": "bs3fidgit_2"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 5,
+    "offset": "CBF4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "bs3idle"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 6,
+    "offset": "92F4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "bs3idle"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 7,
+    "offset": "F914",
+    "source_out": "smbidl2rlx",
+    "replacement_in": "sm3idl2tight"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 8,
+    "offset": "CF94",
+    "source_out": "smrrunjmplnch",
+    "replacement_in": "smrswgmidrls"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 9,
+    "offset": "FD04",
+    "source_out": "smrbncjmplnch",
+    "replacement_in": "smrswingrexita"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 10,
+    "offset": "44E4",
+    "source_out": "smrswingrintroa",
+    "replacement_in": "sm3idle2swglintro"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 11,
+    "offset": "EFB4",
+    "source_out": "smrswinglintroa",
+    "replacement_in": "sm3idle2swglintro"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 12,
+    "offset": "22B4",
+    "source_out": "smrswingblintroa",
+    "replacement_in": "sm3swglintroe"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 13,
+    "offset": "5E0C",
+    "source_out": "smrswingbrintroa",
+    "replacement_in": "sm3swglintroe"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 14,
+    "offset": "A8B4",
+    "source_out": "smrswgrls45r_low",
+    "replacement_in": "smrjmpswgtrn180"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 15,
+    "offset": "91A4",
+    "source_out": "sm3flail",
+    "replacement_in": "smfall"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 16,
+    "offset": "3EDC",
+    "source_out": "smrswgmidrlsv3",
+    "replacement_in": "smrpoleswingexitleft"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 17,
+    "offset": "9754",
+    "source_out": "sm3jumpdoublejump",
+    "replacement_in": "smrjumpbackflipbounce"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 18,
+    "offset": "0D24",
+    "source_out": "smrrightcrosspunch",
+    "replacement_in": "smbrightpunch"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 19,
+    "offset": "9CAC",
+    "source_out": "smbstomp",
+    "replacement_in": "smbbackhandender"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 20,
+    "offset": "493C",
+    "source_out": "smbstomp_nc",
+    "replacement_in": "smbbackhandender"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 21,
+    "offset": "03AC",
+    "source_out": "smbbackhandender",
+    "replacement_in": "smbstomp_nc"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 22,
+    "offset": "373C",
+    "source_out": "smrjmpchgswgup",
+    "replacement_in": "smrwallgrindupjumpoff_fast"
+  },
+  {
+    "preset": "SM3 Style",
+    "line": 23,
+    "offset": "ADFC",
+    "source_out": "smbrightelbow",
+    "replacement_in": "smrrightspinpunchfaster"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 1,
+    "offset": "4444",
+    "source_out": "smridlrlx",
+    "replacement_in": "smrwebidl"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 2,
+    "offset": "45B4",
+    "source_out": "smridlrlx",
+    "replacement_in": "smrwebidl"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 3,
+    "offset": "4E8C",
+    "source_out": "smridlrlx",
+    "replacement_in": "smrwebidl"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 4,
+    "offset": "92F4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smrwebidl"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 5,
+    "offset": "CBF4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smrwebidl"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 6,
+    "offset": "0F9C",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smrwebidl"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 7,
+    "offset": "79CC",
+    "source_out": "smridl2rlx",
+    "replacement_in": "smridl2webidl"
+  },
+  {
+    "preset": "Unused Idle 1",
+    "line": 8,
+    "offset": "F914",
+    "source_out": "smbidl2rlx",
+    "replacement_in": "smridl2webidl"
+  },
+  {
+    "preset": "Unused Idle 2",
+    "line": 1,
+    "offset": "4444",
+    "source_out": "smridlrlx",
+    "replacement_in": "smbjmpchglndloop"
+  },
+  {
+    "preset": "Unused Idle 2",
+    "line": 2,
+    "offset": "45B4",
+    "source_out": "smridlrlx",
+    "replacement_in": "smbjmpchglndloop"
+  },
+  {
+    "preset": "Unused Idle 2",
+    "line": 3,
+    "offset": "4E8C",
+    "source_out": "smridlrlx",
+    "replacement_in": "smbjmpchglndloop"
+  },
+  {
+    "preset": "Unused Idle 2",
+    "line": 4,
+    "offset": "CBF4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smbjmpchglndloop"
+  },
+  {
+    "preset": "Unused Idle 2",
+    "line": 5,
+    "offset": "92F4",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smbjmpchglndloop"
+  },
+  {
+    "preset": "Unused Idle 2",
+    "line": 6,
+    "offset": "0F9C",
+    "source_out": "smbidlrlx",
+    "replacement_in": "smbjmpchglndloop"
+  },
+  {
+    "preset": "Unused Web Zip - Red Suit",
+    "line": 1,
+    "offset": "5BBC",
+    "source_out": "smrziplintrob",
+    "replacement_in": "smrwebzipshort"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 1,
+    "offset": "5614",
+    "source_out": "sm3swglintroc",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 2,
+    "offset": "ABF4",
+    "source_out": "sm2swing_left_intro_red",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 3,
+    "offset": "EFB4",
+    "source_out": "smrswinglintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 4,
+    "offset": "DD7C",
+    "source_out": "sm3swglintroe",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 5,
+    "offset": "22B4",
+    "source_out": "smrswingblintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 6,
+    "offset": "44E4",
+    "source_out": "smrswingrintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 7,
+    "offset": "A96C",
+    "source_out": "smrswingfintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 8,
+    "offset": "5E0C",
+    "source_out": "smrswingbrintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 9,
+    "offset": "AF04",
+    "source_out": "sm2swing_idle_seated_meta",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 10,
+    "offset": "31C4",
+    "source_out": "sm2swing_idle_dangle_meta",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 11,
+    "offset": "5F04",
+    "source_out": "sm2swing_dangle_to_seated_m",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 12,
+    "offset": "FBD4",
+    "source_out": "sm2swing_seated_to_dangle_m",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 13,
+    "offset": "037C",
+    "source_out": "sm2swing_seated_to_dangle_m",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 14,
+    "offset": "C3C4",
+    "source_out": "smrswing2hangidle",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 15,
+    "offset": "B014",
+    "source_out": "smrhang2swingidle",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 16,
+    "offset": "1B04",
+    "source_out": "smrwebclimb",
+    "replacement_in": "smrhangclimb"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 17,
+    "offset": "6124",
+    "source_out": "sm2swing_dangle_to_seated_m",
+    "replacement_in": "smrhang"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 18,
+    "offset": "35D4",
+    "source_out": "sm3swgrintroc",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 19,
+    "offset": "A70C",
+    "source_out": "sm2swing_left_intro_red",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 20,
+    "offset": "0824",
+    "source_out": "smrswingbrintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 21,
+    "offset": "30E4",
+    "source_out": "smrswingfintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 22,
+    "offset": "A1EC",
+    "source_out": "bs3swgltintro",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 23,
+    "offset": "7A54",
+    "source_out": "bs3swgrtintro",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 24,
+    "offset": "3FBC",
+    "source_out": "smrswingblintroa",
+    "replacement_in": "smrswing2hangidle"
+  },
+  {
+    "preset": "Web-Swing Hang",
+    "line": 25,
+    "offset": "6C24",
+    "source_out": "sm3swglintroe",
+    "replacement_in": "smrswing2hangidle"
+  }
+]

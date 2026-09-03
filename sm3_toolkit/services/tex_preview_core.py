@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 SM3 PC Character Texture Preview Component0 v1.4
 
@@ -18,14 +18,14 @@ It reads the 68-byte TEX component0 descriptor:
 
 Supported preview interpretations:
   DXT1 / DXT3 / DXT5 FourCC -> real DDS + PNG first mip preview
-  numeric 50                -> L8 grayscale luminance, based on WOS TEX converter spec
+  numeric 50                -> L8 plus DXT1/DXT3/DXT5 review candidates; black/white output means format review
   numeric 21                -> raw 32-bit BGRA/A8R8G8B8-style preview, plus swizzle/enlarged strip previews
 Unknown formats are copied as RAW_ONLY for research.
 
 New in v1.4:
   - RGB_OPAQUE previews so alpha does not hide the image on a dark background
   - DXT1_OPAQUE comparison for DXT1 files that accidentally preview with 1-bit alpha
-  - Format 50 fixed: reads as L8 grayscale/luminance instead of DXT5 candidate, matching WOS TEX.py / DDS.py
+  - Format 50 caution: writes L8 plus DXT candidate previews so black/white views can be reviewed instead of trusted blindly
   - Format 21 research variants: BGRA/RGBA/ARGB/ABGR swizzles and enlarged strip previews
   - Cleaner contact sheet uses the best visual preview first, not always the raw RGBA decode
 """
@@ -55,10 +55,10 @@ DDPF_LUMINANCE=0x20000
 
 FOURCC_OK = {b'DXT1', b'DXT3', b'DXT5'}
 NUMERIC_FORMATS = {
-    # Verified against the uploaded WOS DDS Wrapped TEX converter:
-    #   TEX.py writes numeric 0x15 for A8R8G8B8 and numeric 0x32 for L8.
-    #   DDS.py reads 0x15 as A8R8G8B8 and 0x32 as L8 luminance.
-    50: {"preview_kind":"L8", "fourcc":"L8", "note":"component0 format=50 / 0x32; WOS TEX converter labels this as uncompressed L8 luminance. SM3 ppi payload size matches L8 mip chain plus small padding."},
+    # Historical WOS converter note: TEX.py/DDS.py can label numeric 0x32 as L8.
+    # WOS toolkit dev clue for SM3: some black/white previews are format interpretation problems.
+    # Therefore format 50 still writes L8, but the tool also generates DXT1/DXT3/DXT5 candidate previews.
+    50: {"preview_kind":"L8", "fourcc":"L8", "note":"component0 format=50 / 0x32; L8 is only one interpretation. v5.2.14 writes DXT1/DXT3/DXT5 review candidates because black/white output can mean wrong format detection."},
     21: {"preview_kind":"BGRA32", "fourcc":"BGRA32", "note":"component0 format=21 / 0x15; WOS TEX converter labels this as A8R8G8B8/BGRA32-style raw32 texture"},
 }
 
@@ -526,14 +526,33 @@ def write_format50_research_variants(payload, out_dir, asset, width, height):
     made=[]
     if not HAS_PIL: return made
     out_dir.mkdir(parents=True,exist_ok=True)
-    first=payload[:first_mip_size(width,height,'DXT5')]
-    # Alpha plane often contains the useful grayscale control mask.
-    p=out_dir/f'{asset}__FMT50_DXT5_ALPHA_ONLY.png'
+    # v5.2.14: format 50/L8 can make color textures look black/white if the format guess is wrong.
+    # Write DXT candidates for visual review only. These are not automatic patch approvals.
+    for fourcc in ('DXT1','DXT3','DXT5'):
+        try:
+            need = first_mip_size(width, height, fourcc)
+            if len(payload) < need:
+                continue
+            first = payload[:need]
+            if fourcc == 'DXT1':
+                pix = decode_dxt1(first, width, height)
+            elif fourcc == 'DXT3':
+                pix = decode_dxt3(first, width, height)
+            else:
+                pix = decode_dxt5(first, width, height)
+            p = out_dir / f'{asset}__FMT50_REVIEW_AS_{fourcc}.png'
+            write_pixels_png([(r,g,b,255) for r,g,b,a in pix], p, width, height)
+            made.append(str(p))
+            dds = out_dir / f'{asset}__FMT50_REVIEW_AS_{fourcc}.dds'
+            dds.write_bytes(make_dds_dxt_header(width,height,fourcc,1,need) + first)
+            made.append(str(dds))
+        except Exception:
+            pass
     try:
+        first=payload[:first_mip_size(width,height,'DXT5')]
+        p=out_dir/f'{asset}__FMT50_DXT5_ALPHA_ONLY.png'
         write_gray_png(decode_dxt5_alpha_plane(first,width,height),p,width,height); made.append(str(p))
     except Exception: pass
-    # BC5/DXT5nm deep reconstructions are intentionally skipped in v1.4 fast mode.
-    # The cleanest useful preview for format 50 so far is usually alpha-only/channel split/RGB opaque.
     return made
 
 def write_bgra_swizzle_variants(payload, out_dir, asset, width, height):
@@ -797,6 +816,8 @@ def process(input_path, output_path):
                     variant_paths.extend(write_format50_research_variants(use_payload, vdir, asset, w, h))
                 if kind == 'L8' and len(use_payload) > 0:
                     variant_paths.extend(write_l8_variants(use_payload, vdir, asset, w, h))
+                    if int(row.get('format_raw') or 0) == 50:
+                        variant_paths.extend(write_format50_research_variants(payload, vdir, asset, w, h))
                 if kind == 'BGRA32' and len(use_payload) > 0:
                     variant_paths.extend(write_bgra_swizzle_variants(use_payload, vdir, asset, w, h))
             except Exception as e:
@@ -853,7 +874,7 @@ def process(input_path, output_path):
     if sheet:
         sheet_rel=os.path.relpath(sheet,out).replace('\\','/')
         sheet_html=f"<p><a href='{html.escape(sheet_rel)}'>Open CONTACT_SHEET.png</a></p><img class='sheet' src='{html.escape(sheet_rel)}'>"
-    index = """<!doctype html><html><head><meta charset='utf-8'><title>SM3 PC Character Texture Preview v1.4</title><style>body{font-family:Arial;margin:24px;background:#111;color:#eee}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.card{background:#1d1d1d;padding:12px;border-radius:10px}.card img{max-width:100%;image-rendering:auto;background:#333}.note,.small{color:#bbb;font-size:12px}.sheet{max-width:100%;background:#222}.legend span{display:inline-block;background:#292929;margin:2px;padding:4px 7px;border-radius:6px}</style></head><body><h1>SM3 PC Character Texture Preview v1.4</h1><p class='small'>DDS files are in DDS_PREVIEWS. PNG browser previews are decoded from the first mip or raw BGRA. v1.4 also writes BEST_VISUAL_PREVIEWS and RESEARCH_VARIANTS for messy/special maps; format 50 is now L8 based on WOS TEX.py/DDS.py.</p><div class='legend'><span>DXT1/DXT5 real FourCC</span><span>format 50 = L8 grayscale (WOS-confirmed)</span><span>format 21 = raw32 swizzle/strip research</span><span>alpha-safe RGB opaque previews</span></div>""" + sheet_html + "<div class='grid'>" + "\n".join(cards) + "</div></body></html>"
+    index = """<!doctype html><html><head><meta charset='utf-8'><title>SM3 PC Character Texture Preview v1.4</title><style>body{font-family:Arial;margin:24px;background:#111;color:#eee}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.card{background:#1d1d1d;padding:12px;border-radius:10px}.card img{max-width:100%;image-rendering:auto;background:#333}.note,.small{color:#bbb;font-size:12px}.sheet{max-width:100%;background:#222}.legend span{display:inline-block;background:#292929;margin:2px;padding:4px 7px;border-radius:6px}</style></head><body><h1>SM3 PC Character Texture Preview v1.4</h1><p class='small'>DDS files are in DDS_PREVIEWS. PNG browser previews are decoded from the first mip or raw BGRA. v1.4 also writes BEST_VISUAL_PREVIEWS and RESEARCH_VARIANTS for messy/special maps; format 50 writes L8 plus DXT1/DXT3/DXT5 review candidates because black/white preview can mean wrong format detection.</p><div class='legend'><span>DXT1/DXT5 real FourCC</span><span>format 50 = L8 + DXT review candidates</span><span>format 21 = raw32 swizzle/strip research</span><span>alpha-safe RGB opaque previews</span></div>""" + sheet_html + "<div class='grid'>" + "\n".join(cards) + "</div></body></html>"
     (out/'PREVIEW_INDEX.html').write_text(index, encoding='utf-8')
     readme = f"""SM3 PC Character Texture Preview Component0 v1.4
 

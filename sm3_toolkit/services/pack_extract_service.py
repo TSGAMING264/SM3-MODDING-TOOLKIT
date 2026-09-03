@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SM3 PC Route Handler Extractor v2.24 - Beta Pack Extractor Flow
-Created for TSGAMING264 public toolkit source.
+Created for TSGAMING264 research workflow.
 
 Purpose:
 - Spider-Man 3 PC only. WOS is not a target.
@@ -41,15 +41,15 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 TOOL_NAME = "SM3_PC_ROUTE_HANDLER_EXTRACTOR"
-TOOL_VERSION = "v2.25_CLEAN_RELEASE_BETA_EXTRACTOR_UI"
+TOOL_VERSION = "v2.27_TEMP_FULL_PACK_CATALOG_SCAN"
 
 SM3_MAGIC = b"hsam"
 APKF_MAGIC = b"APKF"
 NCH_MAGIC = b"NCH\x00"
 PACK_EXTS = {".pcpack", ".pcapk", ".apkf", ".bin"}
 ZIP_EXTS = {".zip"}
-REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip"
-SLIM_REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip"
+REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip"
+SLIM_REPORT_ZIP_NAME = "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip"
 
 # v2.11: controlled payload extraction test set. These are not for scanning again;
 # they are the first safe payload-output proof set after full-folder route/probe PASS.
@@ -786,6 +786,67 @@ def maybe_export_tex_dds(out_root: Path, tex_name: str, filename_hash: int, meta
         return {**base_result, "tex_dds_export_status": "DDS_EXPORT_OK", "tex_dds_export_reason": f"high_exact_payload_wrapped_with_{fmt}_dds_header:{applied}", "tex_dds_export_file": str(dst), "tex_dds_export_size": len(header) + len(dds_payload)}
     except Exception as exc:
         return {**base_result, "tex_dds_export_status": "DDS_EXPORT_FAILED", "tex_dds_export_reason": str(exc), "tex_dds_export_file": path}
+
+
+
+
+
+def write_tex_dds_release_notes(out_root: Path) -> Dict[str, Any]:
+    """Write release-facing notes beside Pack Extractor DDS exports.
+
+    Pack Extractor's 05_TEX_DDS_EXPORT folder is a conservative raw DDS wrapper
+    around game texture payloads. It is useful for browsing and recovery, but it is
+    not the same as the Tex Swapper editor-safe workflow. Some DDS thumbnails can
+    look odd because they are masks, normal maps, alpha maps, atlases, tiny support
+    textures, or raw payload previews. The release UI should make this clear so
+    users do not treat the folder as a guaranteed edit-ready texture set.
+    """
+    out_root = Path(out_root)
+    dds_root = out_root / "05_TEX_DDS_EXPORT"
+    if not dds_root.exists() or not dds_root.is_dir():
+        return {"tex_dds_note_written": False, "dds_count": 0}
+    dds_files = sorted(dds_root.rglob("*.dds"), key=lambda x: str(x).lower())
+    text = (
+        "SM3 Pack Extractor DDS Export - Read Me First\n"
+        "=============================================\n\n"
+        "This folder contains raw/conservative DDS previews created by wrapping the game TEX payload bytes with a DDS header.\n\n"
+        "Important release rule:\n"
+        "- Use Tex Swapper for normal texture editing/export/reimport.\n"
+        "- Do not treat every file in this Pack Extractor 05_TEX_DDS_EXPORT folder as a final edit-ready texture.\n\n"
+        "Why some textures may look 'off' in thumbnails:\n"
+        "- Some are masks, alpha maps, AO maps, normal maps, environment maps, FX maps, or tiny helper textures.\n"
+        "- Some are texture atlases where only part of the image has visible data.\n"
+        "- Some DDS viewers show alpha/mask textures as black, grey, blank, or tiny-looking previews.\n"
+        "- Pack Extractor does not recolor, normalize, resize, recompress, or rebuild these previews.\n\n"
+        "Correct workflow for texture mods:\n"
+        "1) Open the Tex Swapper tab.\n"
+        "2) Use EXPORT EDIT-READY DDS + MANIFEST.\n"
+        "3) Edit those Tex Swapper exports in Paint.NET/GIMP.\n"
+        "4) Use the Tex Swapper editor-safe reimport route to write a new PCPACK.\n\n"
+        "Pack Extractor remains for browsing/extraction. Tex Swapper remains the safe texture patcher.\n"
+    )
+    readme = dds_root / "00_READ_ME_FIRST_RAW_DDS_PREVIEW_NOT_EDIT_READY.txt"
+    try:
+        readme.write_text(text, encoding="utf-8")
+    except Exception:
+        pass
+    rows = []
+    for f in dds_files:
+        try:
+            rel = str(f.relative_to(out_root)).replace("\\", "/")
+        except Exception:
+            rel = str(f)
+        rows.append({
+            "dds_file": rel,
+            "release_status": "RAW_PACK_EXTRACTOR_DDS_PREVIEW",
+            "recommended_edit_workflow": "USE_TEX_SWAPPER_EXPORT_EDIT_READY_DDS_AND_MANIFEST",
+            "warning": "thumbnail_may_look_off_for_masks_alpha_atlases_normals_fx_or_raw_preview",
+        })
+    try:
+        write_csv(dds_root / "00_DDS_EXPORT_RELEASE_NOTES.csv", rows)
+    except Exception:
+        pass
+    return {"tex_dds_note_written": True, "dds_count": len(dds_files), "readme": str(readme)}
 
 
 def _env_truthy(name: str) -> bool:
@@ -2029,6 +2090,239 @@ class PackProbe:
         }
 
 
+
+@dataclass
+class APKFSourceSlice:
+    """A parsed APKF slice plus the SM3 ownership metadata that led us to it.
+
+    v2.26 / toolkit v5.2.109 keeps this identity attached while resources are
+    extracted instead of trying to recover ownership after the normal
+    type-flattened research folders have already been written.
+    """
+
+    label: str
+    absolute_base: int
+    payload: bytes
+    route_reason: str
+    source_kind: str
+    parent_outer_index: Optional[int] = None
+    parent_outer_hash: Optional[int] = None
+    parent_outer_type: Optional[int] = None
+
+    @property
+    def archive_folder(self) -> str:
+        if self.parent_outer_index is not None and self.parent_outer_hash is not None:
+            type_text = f"T{self.parent_outer_type:X}" if self.parent_outer_type is not None else "TUNK"
+            # SM3-specific identity: O = authoritative outer hsam table row.
+            # Do not copy WoS's _Fxxx/.pcapk naming because SM3's parsed object is APKF.
+            return f"_O{self.parent_outer_index:04d}.{hex32(self.parent_outer_hash)}.{type_text}.apkf"
+        if self.source_kind == "compact_header":
+            return f"_COMPACT.off{self.absolute_base:08X}.apkf"
+        return f"_MARKER.off{self.absolute_base:08X}.apkf"
+
+    def ownership_dict(self) -> Dict[str, Any]:
+        return {
+            "source_apkf_label": self.label,
+            "source_apkf_absolute_base": hx(self.absolute_base),
+            "source_archive_folder": self.archive_folder,
+            "source_archive_kind": self.source_kind,
+            "parent_outer_index": "" if self.parent_outer_index is None else self.parent_outer_index,
+            "parent_outer_hash": "" if self.parent_outer_hash is None else hex32(self.parent_outer_hash),
+            "parent_outer_type": "" if self.parent_outer_type is None else f"0x{self.parent_outer_type:X}",
+            "source_route_reason": self.route_reason,
+        }
+
+
+def _mod_loader_resource_filename(filename_hash: int, safe_name: str, ext: str, fallback_index: int) -> str:
+    fname = f"{hex32(filename_hash)}.{safe_name}{ext}"
+    return clean_name(fname, f"file_{fallback_index:05d}{ext}")
+
+
+def _write_mod_loader_resource_copy(
+    *,
+    out_root: Path,
+    source_pack_name: str,
+    source_slice: APKFSourceSlice,
+    file_entry: APKFFileEntry,
+    safe_name: str,
+    ext: str,
+    combined_bytes: bytes,
+) -> Dict[str, Any]:
+    """Write one ownership-preserving copy under 06_MOD_LOADER_READY.
+
+    The bytes are the same component concatenation used by the existing
+    02_APKF_EXTRACTED_REAL_EXT output. TEX therefore remains native SM3
+    [IMG 0x44][PHYS] data; no WoS WRAP header or conversion is introduced.
+    """
+    pack_group = clean_name(source_pack_name, "PACK")
+    archive_folder = source_slice.archive_folder
+    dest_dir = ensure_dir(out_root / "06_MOD_LOADER_READY" / pack_group / archive_folder)
+    resource_name = _mod_loader_resource_filename(
+        file_entry.filename_hash,
+        safe_name,
+        ext,
+        file_entry.global_index,
+    )
+    dest = dest_dir / resource_name
+
+    status = "EXPORTED"
+    collision = ""
+    if dest.exists():
+        try:
+            existing = dest.read_bytes()
+        except Exception:
+            existing = b""
+        if existing == combined_bytes:
+            status = "DUPLICATE_IDENTICAL"
+        else:
+            # Do not silently overwrite a different resource that resolves to
+            # the same runtime filename. Preserve the first canonical path and
+            # surface the conflict in ownership metadata.
+            status = "COLLISION_NOT_OVERWRITTEN"
+            collision = str(dest)
+    else:
+        dest.write_bytes(combined_bytes)
+
+    rel_from_06 = Path(pack_group) / archive_folder / resource_name
+    return {
+        "mod_loader_exported": status in {"EXPORTED", "DUPLICATE_IDENTICAL"},
+        "mod_loader_status": status,
+        "mod_loader_file": str(dest),
+        "mod_loader_relative_path": rel_from_06.as_posix(),
+        "mod_loader_archive_folder": archive_folder,
+        "mod_loader_collision_path": collision,
+    }
+
+
+def write_mod_loader_ready_catalogs(
+    out_root: Path,
+    source_pack_name: str,
+    inner_rows: List[Dict[str, Any]],
+    enabled: bool,
+) -> Dict[str, Any]:
+    """Write exWoS-style ownership catalogs without changing SM3 resource bytes."""
+    if not enabled:
+        return {
+            "enabled": False,
+            "resource_count": 0,
+            "tex_count": 0,
+            "archive_count": 0,
+            "root": "",
+        }
+
+    pack_group = clean_name(source_pack_name, "PACK")
+    ml_root = ensure_dir(out_root / "06_MOD_LOADER_READY")
+    group_root = ensure_dir(ml_root / pack_group)
+
+    exported_rows = [r for r in inner_rows if r.get("mod_loader_exported")]
+    exported_rows.sort(key=lambda r: (
+        str(r.get("source_archive_folder") or r.get("mod_loader_archive_folder") or "").lower(),
+        str(r.get("file_type") or "").lower(),
+        str(r.get("filename_hash") or "").lower(),
+        str(r.get("filename") or "").lower(),
+    ))
+
+    path_lines: List[str] = []
+    detail_lines: List[str] = [
+        "source_pack\tsource_archive\touter_index\touter_hash\touter_type\tresource_type\tresource_hash\tresource_name\tresource_file"
+    ]
+    manifest_resources: List[Dict[str, Any]] = []
+    archives: set[str] = set()
+
+    for r in exported_rows:
+        rel = str(r.get("mod_loader_relative_path") or "")
+        if not rel:
+            continue
+        # filelist.txt is intentionally simple and copy/paste friendly.
+        path_lines.append(rel)
+        archive = str(r.get("source_archive_folder") or r.get("mod_loader_archive_folder") or "")
+        archives.add(archive)
+        detail_lines.append("\t".join([
+            pack_group,
+            archive,
+            "" if r.get("parent_outer_index") in (None, "") else str(r.get("parent_outer_index")),
+            str(r.get("parent_outer_hash") or ""),
+            str(r.get("parent_outer_type") or ""),
+            str(r.get("file_type") or ""),
+            str(r.get("filename_hash") or ""),
+            str(r.get("filename") or ""),
+            rel,
+        ]))
+        manifest_resources.append({
+            "source_pack_name": pack_group,
+            "source_pack_path": str(r.get("source_pack_path") or ""),
+            "source_archive_folder": archive,
+            "source_archive_kind": str(r.get("source_archive_kind") or ""),
+            "source_apkf_label": str(r.get("source_apkf_label") or ""),
+            "source_apkf_absolute_base": str(r.get("source_apkf_absolute_base") or ""),
+            "parent_outer_index": r.get("parent_outer_index", ""),
+            "parent_outer_hash": str(r.get("parent_outer_hash") or ""),
+            "parent_outer_type": str(r.get("parent_outer_type") or ""),
+            "resource_type": str(r.get("file_type") or ""),
+            "resource_hash": str(r.get("filename_hash") or ""),
+            "resource_name": str(r.get("filename") or ""),
+            "resource_extension": str(r.get("extension") or ""),
+            "resource_file": rel,
+            "combined_raw_size": r.get("combined_raw_size", 0),
+            "runtime_status": "NativeTEX supported by current RaimiHook" if str(r.get("file_type") or "").upper() == "TEX" else "ownership preserved for future loader stage",
+        })
+
+    (ml_root / "filelist.txt").write_text(
+        "\n".join(path_lines) + ("\n" if path_lines else ""),
+        encoding="utf-8",
+    )
+    (ml_root / "filelist.apkf.txt").write_text(
+        "\n".join(detail_lines) + "\n",
+        encoding="utf-8",
+    )
+
+    manifest = {
+        "format": "SM3_MOD_LOADER_READY_OWNERSHIP_V1",
+        "source_pack": pack_group,
+        "resource_count": len(manifest_resources),
+        "tex_count": sum(1 for r in manifest_resources if r.get("resource_type") == "TEX"),
+        "archive_count": len(archives),
+        "archive_folders": sorted(a for a in archives if a),
+        "rules": [
+            "TEX files are native Spider-Man 3 .tex component concatenations and are current RaimiHook NativeTEX targets.",
+            "MESH/MAT/ANIM/ASKL/etc are ownership-preserving copies only; this manifest does not claim current runtime loading support for them.",
+            "No Web of Shadows .wrap header is added.",
+            "06_MOD_LOADER_READY contains copies; the original research/editing extraction folders remain unchanged.",
+        ],
+        "resources": manifest_resources,
+    }
+    write_json(ml_root / "ownership_manifest.json", manifest)
+    (ml_root / "README_MOD_LOADER_READY.txt").write_text(
+        "SM3 MOD LOADER READY OWNERSHIP VIEW\n"
+        "===================================\n\n"
+        "This folder is an additional copy/mapping view. It does not replace the normal SM3 research extractor folders.\n\n"
+        "Hierarchy:\n"
+        "  06_MOD_LOADER_READY/<PACK>/<REAL SM3 APKF OWNER>/<RESOURCE>\n\n"
+        "Archive folders beginning with _O#### are derived from the authoritative SM3 outer hsam table row:\n"
+        "  _O<outer index>.0x<outer hash>.T<outer type>.apkf\n\n"
+        "Current runtime support:\n"
+        "  TEX  = NativeTEX / RaimiHook-ready target\n"
+        "  Other native resource extensions are preserved for future loader stages only.\n\n"
+        "Catalogs:\n"
+        "  filelist.txt       = simple ownership paths\n"
+        "  filelist.apkf.txt  = detailed pack/archive/type/hash mapping\n"
+        "  ownership_manifest.json = structured mapping for future RaimiHook work\n",
+        encoding="utf-8",
+    )
+
+    return {
+        "enabled": True,
+        "resource_count": len(manifest_resources),
+        "tex_count": manifest["tex_count"],
+        "archive_count": len(archives),
+        "root": str(ml_root),
+        "group_root": str(group_root),
+        "filelist": str(ml_root / "filelist.txt"),
+        "filelist_apkf": str(ml_root / "filelist.apkf.txt"),
+        "manifest": str(ml_root / "ownership_manifest.json"),
+    }
+
+
 def probe_pack_bytes(name: str, data: bytes) -> PackProbe:
     if data.startswith(NCH_MAGIC):
         return PackProbe(name, len(data), "WOS_NCH_REFERENCE_NOT_SM3", "NOT_SM3_WOS_REFERENCE_ONLY", [], find_all(data, b"APKF", 128), None, [], {}, ["starts_with_NCH"])
@@ -2199,7 +2493,20 @@ def write_compact_header_preserved_regions(data: bytes, probe: PackProbe, out_ro
     return rows
 
 
-def extract_apkf_archive(apkf_data: bytes, label: str, absolute_base: int, out_root: Path, output_layout: str = "smart_browse", max_inner_mb: int = 4096, write_payloads: bool = True) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]], Optional[str]]:
+def extract_apkf_archive(
+    apkf_data: bytes,
+    label: str,
+    absolute_base: int,
+    out_root: Path,
+    output_layout: str = "smart_browse",
+    max_inner_mb: int = 4096,
+    write_payloads: bool = True,
+    source_pack_name: str = "",
+    source_pack_path: str = "",
+    source_slice: Optional[APKFSourceSlice] = None,
+    create_mod_loader_ready: bool = False,
+    mod_loader_ready_only: bool = False,
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Optional[Dict[str, Any]], Optional[str]]:
     inner_rows: List[Dict[str, Any]] = []
     action_rows: List[Dict[str, Any]] = []
     try:
@@ -2208,11 +2515,22 @@ def extract_apkf_archive(apkf_data: bytes, label: str, absolute_base: int, out_r
         return [], [{"action": "parse_apkf_failed", "label": label, "absolute_base": hx(absolute_base), "error": str(exc)}], None, str(exc)
 
     summary = apkf.summary()
-    real_root = ensure_dir(out_root / "02_APKF_EXTRACTED_REAL_EXT")
-    comp_root = ensure_dir(out_root / "03_APKF_COMPONENTS")
-    raw_unknown_root = ensure_dir(out_root / "04_RAW_PRESERVED" / "UNKNOWN_APKF_GROUPS")
+    # In Mod Loader Ready-only mode, do not create the Classic payload roots at all.
+    real_root = (out_root / "02_APKF_EXTRACTED_REAL_EXT") if mod_loader_ready_only else ensure_dir(out_root / "02_APKF_EXTRACTED_REAL_EXT")
+    comp_root = (out_root / "03_APKF_COMPONENTS") if mod_loader_ready_only else ensure_dir(out_root / "03_APKF_COMPONENTS")
+    raw_unknown_root = (out_root / "04_RAW_PRESERVED" / "UNKNOWN_APKF_GROUPS") if mod_loader_ready_only else ensure_dir(out_root / "04_RAW_PRESERVED" / "UNKNOWN_APKF_GROUPS")
     total = 0
     limit = max_inner_mb * 1024 * 1024
+    ownership = source_slice.ownership_dict() if source_slice is not None else {
+        "source_apkf_label": label,
+        "source_apkf_absolute_base": hx(absolute_base),
+        "source_archive_folder": clean_name(label, "APKF") + ".apkf",
+        "source_archive_kind": "unknown",
+        "parent_outer_index": "",
+        "parent_outer_hash": "",
+        "parent_outer_type": "",
+        "source_route_reason": "",
+    }
 
     for f in apkf.files:
         safe = clean_name(f.filename, f"unknown_{f.file_type}_{f.global_index:05d}")
@@ -2231,45 +2549,73 @@ def extract_apkf_archive(apkf_data: bytes, label: str, absolute_base: int, out_r
         real_path = ""
         if total + len(combined_bytes) > limit:
             skip_reason = "max_inner_mb_limit"
-        else:
-            if write_payloads:
-                if output_layout in ("smart_browse", "research_full", "real_ext_only"):
-                    dest_dir = ensure_dir(real_root / category)
-                    fname = f"{hex32(f.filename_hash)}.{safe}{ext}"
-                    real_file = dest_dir / clean_name(fname, f"file_{f.global_index:05d}{ext}")
-                    real_file.write_bytes(combined_bytes)
-                    real_path = str(real_file)
-                    exported = True
-                    total += len(combined_bytes)
-                if output_layout in ("research_full", "component_only"):
-                    comp_dir = ensure_dir(comp_root / category / f"{f.global_index:05d}_{hex32(f.filename_hash)}_{safe}")
-                    for ci, blob, _s, _e in component_blobs:
-                        (comp_dir / f"component{ci}_{len(blob)}bytes.bin").write_bytes(blob)
-                    (comp_dir / "combined_raw.bin").write_bytes(combined_bytes)
-                    write_json(comp_dir / "entry.json", f.to_dict())
-                if category not in EXT_BY_TYPE:
-                    unk_dir = ensure_dir(raw_unknown_root / category)
-                    (unk_dir / f"{hex32(f.filename_hash)}.{safe}.combined_raw.bin").write_bytes(combined_bytes)
-            else:
-                skip_reason = "reports_only_payload_export_disabled"
+        elif not write_payloads:
+            skip_reason = "reports_only_payload_export_disabled"
+        elif not mod_loader_ready_only:
+            if output_layout in ("smart_browse", "research_full", "real_ext_only"):
+                dest_dir = ensure_dir(real_root / category)
+                fname = f"{hex32(f.filename_hash)}.{safe}{ext}"
+                real_file = dest_dir / clean_name(fname, f"file_{f.global_index:05d}{ext}")
+                real_file.write_bytes(combined_bytes)
+                real_path = str(real_file)
+                exported = True
+            if output_layout in ("research_full", "component_only"):
+                comp_dir = ensure_dir(comp_root / category / f"{f.global_index:05d}_{hex32(f.filename_hash)}_{safe}")
+                for ci, blob, _s, _e in component_blobs:
+                    (comp_dir / f"component{ci}_{len(blob)}bytes.bin").write_bytes(blob)
+                (comp_dir / "combined_raw.bin").write_bytes(combined_bytes)
+                write_json(comp_dir / "entry.json", f.to_dict())
+            if category not in EXT_BY_TYPE:
+                unk_dir = ensure_dir(raw_unknown_root / category)
+                (unk_dir / f"{hex32(f.filename_hash)}.{safe}.combined_raw.bin").write_bytes(combined_bytes)
+            total += len(combined_bytes)
+
+        mod_loader_info: Dict[str, Any] = {
+            "mod_loader_exported": False,
+            "mod_loader_status": "DISABLED" if not create_mod_loader_ready else "NOT_EXPORTED",
+            "mod_loader_file": "",
+            "mod_loader_relative_path": "",
+            "mod_loader_archive_folder": str(ownership.get("source_archive_folder") or ""),
+            "mod_loader_collision_path": "",
+        }
+        if create_mod_loader_ready and write_payloads and not skip_reason and source_slice is not None:
+            mod_loader_info = _write_mod_loader_resource_copy(
+                out_root=out_root,
+                source_pack_name=source_pack_name,
+                source_slice=source_slice,
+                file_entry=f,
+                safe_name=safe,
+                ext=ext,
+                combined_bytes=combined_bytes,
+            )
+            if mod_loader_ready_only and mod_loader_info.get("mod_loader_exported"):
+                total += len(combined_bytes)
 
         row = f.to_dict()
         if (f.file_type or "").upper() == "TEX":
             tex_meta = infer_tex_metadata_from_components(f.filename, component_blobs)
             row.update(tex_meta)
-            if write_payloads and len(component_blobs) >= 2:
+            if write_payloads and not mod_loader_ready_only and len(component_blobs) >= 2:
                 row.update(maybe_export_tex_dds(out_root, f.filename, f.filename_hash, tex_meta, component_blobs[1][1]))
                 row.update(maybe_export_tex_layout_lab(out_root, f.filename, f.filename_hash, {**tex_meta, **row}, component_blobs[1][1]))
             else:
                 row.update({"tex_dds_export_status": "NOT_EXPORTED_REPORTS_ONLY", "tex_dds_export_reason": "payload_export_disabled_or_missing_component1", "tex_dds_export_file": ""})
                 row.update({"tex_layout_review_status": "NOT_EXPORTED_REPORTS_ONLY", "tex_layout_review_reason": "payload_export_disabled_or_missing_component1", "tex_layout_candidate_modes": "", "tex_layout_lab_enabled": _tex_layout_lab_enabled(), "tex_layout_lab_candidate_count": 0, "tex_layout_lab_folder": "", "tex_layout_lab_manifest": ""})
         row.update({
-            "source_apkf_label": label,
-            "source_apkf_absolute_base": hx(absolute_base),
+            "source_pack_name": clean_name(source_pack_name, "PACK"),
+            "source_pack_path": source_pack_path,
+            **ownership,
+            "parent_apkf_name": label,
+            "parent_apkf_hash": ownership.get("parent_outer_hash", ""),
+            "resource_hash": hex32(f.filename_hash),
+            "resource_name": f.filename,
+            "resource_type": f.file_type,
+            "resource_extension": ext,
             "combined_raw_size": len(combined_bytes),
             "exported": exported,
             "skip_reason": skip_reason,
             "real_ext_file": real_path,
+            **mod_loader_info,
         })
         for ci, (_blob_i, _blob, s, e) in enumerate(component_blobs):
             row[f"component{ci}_absolute_start_in_pcpack"] = hx(absolute_base + s)
@@ -2317,20 +2663,19 @@ def quick_apkf_header_check(payload: bytes) -> Tuple[bool, str]:
     return True, "header_ok"
 
 
-def apkf_slices_from_probe(data: bytes, probe: PackProbe) -> Tuple[List[Tuple[str, int, bytes, str]], List[Dict[str, Any]]]:
-    """Return candidate APKF slices plus filtered marker report rows.
+def apkf_slices_from_probe(data: bytes, probe: PackProbe) -> Tuple[List[APKFSourceSlice], List[Dict[str, Any]]]:
+    """Return candidate APKF slices with ownership attached at discovery time.
 
-    Returns:
-        (slices, filtered_marker_rows)
-        slices are (label, absolute_offset, bytes, route_reason).
+    The authoritative outer-row route retains outer index/hash/type so the
+    v5.2.109 Mod Loader Ready tree can preserve real SM3 source archive identity.
     """
-    slices: List[Tuple[str, int, bytes, str]] = []
+    slices: List[APKFSourceSlice] = []
     filtered: List[Dict[str, Any]] = []
     seen: set[int] = set()
     covered_apkf_ranges: List[Tuple[int, int]] = []
 
     # Exact outer row APKF payloads first. These are authoritative because the
-    # outer hsam table gives the exact payload size.
+    # outer hsam table gives the exact payload size AND the parent hash/type.
     for row in probe.outer_rows:
         if row.data_offset in seen:
             continue
@@ -2339,28 +2684,43 @@ def apkf_slices_from_probe(data: bytes, probe: PackProbe) -> Tuple[List[Tuple[st
             ok, why = quick_apkf_header_check(payload)
             label = f"outer_{row.index:04d}_T{row.type_id:X}_{hex32(row.hash_value)}"
             if ok:
-                slices.append((label, row.data_offset, payload, "outer_row_exact_size"))
+                slices.append(APKFSourceSlice(
+                    label=label,
+                    absolute_base=row.data_offset,
+                    payload=payload,
+                    route_reason="outer_row_exact_size",
+                    source_kind="outer_row",
+                    parent_outer_index=row.index,
+                    parent_outer_hash=row.hash_value,
+                    parent_outer_type=row.type_id,
+                ))
                 covered_apkf_ranges.append((row.data_offset, row.end))
                 seen.add(row.data_offset)
             else:
                 filtered.append({"label": label, "absolute_base": hx(row.data_offset), "reason": "outer_row_apkf_failed_sanity_check", "detail": why})
 
-    # Compact header APKF pointer.
+    # Compact header APKF pointer. No authoritative outer-row hash exists here,
+    # so preserve the actual absolute APKF offset rather than inventing a hash.
     if probe.compact_header.get("is_compact_header"):
         ptr = probe.compact_header.get("apkf_pointer")
         if isinstance(ptr, int) and ptr not in seen and data[ptr:ptr + 4] == b"APKF":
             payload = data[ptr:]
             ok, why = quick_apkf_header_check(payload)
             if ok:
-                slices.append(("compact_header_apkf_pointer", ptr, payload, "compact_header_to_eof"))
+                slices.append(APKFSourceSlice(
+                    label="compact_header_apkf_pointer",
+                    absolute_base=ptr,
+                    payload=payload,
+                    route_reason="compact_header_to_eof",
+                    source_kind="compact_header",
+                ))
                 covered_apkf_ranges.append((ptr, len(data)))
                 seen.add(ptr)
             else:
                 filtered.append({"label": "compact_header_apkf_pointer", "absolute_base": hx(ptr), "reason": "compact_header_apkf_failed_sanity_check", "detail": why})
 
-    # Non-type36 marker route: only parse APKF markers that are not already
-    # inside an authoritative outer-row APKF range. This prevents false warnings
-    # from random APKF byte strings inside MEGACITY/GAME's real inner archive.
+    # Non-type36 marker route: preserve real marker offset identity. We do not
+    # fabricate an outer hash when the pack did not provide one through a row.
     for idx, off in enumerate(probe.apkf_offsets):
         label = f"marker_apkf_{idx:03d}_off{off:08X}"
         if off in seen:
@@ -2376,12 +2736,28 @@ def apkf_slices_from_probe(data: bytes, probe: PackProbe) -> Tuple[List[Tuple[st
         if not ok:
             filtered.append({"label": label, "absolute_base": hx(off), "reason": "marker_apkf_failed_sanity_check", "detail": why})
             continue
-        slices.append((label, off, payload, "marker_to_eof_non_type36_route"))
+        slices.append(APKFSourceSlice(
+            label=label,
+            absolute_base=off,
+            payload=payload,
+            route_reason="marker_to_eof_non_type36_route",
+            source_kind="marker",
+        ))
         seen.add(off)
     return slices, filtered
 
 
-def extract_one_bytes(display_name: str, data: bytes, out_dir: Path, output_layout: str = "smart_browse", max_outer_mb: int = 2048, max_inner_mb: int = 4096, write_payloads: bool = True) -> Dict[str, Any]:
+def extract_one_bytes(
+    display_name: str,
+    data: bytes,
+    out_dir: Path,
+    output_layout: str = "smart_browse",
+    max_outer_mb: int = 2048,
+    max_inner_mb: int = 4096,
+    write_payloads: bool = True,
+    create_mod_loader_ready: bool = False,
+    mod_loader_ready_only: bool = False,
+) -> Dict[str, Any]:
     pack_name = clean_name(Path(display_name).stem, "pack")
     root = ensure_dir(out_dir / pack_name)
     reports = ensure_dir(root / "00_REPORTS")
@@ -2412,11 +2788,11 @@ def extract_one_bytes(display_name: str, data: bytes, out_dir: Path, output_layo
     apkf_summaries: List[Dict[str, Any]] = []
     errors: List[Dict[str, Any]] = []
 
-    if write_payloads and probe.outer_rows:
+    if write_payloads and not mod_loader_ready_only and probe.outer_rows:
         outer_export_rows = write_outer_payloads(data, probe, root, max_outer_mb=max_outer_mb)
         action_rows.append({"action": "outer_payloads_exported", "count": len([r for r in outer_export_rows if r.get("exported")]), "note": "all valid outer rows were preserved subject to max_outer_mb"})
 
-    if write_payloads and probe.compact_header.get("is_compact_header"):
+    if write_payloads and not mod_loader_ready_only and probe.compact_header.get("is_compact_header"):
         compact_rows = write_compact_header_preserved_regions(data, probe, root, max_outer_mb=max_outer_mb)
         if compact_rows:
             outer_export_rows.extend(compact_rows)
@@ -2426,17 +2802,61 @@ def extract_one_bytes(display_name: str, data: bytes, out_dir: Path, output_layo
     apkf_slices, filtered_apkf_markers = apkf_slices_from_probe(data, probe)
     for fr in filtered_apkf_markers:
         action_rows.append({"action": "apkf_marker_filtered", **fr})
-    for label, base, payload, reason in apkf_slices:
-        rows, actions, summary, error = extract_apkf_archive(payload, label=label, absolute_base=base, out_root=root, output_layout=output_layout, max_inner_mb=max_inner_mb, write_payloads=write_payloads)
+    for source_slice in apkf_slices:
+        label = source_slice.label
+        base = source_slice.absolute_base
+        payload = source_slice.payload
+        reason = source_slice.route_reason
+        rows, actions, summary, error = extract_apkf_archive(
+            payload,
+            label=label,
+            absolute_base=base,
+            out_root=root,
+            output_layout=output_layout,
+            max_inner_mb=max_inner_mb,
+            write_payloads=write_payloads,
+            source_pack_name=pack_name,
+            source_pack_path=display_name,
+            source_slice=source_slice,
+            create_mod_loader_ready=create_mod_loader_ready,
+            mod_loader_ready_only=mod_loader_ready_only,
+        )
         for a in actions:
             a["route_reason"] = reason
+            a.update(source_slice.ownership_dict())
             action_rows.append(a)
         if summary:
-            summary_row = {"label": label, "absolute_base": hx(base), "route_reason": reason, "total_files": summary.get("total_files"), "counts_by_type": json.dumps(summary.get("counts_by_type", {}), sort_keys=True)}
+            summary_row = {
+                "label": label,
+                "absolute_base": hx(base),
+                "route_reason": reason,
+                "source_archive_folder": source_slice.archive_folder,
+                "source_archive_kind": source_slice.source_kind,
+                "parent_outer_index": "" if source_slice.parent_outer_index is None else source_slice.parent_outer_index,
+                "parent_outer_hash": "" if source_slice.parent_outer_hash is None else hex32(source_slice.parent_outer_hash),
+                "parent_outer_type": "" if source_slice.parent_outer_type is None else f"0x{source_slice.parent_outer_type:X}",
+                "total_files": summary.get("total_files"),
+                "counts_by_type": json.dumps(summary.get("counts_by_type", {}), sort_keys=True),
+            }
             apkf_summaries.append(summary_row)
         if error:
             errors.append({"label": label, "absolute_base": hx(base), "route_reason": reason, "error": error})
         inner_rows.extend(rows)
+
+    mod_loader_summary = write_mod_loader_ready_catalogs(
+        root,
+        pack_name,
+        inner_rows,
+        enabled=bool(create_mod_loader_ready and write_payloads),
+    )
+    if mod_loader_summary.get("enabled"):
+        action_rows.append({
+            "action": "mod_loader_ready_structure_written",
+            "count": mod_loader_summary.get("resource_count", 0),
+            "tex_count": mod_loader_summary.get("tex_count", 0),
+            "archive_count": mod_loader_summary.get("archive_count", 0),
+            "note": "v5.2.109 ownership-preserving copies under 06_MOD_LOADER_READY; NativeTEX is current runtime-supported target",
+        })
 
     write_csv(reports / "OUTER_PAYLOAD_EXPORTS.csv", outer_export_rows)
     write_csv(reports / "INNER_APKF_FILES.csv", inner_rows)
@@ -2460,6 +2880,7 @@ def extract_one_bytes(display_name: str, data: bytes, out_dir: Path, output_layo
         "parse_errors": errors,
         "filtered_apkf_markers": filtered_apkf_markers,
         "resource_metadata_summary": resource_summary,
+        "mod_loader_ready": mod_loader_summary,
         "v2_8_browse_reports": [
             "RESOURCE_BROWSE_INDEX.csv",
             "RESOURCE_BROWSE_INDEX.html",
@@ -2738,7 +3159,7 @@ def resolve_named_target_packs(target_names: List[str], pack_root: Path, recursi
     return selected, report
 
 
-def extract_file(path: Path, out_dir: Path, output_layout: str, max_outer_mb: int, max_inner_mb: int, write_payloads: bool, log=print) -> List[Dict[str, Any]]:
+def extract_file(path: Path, out_dir: Path, output_layout: str, max_outer_mb: int, max_inner_mb: int, write_payloads: bool, create_mod_loader_ready: bool = False, mod_loader_ready_only: bool = False, log=print) -> List[Dict[str, Any]]:
     results: List[Dict[str, Any]] = []
     if path.suffix.lower() == ".zip":
         with zipfile.ZipFile(path, "r") as zf:
@@ -2751,11 +3172,11 @@ def extract_file(path: Path, out_dir: Path, output_layout: str, max_outer_mb: in
                 log(f"[ZIP] {path.name} :: {info.filename}")
                 data = zf.read(info)
                 display = f"{path.name}::{info.filename}"
-                results.append(extract_one_bytes(display, data, out_dir, output_layout, max_outer_mb, max_inner_mb, write_payloads))
+                results.append(extract_one_bytes(display, data, out_dir, output_layout, max_outer_mb, max_inner_mb, write_payloads, create_mod_loader_ready=create_mod_loader_ready, mod_loader_ready_only=mod_loader_ready_only))
         return results
     log(f"[PACK] {path}")
     data = path.read_bytes()
-    results.append(extract_one_bytes(str(path), data, out_dir, output_layout, max_outer_mb, max_inner_mb, write_payloads))
+    results.append(extract_one_bytes(str(path), data, out_dir, output_layout, max_outer_mb, max_inner_mb, write_payloads, create_mod_loader_ready=create_mod_loader_ready, mod_loader_ready_only=mod_loader_ready_only))
     return results
 
 
@@ -2828,15 +3249,15 @@ def _norm_path_variants(path_value: Any) -> List[str]:
     return sorted([v for v in variants if v], key=len, reverse=True)
 
 
-def sanitize_report_text_for_diagnostic_bundle(text: str, out_dir: Optional[Path] = None, extra_roots: Optional[List[Path]] = None) -> str:
-    """Sanitize report text before it is written into diagnostic report bundles.
+def sanitize_report_text_for_gpt(text: str, out_dir: Optional[Path] = None, extra_roots: Optional[List[Path]] = None) -> str:
+    """Sanitize report text before it is written into Send-To-GPT bundles.
 
     v2.12 privacy fix:
     - local absolute Windows paths become LOCAL_PATH_REDACTED/<filename when obvious>
     - container sandbox paths are redacted
     - output-folder absolute paths are replaced with OUTPUT_ROOT
 
-    This is intentionally applied only to the diagnostic report bundles. The local reports on
+    This is intentionally applied only to the GPT report bundles. The local reports on
     the user's PC can keep full paths so Open Output/Open Reports still works.
     """
     if not text:
@@ -2883,13 +3304,13 @@ def _zip_report_file_sanitized(zf: zipfile.ZipFile, path: Path, arcname: str, ou
     """Write a report file into a zip, sanitizing text report content when possible."""
     if _is_text_report_file(path):
         text = path.read_text(encoding="utf-8", errors="replace")
-        zf.writestr(arcname, sanitize_report_text_for_diagnostic_bundle(text, out_dir=out_dir))
+        zf.writestr(arcname, sanitize_report_text_for_gpt(text, out_dir=out_dir))
     else:
         zf.write(path, arcname)
 
 
-def build_diagnostic_report_zip(out_dir: Path, log=print) -> Path:
-    """Create a compact diagnostic zip with the reports support diagnostics need.
+def build_send_to_gpt_report_zip(out_dir: Path, log=print) -> Path:
+    """Create a compact diagnostic zip with the reports GPT needs.
 
     This intentionally excludes extracted payload folders so the user can send diagnostics
     without uploading huge game-resource dumps. It includes master reports plus each
@@ -3129,7 +3550,7 @@ def build_diagnostic_report_zip(out_dir: Path, log=print) -> Path:
             _zip_report_file_sanitized(zf, path, arcname, out_dir)
             manifest_rows.append({"arcname": arcname, "source_rel": rel_to_out(path), "size_bytes": size, "reason": reason, "sanitized_in_bundle": _is_text_report_file(path)})
         except Exception as exc:
-            skipped_rows.append({"path": sanitize_report_text_for_diagnostic_bundle(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
+            skipped_rows.append({"path": sanitize_report_text_for_gpt(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
 
     def csv_bytes(rows: List[Dict[str, Any]]) -> bytes:
         sio = io.StringIO()
@@ -3145,11 +3566,11 @@ def build_diagnostic_report_zip(out_dir: Path, log=print) -> Path:
                 writer.writerow(row)
         else:
             sio.write("note\nno rows\n")
-        return sanitize_report_text_for_diagnostic_bundle(sio.getvalue(), out_dir=out_dir).encode("utf-8")
+        return sanitize_report_text_for_gpt(sio.getvalue(), out_dir=out_dir).encode("utf-8")
 
     with zipfile.ZipFile(report_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         readme = [
-            f"{TOOL_NAME} {TOOL_VERSION} - Diagnostic Report Bundle",
+            f"{TOOL_NAME} {TOOL_VERSION} - Send-To-GPT Report Bundle",
             f"Created: {_dt.datetime.now().isoformat(timespec='seconds')}",
             "",
             "Purpose:",
@@ -3161,15 +3582,15 @@ def build_diagnostic_report_zip(out_dir: Path, log=print) -> Path:
             "- 00_MASTER_REPORTS summary/index/error reports",
             "- CSV_TARGET_* reports when a pack-list CSV/text file was used",
             "- Each pack's 00_REPORTS route summary, probe JSON, outer rows, APKF summaries, parse errors, and handler actions",
-            "- v2.9 resource browse indexes, resource pack matrix, TEX/MESH/MAT/ANIM/CVX/UNKNOWN top-pack reports, and slim diagnostic bundle",
-            "- DIAGNOSTIC_REPORT_MANIFEST.csv listing exactly what was included",
-            "- DIAGNOSTIC_REPORT_SKIPPED_FILES.csv listing anything skipped by size/safety rules",
+            "- v2.9 resource browse indexes, resource pack matrix, TEX/MESH/MAT/ANIM/CVX/UNKNOWN top-pack reports, and slim GPT bundle",
+            "- GPT_REPORT_MANIFEST.csv listing exactly what was included",
+            "- GPT_REPORT_SKIPPED_FILES.csv listing anything skipped by size/safety rules",
             "",
             "How to use:",
-            "Share this zip for support diagnostics instead of the full extraction output when troubleshooting handlers.",
-            "If support asks for one specific pack later, review that pack's generated diagnostics from your local output folder.",
+            "Send this zip to GPT instead of the full extraction output when troubleshooting handlers.",
+            "If GPT asks for one specific pack later, send that pack's 00_REPORTS folder or the original test pack separately.",
         ]
-        zf.writestr("README_DIAGNOSTIC_REPORT.txt", "\n".join(readme) + "\n")
+        zf.writestr("README_SEND_TO_GPT.txt", "\n".join(readme) + "\n")
 
         if master.exists():
             for p in sorted(master.iterdir(), key=lambda x: x.name.lower()):
@@ -3188,10 +3609,10 @@ def build_diagnostic_report_zip(out_dir: Path, log=print) -> Path:
                 max_bytes = 512 * 1024 if p.name == "STRING_SAMPLES.csv" else None
                 add_file(zf, p, f"PER_PACK_REPORTS/{safe_pack}/00_REPORTS/{p.name}", "per_pack_report", max_bytes=max_bytes)
 
-        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this diagnostic report bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
+        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this Send-To-GPT bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
         zf.writestr("SANITIZED_REPORT_PATHS.json", json.dumps({"enabled": True, "version_added": "v2.12", "bundle_only": True, "placeholders": ["OUTPUT_ROOT", "LOCAL_PATH_REDACTED", "SANDBOX_PATH_REDACTED"]}, indent=2))
-        zf.writestr("DIAGNOSTIC_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
-        zf.writestr("DIAGNOSTIC_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
+        zf.writestr("GPT_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
+        zf.writestr("GPT_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
         summary_obj = {
             "tool": TOOL_NAME,
             "version": TOOL_VERSION,
@@ -3203,19 +3624,19 @@ def build_diagnostic_report_zip(out_dir: Path, log=print) -> Path:
             "zip_name": report_zip.name,
             "note": "Full report bundle only. No extracted payload folders are included. A smaller slim bundle is also created for whole-folder review.",
         }
-        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
-        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
+        zf.writestr("GPT_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
+        zf.writestr("GPT_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
 
-    log(f"Diagnostic report bundle written: {report_zip}")
+    log(f"Send-To-GPT report bundle written: {report_zip}")
     return report_zip
 
 
 
-def build_diagnostic_report_zip_slim(out_dir: Path, log=print) -> Path:
+def build_send_to_gpt_report_zip_slim(out_dir: Path, log=print) -> Path:
     """Create a smaller full-folder diagnostic zip.
 
     v2.9 purpose:
-    The full diagnostic report bundle is useful for deep debugging, but whole-folder runs can
+    The full Send-To-GPT bundle is useful for deep debugging, but whole-folder runs can
     include tens of thousands of report files. The slim bundle keeps the proof-level
     master reports and small per-pack summaries/counts, while excluding large per-pack
     browse indexes/hint CSVs unless they contain errors.
@@ -3370,7 +3791,7 @@ def build_diagnostic_report_zip_slim(out_dir: Path, log=print) -> Path:
             _zip_report_file_sanitized(zf, path, arcname, out_dir)
             manifest_rows.append({"arcname": arcname, "source_rel": rel_to_out(path), "size_bytes": size, "reason": reason, "sanitized_in_bundle": _is_text_report_file(path)})
         except Exception as exc:
-            skipped_rows.append({"path": sanitize_report_text_for_diagnostic_bundle(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
+            skipped_rows.append({"path": sanitize_report_text_for_gpt(str(path), out_dir=out_dir), "size_bytes": "", "reason": f"add_failed: {exc}"})
 
     def csv_bytes(rows: List[Dict[str, Any]]) -> bytes:
         sio = io.StringIO()
@@ -3386,16 +3807,16 @@ def build_diagnostic_report_zip_slim(out_dir: Path, log=print) -> Path:
                 writer.writerow(row)
         else:
             sio.write("note\nno rows\n")
-        return sanitize_report_text_for_diagnostic_bundle(sio.getvalue(), out_dir=out_dir).encode("utf-8")
+        return sanitize_report_text_for_gpt(sio.getvalue(), out_dir=out_dir).encode("utf-8")
 
     with zipfile.ZipFile(report_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         readme = [
-            f"{TOOL_NAME} {TOOL_VERSION} - SLIM Diagnostic Report Bundle",
+            f"{TOOL_NAME} {TOOL_VERSION} - SLIM Send-To-GPT Report Bundle",
             f"Created: {_dt.datetime.now().isoformat(timespec='seconds')}",
             "",
             "Purpose:",
             "This is the smaller full-folder review zip. Send this first for PASS/FAIL and dashboard checks.",
-            "Use the full SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip only when deep per-pack debugging is needed.",
+            "Send the full SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip only when deep per-pack debugging is needed.",
             "v2.12 privacy: text reports in this bundle are sanitized so local Windows/container paths are replaced with safe placeholders.",
             "",
             "Included:",
@@ -3406,7 +3827,7 @@ def build_diagnostic_report_zip_slim(out_dir: Path, log=print) -> Path:
             "- Full per-pack RESOURCE_BROWSE_INDEX.csv/html and large hint CSVs",
             "- Extracted payload folders/raw game dumps",
         ]
-        zf.writestr("README_DIAGNOSTIC_REPORT_SLIM.txt", "\n".join(readme) + "\n")
+        zf.writestr("README_SEND_TO_GPT_SLIM.txt", "\n".join(readme) + "\n")
 
         if master.exists():
             for p in sorted(master.iterdir(), key=lambda x: x.name.lower()):
@@ -3422,10 +3843,10 @@ def build_diagnostic_report_zip_slim(out_dir: Path, log=print) -> Path:
                     continue
                 add_file(zf, p, f"PER_PACK_REPORTS/{safe_pack}/00_REPORTS/{p.name}", "per_pack_slim_report")
 
-        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this diagnostic report bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
+        zf.writestr("SANITIZED_REPORT_PATHS_README.txt", "v2.12 privacy cleanup\n\nText reports inside this Send-To-GPT bundle are sanitized before zipping.\nLocal absolute Windows paths are replaced with LOCAL_PATH_REDACTED or OUTPUT_ROOT placeholders.\nSandbox/container absolute paths are also redacted.\nThe local output folder on your PC still keeps full paths for Open Output/Open Reports usability.\n")
         zf.writestr("SANITIZED_REPORT_PATHS.json", json.dumps({"enabled": True, "version_added": "v2.12", "bundle_only": True, "placeholders": ["OUTPUT_ROOT", "LOCAL_PATH_REDACTED", "SANDBOX_PATH_REDACTED"]}, indent=2))
-        zf.writestr("DIAGNOSTIC_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
-        zf.writestr("DIAGNOSTIC_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
+        zf.writestr("GPT_REPORT_MANIFEST.csv", csv_bytes(manifest_rows))
+        zf.writestr("GPT_REPORT_SKIPPED_FILES.csv", csv_bytes(skipped_rows))
         summary_obj = {
             "tool": TOOL_NAME,
             "version": TOOL_VERSION,
@@ -3435,12 +3856,12 @@ def build_diagnostic_report_zip_slim(out_dir: Path, log=print) -> Path:
             "included_file_count": len(manifest_rows),
             "skipped_file_count": len(skipped_rows),
             "zip_name": report_zip.name,
-            "note": "Slim report bundle only. Send the full bundle if support asks for deep per-pack browse indexes.",
+            "note": "Slim report bundle only. Send the full bundle if GPT asks for deep per-pack browse indexes.",
         }
-        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
-        zf.writestr("DIAGNOSTIC_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
+        zf.writestr("GPT_REPORT_SUMMARY.json", json.dumps(summary_obj, indent=2))
+        zf.writestr("GPT_REPORT_SUMMARY.txt", "\n".join([f"{k}: {v}" for k, v in summary_obj.items()]) + "\n")
 
-    log(f"SLIM Diagnostic report bundle written: {report_zip}")
+    log(f"SLIM Send-To-GPT report bundle written: {report_zip}")
     return report_zip
 
 
@@ -3872,7 +4293,7 @@ def write_master_resource_index_reports(reports: Path, master_rows: List[Dict[st
     write_csv(reports / "MASTER_RESOURCE_NAVIGATION_INDEX.csv", nav_index_rows)
     write_csv(reports / "MASTER_DEPENDENCY_NAVIGATION_INDEX.csv", dep_nav_rows)
     css = "body{font-family:Segoe UI,Arial,sans-serif;margin:24px;background:#111;color:#eee}a{color:#8cc8ff}table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid #444;padding:6px;font-size:12px}th{background:#222}.note{color:#bbb}.card{display:inline-block;background:#181b22;border:1px solid #333;border-radius:10px;padding:10px;margin:6px}.num{font-size:20px;font-weight:bold}"
-    html = ["<!doctype html><html><head><meta charset='utf-8'><title>SM3 Master Pack Browse Index</title>", f"<style>{css}</style></head><body>", f"<h1>SM3 Master Pack Browse Index - {TOOL_VERSION}</h1>", "<p class='note'>Open a per-pack dashboard for easier TEX/MESH/MAT/ANIM/resource dependency browsing. Paths in diagnostic bundles are sanitized placeholders.</p>"]
+    html = ["<!doctype html><html><head><meta charset='utf-8'><title>SM3 Master Pack Browse Index</title>", f"<style>{css}</style></head><body>", f"<h1>SM3 Master Pack Browse Index - {TOOL_VERSION}</h1>", "<p class='note'>Open a per-pack dashboard for easier TEX/MESH/MAT/ANIM/resource dependency browsing. Paths in GPT bundles are sanitized placeholders.</p>"]
     html.append("<h2>Resource Totals</h2>")
     for key in ['TEX','MESH','MAT','ANIM','CVX','SKEL','ASKL','SANM','MORH','UNKNOWN']:
         html.append(f"<div class='card'><div>{_html.escape(key)}</div><div class='num'>{type_counts.get(key,0)}</div></div>")
@@ -3932,7 +4353,7 @@ def write_master_resource_index_reports(reports: Path, master_rows: List[Dict[st
         "- MASTER_RESOURCE_DEPENDENCY_HINTS.csv = v2.21 starter dependency map for MESH/MAT/ANIM/TEX/SKEL/ASKL linking.",
         "- MASTER_TEX_METADATA_SUMMARY.csv, MASTER_TEX_* counts, MASTER_TEX_REVIEW_QUEUE.csv, MASTER_TEX_REVIEW_TRIAGE.csv, and MASTER_TEX_DDS_EXPORT_CANDIDATES.csv = TEX metadata/DDS export/review overview",
         "- MASTER_TEX_SWIZZLE_REVIEW_QUEUE.csv and MASTER_TEX_LAYOUT_CANDIDATES.csv = v2.18 layout/swizzle visual-review queues",
-        "- SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
+        "- SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
         "",
         "Important:",
         "These are conservative metadata hints and browse indexes. TEX metadata is guessed by descriptor/payload-size matching; full TEX decode/export is still a later phase.",
@@ -4146,8 +4567,8 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
     processed = len(master_rows)
     route_counts = Counter(str(r.get("route") or "UNKNOWN") for r in master_rows)
     mode_rows = [
-        {"mode": "Release Mode", "audience": "normal daily use", "recommended_actions": "Full Folder Reports-Only, Payload Test Preset, Open Master Dashboard, Open Pack Browse Index, Create Slim Diagnostic Bundle", "avoid_by_default": "research_full, layout-lab-all, giant full-game payload dumps"},
-        {"mode": "Advanced Mode", "audience": "advanced parser review", "recommended_actions": "TEX Layout/Swizzle Lab, Layout Lock Map, full diagnostic bundle, per-pack dependency navigation, component_only/research_full on selected packs", "avoid_by_default": "applying layout guesses globally without visual confirmation"},
+        {"mode": "Release Mode", "audience": "normal daily use", "recommended_actions": "Full Folder Reports-Only, Payload Test Preset, Open Master Dashboard, Open Pack Browse Index, Send Slim GPT Bundle", "avoid_by_default": "research_full, layout-lab-all, giant full-game payload dumps"},
+        {"mode": "Research Mode", "audience": "deep reverse engineering", "recommended_actions": "TEX Layout/Swizzle Lab, Layout Lock Map, full GPT bundle, per-pack dependency navigation, component_only/research_full on selected packs", "avoid_by_default": "applying layout guesses globally without visual confirmation"},
     ]
     write_csv(reports / "MASTER_WORKFLOW_MODES.csv", mode_rows)
 
@@ -4156,8 +4577,8 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
         {"button_or_file": "PAYLOAD EXTRACTION TEST PRESET", "when_to_use": "Proof that extraction output writes useful files", "expected_output": "MASTER_PAYLOAD_EXTRACTION_VALIDATION PASS for main route families"},
         {"button_or_file": "PAYLOAD TEST + TEX LAYOUT LAB", "when_to_use": "When DDS images look tiled/swizzled and need visual candidates", "expected_output": "06_TEX_LAYOUT_LAB folders with linear/morton/tile candidate DDS files"},
         {"button_or_file": "Layout lock CSV/JSON", "when_to_use": "After visually confirming the best layout for a texture", "expected_output": "TEX_LAYOUT_LOCK_APPLIED rows and locked DDS layout mode"},
-        {"button_or_file": "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip", "when_to_use": "Default bundle for diagnostic review", "expected_output": "Small sanitized report zip"},
-        {"button_or_file": "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip", "when_to_use": "Only when deep per-pack HTML/CSV debugging is needed", "expected_output": "Large sanitized report zip with more per-pack files"},
+        {"button_or_file": "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip", "when_to_use": "Default bundle to send for GPT review", "expected_output": "Small sanitized report zip"},
+        {"button_or_file": "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip", "when_to_use": "Only when deep per-pack HTML/CSV debugging is needed", "expected_output": "Large sanitized report zip with more per-pack files"},
     ]
     write_csv(reports / "MASTER_WORKFLOW_SHORTCUTS.csv", shortcut_rows)
 
@@ -4195,7 +4616,7 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
         "3. Open Master Dashboard / Pack Browse Index - review high-level results first.",
         "4. Use TEX Layout/Swizzle Lab only when images look tiled/swizzled.",
         "5. Save/import a Layout Lock Map only after visual confirmation.",
-        "6. Use the slim diagnostic bundle first; use the full bundle only for deep debugging.",
+        "6. Send the SLIM GPT bundle first; send the full bundle only for deep debugging.",
         "",
         "Release Mode mindset:",
         "- Prefer smart_browse.",
@@ -4203,8 +4624,8 @@ def write_master_workflow_polish_reports(reports: Path, master_rows: List[Dict[s
         "- Avoid layout-lab-all unless you really need it.",
         "- Avoid full-game payload dumps until selected packs are proven.",
         "",
-        "Advanced Mode mindset:",
-        "- Use layout lab, lock maps, component_only, and full diagnostic bundle for focused packs.",
+        "Research Mode mindset:",
+        "- Use layout lab, lock maps, component_only, and full GPT bundle for focused packs.",
         "- Do not auto-apply swizzle/layout globally.",
         "- Original PCPACKs are never modified.",
         "",
@@ -4396,7 +4817,7 @@ def write_master_dashboard_reports(reports: Path, master_rows: List[Dict[str, An
         "- MASTER_RESOURCE_DEPENDENCY_HINTS.csv = v2.21 starter dependency map for MESH/MAT/ANIM/TEX/SKEL/ASKL linking.",
         "- MASTER_TEX_METADATA_SUMMARY.csv, MASTER_TEX_* counts, MASTER_TEX_REVIEW_QUEUE.csv, MASTER_TEX_REVIEW_TRIAGE.csv, and MASTER_TEX_DDS_EXPORT_CANDIDATES.csv = TEX metadata/DDS export/review overview",
         "- MASTER_TEX_SWIZZLE_REVIEW_QUEUE.csv and MASTER_TEX_LAYOUT_CANDIDATES.csv = v2.18 layout/swizzle visual-review queues",
-        "- SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
+        "- SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE_SLIM.zip = smaller whole-folder review bundle",
         "- MASTER_BROWSE_OUTPUT_GUIDE.txt",
     ]
     (reports / "MASTER_ROUTE_DASHBOARD.txt").write_text("\n".join(dashboard_lines) + "\n", encoding="utf-8")
@@ -4456,7 +4877,347 @@ def write_master_dashboard_reports(reports: Path, master_rows: List[Dict[str, An
 
     return phase_status
 
-def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, include_zips: bool = False, output_layout: str = "smart_browse", max_outer_mb: int = 2048, max_inner_mb: int = 4096, write_payloads: bool = True, log=print, stop_event: Optional[threading.Event] = None, csv_target_report: Optional[Dict[str, Any]] = None) -> Path:
+
+def scan_game_pack_folder_for_catalogs(
+    pack_folder: Path,
+    out_dir: Path,
+    *,
+    recursive: bool = True,
+    log=print,
+    stop_event: Optional[threading.Event] = None,
+) -> Dict[str, Any]:
+    """Temporary metadata-only whole-game pack scan for SM3 catalog research.
+
+    This intentionally does NOT extract resource payload files and never modifies the
+    game's packs.  It walks the selected Spider-Man 3 packs folder, parses the outer
+    HSAM rows plus every discoverable APKF archive, then emits two exWoS-style research
+    catalogs and supporting raw metadata:
+
+      filelist.txt             -> outer PCPACK row identities (candidate SM3 equivalent)
+      filelist.apkf.txt        -> detailed pack/archive/resource ownership catalog
+      filelist.apkf.paths.txt  -> simple PACK/APKF/RESOURCE paths
+      filelist.outer.tsv       -> lossless outer-row scan metadata
+
+    The detailed filelist.apkf.txt keeps the same columns used by the existing
+    06_MOD_LOADER_READY catalog so current RaimiHook archive-scope learning can consume
+    the merged all-pack result during research.
+    """
+    pack_folder = Path(pack_folder)
+    out_dir = Path(out_dir)
+    if not pack_folder.exists() or not pack_folder.is_dir():
+        raise ValueError(f"Pack folder does not exist: {pack_folder}")
+
+    # Do not include arbitrary .bin files here.  The temporary button is specifically
+    # meant to inventory the game's actual pack/archive files.
+    scan_exts = {".pcpack", ".pcapk", ".apkf"}
+    pattern = "**/*" if recursive else "*"
+    files = sorted(
+        [p for p in pack_folder.glob(pattern) if p.is_file() and p.suffix.lower() in scan_exts],
+        key=lambda p: str(p).lower(),
+    )
+    if not files:
+        raise ValueError("No .PCPACK/.PCAPK/.APKF files were found in the selected folder.")
+
+    stamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    scan_root = ensure_dir(out_dir / f"SM3_FULL_PACK_SCAN_{stamp}")
+
+    outer_path_lines: List[str] = []
+    apkf_path_lines: List[str] = []
+    apkf_detail_lines: List[str] = [
+        "source_pack\tsource_archive\touter_index\touter_hash\touter_type\tresource_type\tresource_hash\tresource_name\tresource_file"
+    ]
+    outer_detail_rows: List[Dict[str, Any]] = []
+    archive_detail_rows: List[Dict[str, Any]] = []
+    pack_summary_rows: List[Dict[str, Any]] = []
+    error_rows: List[Dict[str, Any]] = []
+    resource_type_counts: Counter[str] = Counter()
+    outer_ext_counts: Counter[str] = Counter()
+    seen_outer_lines: set[str] = set()
+    seen_apkf_paths: set[str] = set()
+    seen_apkf_detail: set[str] = set()
+
+    processed = 0
+    total_outer = 0
+    total_archives = 0
+    total_resources = 0
+    total_filtered_markers = 0
+
+    log(f"[TEMP PACK SCAN] Found {len(files)} SM3 pack/archive file(s) under: {pack_folder}")
+    log("[TEMP PACK SCAN] Metadata only: no resource payload extraction will be written.")
+
+    for file_index, path in enumerate(files, 1):
+        if stop_event is not None and stop_event.is_set():
+            log("[TEMP PACK SCAN] Stop requested.")
+            break
+
+        pack_group = clean_name(path.stem, "PACK")
+        pack_outer = 0
+        pack_archives = 0
+        pack_resources = 0
+        pack_errors = 0
+        log(f"[TEMP PACK SCAN {file_index}/{len(files)}] {path.name}")
+
+        try:
+            data = path.read_bytes()
+            if data.startswith(APKF_MAGIC):
+                # A standalone .APKF is already the archive itself; do not run the
+                # PCPACK outer-table heuristic over its internal bytes.
+                probe_detection = "STANDALONE_APKF"
+                probe_route = "STANDALONE_APKF"
+                outer_rows: List[OuterRow] = []
+                slices = [APKFSourceSlice(
+                    label=f"standalone_{pack_group}",
+                    absolute_base=0,
+                    payload=data,
+                    route_reason="standalone_apkf_file",
+                    source_kind="standalone",
+                )]
+                filtered: List[Dict[str, Any]] = []
+            else:
+                probe = probe_pack_bytes(str(path), data)
+                probe_detection = probe.detection
+                probe_route = probe.route
+                if probe.detection == "WOS_NCH_REFERENCE_NOT_SM3" or probe.route == "NOT_SM3_WOS_REFERENCE_ONLY":
+                    error_rows.append({
+                        "pack": pack_group,
+                        "source_path": str(path),
+                        "stage": "guard",
+                        "error": "Skipped non-SM3/WoS NCH reference input",
+                    })
+                    log(f"[TEMP PACK SCAN] SKIP wrong-game/reference file: {path.name}")
+                    continue
+                outer_rows = probe.outer_rows
+                slices, filtered = apkf_slices_from_probe(data, probe)
+
+            # True outer PCPACK table inventory. Keep a compact human-readable line,
+            # plus detailed offsets/sizes so no research data is lost.
+            for row in outer_rows:
+                payload_head = data[row.data_offset:min(row.end, row.data_offset + 65536)]
+                strings = sample_strings(data, row.data_offset, row.data_size, limit=8192, max_strings=12)
+                ext, outer_category, outer_reason = sniff_outer_ext(payload_head, strings)
+                identity = f"_O{row.index:04d}.{hex32(row.hash_value)}.T{row.type_id:X}{ext}"
+                simple_line = f"{pack_group}/{identity}"
+                if simple_line not in seen_outer_lines:
+                    seen_outer_lines.add(simple_line)
+                    outer_path_lines.append(simple_line)
+                outer_detail_rows.append({
+                    "source_pack": pack_group,
+                    "source_pack_file": path.name,
+                    "source_pack_path": str(path),
+                    "outer_index": row.index,
+                    "outer_hash": hex32(row.hash_value),
+                    "outer_type": f"0x{row.type_id:X}",
+                    "outer_identity": identity,
+                    "known_name": row.known_name,
+                    "data_offset": hx(row.data_offset),
+                    "data_offset_dec": row.data_offset,
+                    "data_size": hx(row.data_size),
+                    "data_size_dec": row.data_size,
+                    "data_magic": row.data_magic,
+                    "sniffed_extension": ext,
+                    "outer_category": outer_category,
+                    "outer_reason": outer_reason,
+                    "string_sample": strings,
+                })
+                outer_ext_counts[ext or ".bin"] += 1
+                pack_outer += 1
+
+            total_filtered_markers += len(filtered)
+            for source_slice in slices:
+                pack_archives += 1
+                archive_folder = source_slice.archive_folder
+                archive_detail_rows.append({
+                    "source_pack": pack_group,
+                    "source_pack_file": path.name,
+                    "source_pack_path": str(path),
+                    "source_archive": archive_folder,
+                    "source_archive_kind": source_slice.source_kind,
+                    "source_apkf_label": source_slice.label,
+                    "source_apkf_absolute_base": hx(source_slice.absolute_base),
+                    "outer_index": "" if source_slice.parent_outer_index is None else source_slice.parent_outer_index,
+                    "outer_hash": "" if source_slice.parent_outer_hash is None else hex32(source_slice.parent_outer_hash),
+                    "outer_type": "" if source_slice.parent_outer_type is None else f"0x{source_slice.parent_outer_type:X}",
+                    "route_reason": source_slice.route_reason,
+                    "payload_size": len(source_slice.payload),
+                })
+                try:
+                    apkf = APKFArchive(source_slice.payload, label=source_slice.label)
+                except Exception as exc:
+                    pack_errors += 1
+                    error_rows.append({
+                        "pack": pack_group,
+                        "source_path": str(path),
+                        "stage": "apkf_parse",
+                        "archive": archive_folder,
+                        "absolute_base": hx(source_slice.absolute_base),
+                        "error": str(exc),
+                    })
+                    log(f"[TEMP PACK SCAN] APKF parse warning {path.name} {archive_folder}: {exc}")
+                    continue
+
+                for f in apkf.files:
+                    safe_name = clean_name(f.filename, f"unknown_{f.file_type}_{f.global_index:05d}")
+                    ext = inner_extension(f.file_type, f.filename)
+                    resource_filename = _mod_loader_resource_filename(
+                        f.filename_hash,
+                        safe_name,
+                        ext,
+                        f.global_index,
+                    )
+                    resource_rel = (Path(pack_group) / archive_folder / resource_filename).as_posix()
+                    if resource_rel not in seen_apkf_paths:
+                        seen_apkf_paths.add(resource_rel)
+                        apkf_path_lines.append(resource_rel)
+
+                    outer_index = "" if source_slice.parent_outer_index is None else str(source_slice.parent_outer_index)
+                    outer_hash = "" if source_slice.parent_outer_hash is None else hex32(source_slice.parent_outer_hash)
+                    outer_type = "" if source_slice.parent_outer_type is None else f"0x{source_slice.parent_outer_type:X}"
+                    detail_line = "\t".join([
+                        pack_group,
+                        archive_folder,
+                        outer_index,
+                        outer_hash,
+                        outer_type,
+                        str(f.file_type or ""),
+                        hex32(f.filename_hash),
+                        str(f.filename or ""),
+                        resource_rel,
+                    ])
+                    if detail_line not in seen_apkf_detail:
+                        seen_apkf_detail.add(detail_line)
+                        apkf_detail_lines.append(detail_line)
+                    resource_type_counts[(f.file_type or "UNKNOWN").upper() or "UNKNOWN"] += 1
+                    pack_resources += 1
+
+            processed += 1
+            total_outer += pack_outer
+            total_archives += pack_archives
+            total_resources += pack_resources
+            pack_summary_rows.append({
+                "pack": pack_group,
+                "source_file": path.name,
+                "source_path": str(path),
+                "file_size": len(data),
+                "detection": probe_detection,
+                "route": probe_route,
+                "outer_rows": pack_outer,
+                "apkf_archives": pack_archives,
+                "apkf_resources": pack_resources,
+                "filtered_apkf_markers": len(filtered),
+                "errors": pack_errors,
+            })
+            log(f"[TEMP PACK SCAN] {path.name}: outer={pack_outer} apkf={pack_archives} resources={pack_resources}")
+        except Exception as exc:
+            pack_errors += 1
+            error_rows.append({
+                "pack": pack_group,
+                "source_path": str(path),
+                "stage": "pack_scan",
+                "error": str(exc),
+                "traceback": traceback.format_exc(),
+            })
+            log(f"[TEMP PACK SCAN] ERROR {path.name}: {exc}")
+        finally:
+            try:
+                del data
+            except Exception:
+                pass
+
+    outer_path_lines.sort(key=str.lower)
+    apkf_path_lines.sort(key=str.lower)
+    # Keep the detail catalog grouped/sorted but preserve the header at row 0.
+    header = apkf_detail_lines[0]
+    apkf_detail_lines = [header] + sorted(apkf_detail_lines[1:], key=str.lower)
+
+    (scan_root / "filelist.txt").write_text(
+        "\n".join(outer_path_lines) + ("\n" if outer_path_lines else ""),
+        encoding="utf-8",
+    )
+    (scan_root / "filelist.apkf.txt").write_text(
+        "\n".join(apkf_detail_lines) + "\n",
+        encoding="utf-8",
+    )
+    (scan_root / "filelist.apkf.paths.txt").write_text(
+        "\n".join(apkf_path_lines) + ("\n" if apkf_path_lines else ""),
+        encoding="utf-8",
+    )
+    write_csv(scan_root / "filelist.outer.csv", outer_detail_rows, fieldnames=[
+        "source_pack", "source_pack_file", "source_pack_path", "outer_index", "outer_hash", "outer_type",
+        "outer_identity", "known_name", "data_offset", "data_offset_dec", "data_size", "data_size_dec",
+        "data_magic", "sniffed_extension", "outer_category", "outer_reason", "string_sample",
+    ])
+    write_csv(scan_root / "apkf_archives.csv", archive_detail_rows)
+    write_csv(scan_root / "pack_scan_summary.csv", pack_summary_rows)
+    write_csv(scan_root / "pack_scan_errors.csv", error_rows)
+
+    summary = {
+        "format": "SM3_TEMP_FULL_PACK_CATALOG_SCAN_V1",
+        "source_pack_folder": str(pack_folder),
+        "scan_root": str(scan_root),
+        "recursive": recursive,
+        "candidate_files_found": len(files),
+        "packs_processed": processed,
+        "outer_rows": total_outer,
+        "apkf_archives": total_archives,
+        "apkf_resources": total_resources,
+        "unique_outer_filelist_lines": len(outer_path_lines),
+        "unique_apkf_resource_paths": len(apkf_path_lines),
+        "filtered_apkf_markers": total_filtered_markers,
+        "errors": len(error_rows),
+        "resource_type_counts": dict(sorted(resource_type_counts.items())),
+        "outer_extension_counts": dict(sorted(outer_ext_counts.items())),
+        "outputs": {
+            "filelist": str(scan_root / "filelist.txt"),
+            "filelist_apkf": str(scan_root / "filelist.apkf.txt"),
+            "filelist_apkf_paths": str(scan_root / "filelist.apkf.paths.txt"),
+            "outer_rows_csv": str(scan_root / "filelist.outer.csv"),
+            "apkf_archives_csv": str(scan_root / "apkf_archives.csv"),
+            "pack_summary_csv": str(scan_root / "pack_scan_summary.csv"),
+            "errors_csv": str(scan_root / "pack_scan_errors.csv"),
+        },
+        "notes": [
+            "Temporary research scan; no source packs were modified.",
+            "No resource payload files were extracted.",
+            "filelist.apkf.txt uses the same core ownership columns as 06_MOD_LOADER_READY and is intended for current RaimiHook archive-scope research.",
+            "filelist.txt inventories authoritative outer PCPACK rows using SM3 _O#### identities; runtime override semantics for every outer type are not claimed yet.",
+        ],
+    }
+    write_json(scan_root / "SM3_PACK_SCAN_SUMMARY.json", summary)
+    (scan_root / "README_TEMP_PACK_SCAN.txt").write_text(
+        "SM3 TEMPORARY FULL PACK CATALOG SCAN\n"
+        "====================================\n\n"
+        "Purpose: scan the game's packs folder without extracting payloads so we can build the Spider-Man 3 equivalents of exWoS filelist.txt and filelist.pcapk.txt.\n\n"
+        "Outputs:\n"
+        "  filelist.txt            = outer PCPACK row identities\n"
+        "  filelist.apkf.txt       = detailed PACK/APKF/resource ownership catalog\n"
+        "  filelist.apkf.paths.txt = simple PACK/APKF/resource paths\n"
+        "  filelist.outer.csv      = detailed outer row offsets/sizes/types/magic\n"
+        "  apkf_archives.csv       = discovered APKF owner records\n"
+        "  pack_scan_summary.csv   = one summary row per scanned pack\n"
+        "  pack_scan_errors.csv    = parse/guard issues only\n\n"
+        "This scanner does not modify the game and does not extract resource payload files.\n",
+        encoding="utf-8",
+    )
+
+    log(f"[TEMP PACK SCAN] DONE packs={processed}/{len(files)} outer={total_outer} apkf={total_archives} resources={total_resources} errors={len(error_rows)}")
+    log(f"[TEMP PACK SCAN] Catalogs: {scan_root}")
+    return summary
+
+def run_extract(
+    inputs: List[Path],
+    out_dir: Path,
+    recursive: bool = True,
+    include_zips: bool = False,
+    output_layout: str = "smart_browse",
+    max_outer_mb: int = 2048,
+    max_inner_mb: int = 4096,
+    write_payloads: bool = True,
+    create_mod_loader_ready: bool = False,
+    mod_loader_ready_only: bool = False,
+    log=print,
+    stop_event: Optional[threading.Event] = None,
+    csv_target_report: Optional[Dict[str, Any]] = None,
+) -> Path:
     """Run route handlers on one or many pack files/folders.
 
     v2.4 batch/report-zip promise:
@@ -4504,7 +5265,7 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
             break
         try:
             log(f"[{i}/{len(files)}] {path.name}")
-            results = extract_file(path, out_dir, output_layout, max_outer_mb, max_inner_mb, write_payloads, log=log)
+            results = extract_file(path, out_dir, output_layout, max_outer_mb, max_inner_mb, write_payloads, create_mod_loader_ready=create_mod_loader_ready, mod_loader_ready_only=mod_loader_ready_only, log=log)
             for r in results:
                 pr = r.get("probe", {})
                 pack_out = Path(str(r.get("out_dir"))) if r.get("out_dir") else Path("")
@@ -4526,6 +5287,9 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
                     "outer_row_count": pr.get("outer_row_count"),
                     "outer_exports": r.get("outer_exports"),
                     "inner_files": r.get("inner_files"),
+                    "mod_loader_ready_resources": (r.get("mod_loader_ready") or {}).get("resource_count", 0),
+                    "mod_loader_ready_tex": (r.get("mod_loader_ready") or {}).get("tex_count", 0),
+                    "mod_loader_ready_archives": (r.get("mod_loader_ready") or {}).get("archive_count", 0),
                     "parse_error_count": len(parse_errors),
                     "reasons": pr.get("reasons"),
                 }
@@ -4698,8 +5462,8 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
             "MASTER_TEX_LOW_CONFIDENCE_BY_PACK.csv",
             "Review actions and priorities for low/medium TEX metadata rows",
         ],
-        "sanitized_diagnostic_bundle_update_v2_12": [
-            "Text reports inside diagnostic report bundles are sanitized before zipping",
+        "sanitized_gpt_bundle_update_v2_12": [
+            "Text reports inside Send-To-GPT bundles are sanitized before zipping",
             "Local absolute paths are replaced with OUTPUT_ROOT/LOCAL_PATH_REDACTED/SANDBOX_PATH_REDACTED placeholders",
             "Local on-disk reports remain unchanged for Open Output/Open Reports usability",
         ],
@@ -4737,7 +5501,7 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
             "PER_PACK_REPORT_INDEX.csv",
             "MASTER_APKF_PARSE_ERRORS.csv",
             "PACKS_WITH_ERRORS_OR_PARSE_WARNINGS.csv",
-            "SM3_ROUTE_HANDLER_DIAGNOSTIC_REPORT_BUNDLE.zip",
+            "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE.zip",
             "CSV_TARGET_REQUESTS.csv",
             "CSV_TARGET_MATCHES.csv",
             "CSV_TARGET_MISSING.csv",
@@ -4780,7 +5544,7 @@ def run_extract(inputs: List[Path], out_dir: Path, recursive: bool = True, inclu
         "- MASTER_EXTRACTION_READINESS.csv / MASTER_PAYLOAD_TEST_CANDIDATES.csv = v2.10 extraction readiness plan",
         "- MASTER_PAYLOAD_EXTRACTION_VALIDATION.csv/txt/json = v2.11 actual payload-output validation",
         "- MASTER_RECOMMENDED_WORKFLOW.txt/html and workflow shortcut CSVs = v2.23 daily-use/release-mode guide",
-        "- SANITIZED_REPORT_PATHS_README.txt/json inside diagnostic bundles = v2.12 path privacy cleanup",
+        "- SANITIZED_REPORT_PATHS_README.txt/json inside GPT bundles = v2.12 path privacy cleanup",
         "- TEX_METADATA_HINTS.csv and MASTER_TEX_METADATA_SUMMARY.csv = v2.15 TEX metadata parser reports",
         "- MASTER_FILETYPE_METADATA_PRIORITY.csv / MASTER_CVX_UNKNOWN_REVIEW_QUEUE.csv = v2.10 metadata parser priorities",
         "",
@@ -4796,7 +5560,7 @@ def clean_release_report_artifacts(out_dir: Path, log=print) -> Dict[str, Any]:
 
     The backend still builds temporary metadata while extracting so the UI can list
     contents, but release users should not get 00_REPORTS, 00_MASTER_REPORTS,
-    or diagnostic report bundles in their output folder.
+    or Send-To-GPT bundles in their output folder.
     """
     removed: List[str] = []
     failed: List[Dict[str, str]] = []
@@ -4810,7 +5574,7 @@ def clean_release_report_artifacts(out_dir: Path, log=print) -> Dict[str, Any]:
             if p.exists():
                 targets.append(p)
         targets.extend(sorted(out_dir.glob("*/00_REPORTS"), key=lambda p: str(p).lower()))
-        for pattern in ["*REPORT_BUNDLE*.zip", "*REPORT_BUNDLE*.json", "DIAGNOSTIC_REPORT_*.csv", "DIAGNOSTIC_REPORT_*.txt"]:
+        for pattern in ["SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE*.zip", "SM3_ROUTE_HANDLER_SEND_TO_GPT_REPORT_BUNDLE*.json", "GPT_REPORT_*.csv", "GPT_REPORT_*.txt"]:
             targets.extend(sorted(out_dir.glob(pattern), key=lambda p: str(p).lower()))
         seen: set[str] = set()
         unique_targets: List[Path] = []

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from tkinter import scrolledtext, ttk
 
-from sm3_toolkit import paths
 from sm3_toolkit.i18n import tr
 from sm3_toolkit.theme import COLORS
 
@@ -40,13 +39,25 @@ class HomeTab(ttk.Frame):
             style="Muted.TLabel",
             wraplength=1120,
         )
-        self.subtitle_label.pack(anchor="w", pady=(0, 10))
+        self.subtitle_label.pack(anchor="w", pady=(0, 8))
+
+        actions = ttk.Frame(self, style="Body.TFrame")
+        actions.pack(fill="x", pady=(0, 10))
+        ttk.Button(actions, text="OPEN HOW TO USE", command=self._open_how_to).pack(side="left", padx=(0, 8))
 
         self.overview_box = self._text_box(self, "")
         if self.app_state:
             self.app_state.on_language_change(self._apply_language)
         else:
             self._apply_language("English")
+
+
+    def _open_how_to(self) -> None:
+        try:
+            # Final release order: How To Use is the 12th tab (index 11).
+            self.master.select(11)
+        except Exception:
+            pass
 
     def _set_box_text(self, text: str) -> None:
         self.overview_box.configure(state="normal")

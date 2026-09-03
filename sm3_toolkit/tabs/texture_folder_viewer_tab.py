@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================
-# SM3 TEXTURE FOLDER PREVIEWER v0.9
+# SM3 TEXTURE FOLDER PREVIEWER v1.1
 # Released by TSGAMING264
 #
 # Purpose:
@@ -13,16 +13,23 @@
 #   fixes the buggy duplicate/misfire behavior from rapid/double clicks.
 # - v0.8 adds stronger list filtering: size search, format filter,
 #   mip filter, status filter, category filter, square/power-of-two/common suit toggles.
+# - v1.0 adds release-safe folder type labels and texture category labels only.
+#   It does not create reports, contact sheets, side-by-side previews, or patch handoffs.
+# - v1.1 adds Native SM3 .TEX viewing through Tex Swapper's proven parser/decoder,
+#   broader Pillow image formats, stronger DDS fallback decoding, and smarter search/filters.
+# - v1.2 adds BC6H/BC7 direct BCN fallback decoding through the bundled Pillow decoder.
+#   Project-file formats are intentionally not part of the supported list.
 #
 # Supported image inputs:
-#   DDS, PNG, JPG/JPEG, BMP, DIB, TGA, PPM/PGM/PNM, HDR, PFM
+#   SM3 TEX, DDS, PNG/APNG, JPG/JPEG/JFIF, BMP/DIB, TGA, TIFF, WEBP, GIF, ICO/CUR,
+#   PPM/PGM/PNM/PBM, HDR, PFM, PCX, QOI, SGI/RGB/RGBA/BW, AVIF, JPEG2000, XBM/XPM.
 #
 # Notes:
 # - This is a viewer only.
 # - It does NOT edit textures.
 # - It does NOT patch PCPACK/PCAPK/XEPACK files.
-# - DDS support depends on Pillow's DDS decoder for actual image preview.
-#   The tool still reads DDS header metadata even if Pillow cannot decode it.
+# - DDS preview uses Pillow first, then Toolkit fallbacks for BC1/2/3, BC4, BC5, BC6H, BC7, BGRA/RGBA32 and L8/R8.
+# - Native SM3 .TEX preview reuses Tex Swapper's proven parser/decoder so both tools agree on supported SM3 texture layouts.
 # ============================================================
 
 from __future__ import annotations
@@ -39,10 +46,25 @@ import threading
 import webbrowser
 import traceback
 import hashlib
+import shlex
 from pathlib import Path
 from collections import OrderedDict
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+from sm3_toolkit.theme import COLORS
+from sm3_toolkit.services import tex_preview_core as sm3_tex_core
+
+# Reuse the proven loose NativeTEX parser/decoder from Tex Swapper so Folder Viewer
+# can display the same SM3 .TEX files without maintaining a second incompatible parser.
+try:
+    from sm3_toolkit.tabs.tex_swapper_tab import parse_native_tex_file, native_tex_preview_pil
+    NATIVE_TEX_VIEW_OK = True
+    NATIVE_TEX_VIEW_ERROR = ""
+except Exception as exc:
+    parse_native_tex_file = None
+    native_tex_preview_pil = None
+    NATIVE_TEX_VIEW_OK = False
+    NATIVE_TEX_VIEW_ERROR = str(exc)
 
 try:
     from PIL import Image, ImageTk, ImageDraw, ImageFont, ImageOps
@@ -69,18 +91,24 @@ try:
 except Exception:
     pass
 
-APP_TITLE = "SM3 Texture Folder Previewer v0.9"
-APP_VERSION = "v0.9"
+APP_TITLE = "SM3 Texture Folder Previewer v1.2"
+APP_VERSION = "v1.2"
 RELEASED_BY = "TSGAMING264"
 CACHE_FILENAME = ".sm3_wos_texture_viewer_cache_v05.json"
 THUMB_CACHE_DIRNAME = ".sm3_wos_texture_viewer_thumbs_v05"
-CACHE_VERSION = 5
+CACHE_VERSION = 7
 
 SUPPORTED_EXTS = {
-    ".dds", ".png", ".jpg", ".jpeg", ".bmp", ".dib", ".tga",
-    ".ppm", ".pgm", ".pnm", ".hdr", ".pfm"
+    ".tex", ".dds",
+    ".png", ".apng", ".jpg", ".jpeg", ".jpe", ".jfif",
+    ".bmp", ".dib", ".tga", ".icb", ".vda", ".vst",
+    ".tif", ".tiff", ".webp", ".gif", ".ico", ".cur",
+    ".ppm", ".pgm", ".pnm", ".pbm", ".hdr", ".pfm",
+    ".pcx", ".qoi", ".sgi", ".rgb", ".rgba", ".bw",
+    ".avif", ".avifs", ".jp2", ".j2k", ".j2c", ".jpf", ".jpx", ".jpc",
+    ".xbm", ".xpm"
 }
-EXT_LABELS = "DDS, PNG, JPG, BMP, DIB, TGA, PPM, HDR, PFM"
+EXT_LABELS = "SM3 TEX, DDS + common image formats"
 
 
 # ------------------------------------------------------------
@@ -382,13 +410,136 @@ def parse_generic_image_header(path: str) -> dict:
     return meta
 
 
+def parse_native_tex_meta(path: str) -> dict:
+    meta = {
+        "kind": "SM3 TEX",
+        "width": "?",
+        "height": "?",
+        "format": "SM3 TEX",
+        "mips": "?",
+        "status": "Unsupported",
+        "extra": "",
+    }
+    if not NATIVE_TEX_VIEW_OK or parse_native_tex_file is None:
+        meta["status"] = f"Native TEX unavailable: {NATIVE_TEX_VIEW_ERROR or 'Tex Swapper parser not available'}"
+        return meta
+    try:
+        rec = parse_native_tex_file(Path(path))
+        payload_status = str(rec.get("payload_status") or "")
+        if payload_status in ("EXACT", "EXTRA_BYTES"):
+            status = "OK"
+        elif payload_status == "UNKNOWN_FORMAT":
+            status = "Unsupported TEX format"
+        else:
+            status = f"TEX {payload_status or 'problem'}"
+        layout = "PHYS" if rec.get("has_phys_marker") else "NO-PHYS"
+        expected = rec.get("expected_payload_bytes")
+        extra = (
+            f"hash={rec.get('filename_hash','')}; layout={layout}; "
+            f"payload={rec.get('payload_bytes',0)}"
+        )
+        if expected is not None:
+            extra += f"/{expected} bytes"
+        meta.update({
+            "width": str(rec.get("width") or "?"),
+            "height": str(rec.get("height") or "?"),
+            "format": str(rec.get("format_kind") or "SM3 TEX"),
+            "mips": str(rec.get("mips") or 1),
+            "status": status,
+            "extra": extra,
+            "resource_hash": str(rec.get("filename_hash") or ""),
+            "payload_status": payload_status,
+            "tex_layout": layout,
+        })
+        return meta
+    except Exception as exc:
+        meta["status"] = f"TEX parse error: {exc}"
+        return meta
+
+
 def parse_image_meta(path: str) -> dict:
     ext = Path(path).suffix.lower()
+    if ext == ".tex":
+        return parse_native_tex_meta(path)
     if ext == ".dds":
         return parse_dds_header(path)
     if ext == ".pfm":
         return parse_pfm_header(path)
     return parse_generic_image_header(path)
+
+
+def detect_texture_folder_type(folder: str) -> dict:
+    """Release-safe folder context label only; no reports or output files."""
+    root = Path(folder)
+    parts = {part.lower() for part in root.parts}
+    try:
+        names = {p.name.lower() for p in root.iterdir()}
+    except Exception:
+        names = set()
+    if "05_tex_dds_export" in parts or "00_read_me_first_raw_dds_preview_not_edit_ready.txt" in names:
+        return {
+            "kind": "Pack Extractor raw DDS preview/recovery folder",
+            "warning": "Raw preview DDS only — not the normal edit-ready texture workflow.",
+            "short": "RAW PREVIEW",
+        }
+    if "tex_target_header_name_lock_manifest.csv" in names or "tex_target_header_name_lock_manifest.json" in names or "tex_target_format_name_lock_manifest.csv" in names:
+        return {
+            "kind": "Tex Swapper edit-ready export folder",
+            "warning": "Edit-ready export folder — keep names/format/mips/payload expectations.",
+            "short": "EDIT-READY",
+        }
+    if {"01_outer_payloads", "02_apkf_extracted_real_ext", "03_apkf_components", "04_raw_preserved"} & names:
+        return {
+            "kind": "Pack Extractor output root",
+            "warning": "Browse/extract output. Texture editing should be done from Tex Swapper edit-ready exports.",
+            "short": "PACK OUTPUT",
+        }
+    if root.name.lower() in {"replacement", "replacements", "replacement_dds", "edited", "edited_dds"}:
+        return {
+            "kind": "Texture replacement/edited folder",
+            "warning": "Replacement folder preview only — patching is handled elsewhere.",
+            "short": "REPLACEMENT",
+        }
+    return {
+        "kind": "General texture/image folder",
+        "warning": "Viewer only — no reports or patching are created here.",
+        "short": "GENERAL",
+    }
+
+
+def guess_texture_category(filename: str, meta: dict | None = None, folder_short: str = "") -> str:
+    name = str(filename or "").lower()
+    meta = meta or {}
+    try:
+        w = int(str(meta.get("width") or "0"))
+        h = int(str(meta.get("height") or "0"))
+    except Exception:
+        w = h = 0
+    small = bool(w and h and max(w, h) <= 32)
+    lookup = bool(w and h and w != h and min(w, h) <= 4)
+    if any(x in name for x in ("_nor", "normal", "norm", "nrm")):
+        return "Normal Map"
+    if any(x in name for x in ("_dif", "diff", "diffuse", "color", "albedo", "base")):
+        return "Diffuse / Color"
+    if any(x in name for x in ("_spe", "spec", "gloss", "shine")):
+        return "Specular / Gloss"
+    if any(x in name for x in ("_rfl", "refl", "reflect", "env", "cube")):
+        return "Reflection / Env"
+    if any(x in name for x in ("alpha", "mask", "opac", "opacity", "trans")):
+        return "Alpha / Mask"
+    if any(x in name for x in ("_ao", "ambient", "occlusion")):
+        return "AO"
+    if any(x in name for x in ("webbing", "web", "spideyweb")):
+        return "Webbing"
+    if any(x in name for x in ("fx_", "effect", "spark", "smoke", "splat", "particle", "flare")):
+        return "FX"
+    if any(x in name for x in ("atlas", "sheet", "tile")):
+        return "Atlas / Tile"
+    if small or lookup:
+        return "Tiny / Lookup"
+    if str(folder_short).upper() == "RAW PREVIEW":
+        return "Raw DDS Preview"
+    return "Unknown / General"
 
 
 def load_pfm_as_image(path: str):
@@ -445,13 +596,178 @@ def load_pfm_as_image(path: str):
     return ImageOps.flip(im)
 
 
+def _decode_bc4_values(block8: bytes):
+    """Decode one BC4 block into sixteen 8-bit values."""
+    if len(block8) < 8:
+        return [0] * 16
+    a0 = block8[0]
+    a1 = block8[1]
+    bits = int.from_bytes(block8[2:8], "little")
+    vals = [a0, a1]
+    if a0 > a1:
+        vals += [
+            (6*a0 + 1*a1)//7, (5*a0 + 2*a1)//7, (4*a0 + 3*a1)//7,
+            (3*a0 + 4*a1)//7, (2*a0 + 5*a1)//7, (1*a0 + 6*a1)//7,
+        ]
+    else:
+        vals += [
+            (4*a0 + 1*a1)//5, (3*a0 + 2*a1)//5, (2*a0 + 3*a1)//5,
+            (1*a0 + 4*a1)//5, 0, 255,
+        ]
+    return [vals[(bits >> (3*i)) & 7] for i in range(16)]
+
+
+def _decode_bc4_image(payload: bytes, width: int, height: int):
+    out = bytearray(width * height)
+    off = 0
+    for by in range(0, height, 4):
+        for bx in range(0, width, 4):
+            block = _decode_bc4_values(payload[off:off+8])
+            off += 8
+            for y in range(4):
+                for x in range(4):
+                    px, py = bx+x, by+y
+                    if px < width and py < height:
+                        out[py*width+px] = block[y*4+x]
+    return Image.frombytes("L", (width, height), bytes(out)).convert("RGBA")
+
+
+def _decode_bc5_image(payload: bytes, width: int, height: int):
+    """BC5 normal-map friendly preview: R/G channels + reconstructed blue Z."""
+    out = bytearray(width * height * 4)
+    off = 0
+    for by in range(0, height, 4):
+        for bx in range(0, width, 4):
+            rv = _decode_bc4_values(payload[off:off+8])
+            gv = _decode_bc4_values(payload[off+8:off+16])
+            off += 16
+            for y in range(4):
+                for x in range(4):
+                    px, py = bx+x, by+y
+                    if px >= width or py >= height:
+                        continue
+                    i = y*4+x
+                    r, g = rv[i], gv[i]
+                    nx = r / 127.5 - 1.0
+                    ny = g / 127.5 - 1.0
+                    nz = math.sqrt(max(0.0, 1.0 - nx*nx - ny*ny))
+                    b = max(0, min(255, int((nz * 0.5 + 0.5) * 255 + 0.5)))
+                    j = (py*width+px)*4
+                    out[j:j+4] = bytes((r, g, b, 255))
+    return Image.frombytes("RGBA", (width, height), bytes(out))
+
+
+def _open_dds_fallback(path: str):
+    """Fallback DDS decoder for formats already understood elsewhere in the Toolkit.
+
+    Pillow remains the first choice. This fallback covers legacy/DX10 BC1/2/3,
+    BC4, BC5, BC6H, BC7, BGRA/RGBA32 and L8/R8 when the normal Pillow DDS route refuses a file.
+    """
+    data = Path(path).read_bytes()
+    if len(data) < 128 or data[:4] != b"DDS ":
+        raise ValueError("Not a valid DDS file")
+    h = read_u32(data, 12)
+    w = read_u32(data, 16)
+    pf_flags = read_u32(data, 80)
+    fourcc = data[84:88]
+    rgb_bits = read_u32(data, 88)
+    rmask = read_u32(data, 92)
+    gmask = read_u32(data, 96)
+    bmask = read_u32(data, 100)
+    amask = read_u32(data, 104)
+    payload_off = 128
+    kind = fourcc.decode("ascii", "ignore").rstrip("\x00 ")
+    if fourcc == b"DX10":
+        if len(data) < 148:
+            raise ValueError("DX10 DDS header is truncated")
+        dxgi = read_u32(data, 128)
+        payload_off = 148
+        kind = {
+            71: "DXT1", 72: "DXT1", 74: "DXT3", 75: "DXT3",
+            77: "DXT5", 78: "DXT5", 80: "BC4", 81: "BC4",
+            83: "BC5", 84: "BC5", 95: "BC6H", 96: "BC6HS",
+            98: "BC7", 99: "BC7", 87: "BGRA32", 88: "BGRA32", 61: "L8",
+        }.get(dxgi, f"DXGI_{dxgi}")
+    elif kind in ("ATI1", "BC4U", "BC4S"):
+        kind = "BC4"
+    elif kind in ("ATI2", "BC5U", "BC5S"):
+        kind = "BC5"
+    payload = data[payload_off:]
+    if kind in ("DXT1",):
+        need = max(1, (w+3)//4) * max(1, (h+3)//4) * 8
+        pix = sm3_tex_core.decode_dxt1(payload[:need], w, h)
+        im = Image.new("RGBA", (w, h)); im.putdata(pix); return im
+    if kind in ("DXT2", "DXT3"):
+        need = max(1, (w+3)//4) * max(1, (h+3)//4) * 16
+        pix = sm3_tex_core.decode_dxt3(payload[:need], w, h)
+        im = Image.new("RGBA", (w, h)); im.putdata(pix); return im
+    if kind in ("DXT4", "DXT5"):
+        need = max(1, (w+3)//4) * max(1, (h+3)//4) * 16
+        pix = sm3_tex_core.decode_dxt5(payload[:need], w, h)
+        im = Image.new("RGBA", (w, h)); im.putdata(pix); return im
+    if kind == "BC4":
+        need = max(1, (w+3)//4) * max(1, (h+3)//4) * 8
+        return _decode_bc4_image(payload[:need], w, h)
+    if kind == "BC5":
+        need = max(1, (w+3)//4) * max(1, (h+3)//4) * 16
+        return _decode_bc5_image(payload[:need], w, h)
+    if kind in ("BC6H", "BC6HS"):
+        need = max(1, (w+3)//4) * max(1, (h+3)//4) * 16
+        if len(payload) < need:
+            raise ValueError(f"{kind} DDS payload is truncated")
+        # Pillow exposes its BCN block decoder directly. Using it here gives the
+        # Toolkit a second route even when Pillow's DDS container loader rejects
+        # an otherwise valid BC6H file.
+        return Image.frombytes("RGB", (w, h), payload[:need], "bcn", 6, kind).convert("RGBA")
+    if kind == "BC7":
+        need = max(1, (w+3)//4) * max(1, (h+3)//4) * 16
+        if len(payload) < need:
+            raise ValueError("BC7 DDS payload is truncated")
+        return Image.frombytes("RGBA", (w, h), payload[:need], "bcn", 7, "BC7")
+    if kind == "L8" or ((pf_flags & 0x20000) and rgb_bits == 8):
+        need = w*h
+        if len(payload) < need:
+            raise ValueError("L8 DDS payload is truncated")
+        return Image.frombytes("L", (w, h), payload[:need]).convert("RGBA")
+    if kind == "BGRA32" or ((pf_flags & 0x40) and rgb_bits == 32):
+        need = w*h*4
+        if len(payload) < need:
+            raise ValueError("32-bit DDS payload is truncated")
+        raw = payload[:need]
+        # Common A8R8G8B8/BGRA byte layout.
+        if (rmask, gmask, bmask) == (0x00ff0000, 0x0000ff00, 0x000000ff):
+            return Image.frombytes("RGBA", (w, h), raw, "raw", "BGRA")
+        if (rmask, gmask, bmask) == (0x000000ff, 0x0000ff00, 0x00ff0000):
+            return Image.frombytes("RGBA", (w, h), raw, "raw", "RGBA")
+    raise ValueError(f"DDS fallback does not support {kind or 'this pixel format'}")
+
+
 def open_image_any(path: str):
     if not PIL_OK:
-        raise RuntimeError("Pillow is not installed. Install requirements with: py -3 -m pip install -r requirements.txt")
+        raise RuntimeError("Pillow is not installed. Run READY_LAUNCH_SM3_TOOLKIT.bat so the toolkit can install Pillow automatically.")
     ext = Path(path).suffix.lower()
+    if ext == ".tex":
+        if not NATIVE_TEX_VIEW_OK or parse_native_tex_file is None or native_tex_preview_pil is None:
+            raise RuntimeError(f"Native SM3 .TEX preview is unavailable: {NATIVE_TEX_VIEW_ERROR}")
+        return native_tex_preview_pil(parse_native_tex_file(Path(path)))
     if ext == ".pfm":
         return load_pfm_as_image(path)
+    if ext == ".dds":
+        try:
+            im = Image.open(path)
+            im.load()
+            return im
+        except Exception as pillow_exc:
+            try:
+                return _open_dds_fallback(path)
+            except Exception as fallback_exc:
+                raise RuntimeError(f"Pillow DDS decode failed: {pillow_exc}; Toolkit fallback failed: {fallback_exc}") from fallback_exc
     im = Image.open(path)
+    # Animated/container images preview their first frame consistently.
+    try:
+        im.seek(0)
+    except Exception:
+        pass
     im.load()
     return im
 
@@ -525,6 +841,8 @@ class TextureFolderViewerTab(tk.Frame):
         self.window = self.winfo_toplevel()
 
         self.folder = ""
+        self.folder_context = {"kind": "No folder selected", "warning": "Choose a folder to preview textures.", "short": "NONE"}
+        self.folder_type_var = tk.StringVar(value="Folder type: choose a folder")
         self.records = []
         self.filtered = []
         self.item_to_index = {}
@@ -546,6 +864,8 @@ class TextureFolderViewerTab(tk.Frame):
         self.auto_preview = tk.BooleanVar(value=True)
         self.auto_preload = tk.BooleanVar(value=True)
         self.disk_cache_enabled = tk.BooleanVar(value=True)
+        self._disk_cache_enabled_value = True
+        self.disk_cache_enabled.trace_add("write", lambda *_: setattr(self, "_disk_cache_enabled_value", bool(self.disk_cache_enabled.get())))
         self.recursive = tk.BooleanVar(value=True)
         self.show_unsupported = tk.BooleanVar(value=True)
         # v0.8 list filters
@@ -560,13 +880,37 @@ class TextureFolderViewerTab(tk.Frame):
 
         self._build_style()
         self._build_ui()
+        if self.app_state is not None:
+            try:
+                self.app_state.on_theme_change(lambda _theme: self._on_global_theme_changed())
+            except Exception:
+                pass
         self.after(80, self._drain_scan_queue)
         self.after(90, self._drain_preview_queue)
         if not self.embedded:
             self.window.protocol("WM_DELETE_WINDOW", self._on_close)
 
+    def _on_global_theme_changed(self):
+        self._build_style()
+        try:
+            self.configure(bg=COLORS.get("bg", DARK_BG))
+            self.canvas.configure(
+                bg=COLORS.get("field", DARK_FIELD),
+                highlightbackground=COLORS.get("border", DARK_BORDER),
+                highlightcolor=COLORS.get("accent", DARK_ACCENT),
+            )
+            self.info_text.configure(
+                bg=COLORS.get("field", DARK_FIELD),
+                fg=COLORS.get("fg", DARK_TEXT),
+                insertbackground=COLORS.get("fg", DARK_TEXT),
+                selectbackground=COLORS.get("select", DARK_SELECT),
+                selectforeground=COLORS.get("fg", DARK_TEXT),
+            )
+        except Exception:
+            pass
+
     def _build_style(self):
-        self.configure(bg=DARK_BG)
+        self.configure(bg=COLORS.get("bg", DARK_BG))
         style = ttk.Style(self.window if self.embedded else self)
         try:
             style.theme_use("clam")
@@ -639,6 +983,56 @@ class TextureFolderViewerTab(tk.Frame):
         style.configure("Vertical.TScrollbar", background=DARK_PANEL_2, troughcolor=DARK_FIELD, bordercolor=DARK_BORDER, arrowcolor=DARK_TEXT)
         style.configure("TProgressbar", background=DARK_ACCENT, troughcolor=DARK_FIELD, bordercolor=DARK_BORDER)
 
+        bg = COLORS.get("bg", DARK_BG)
+        panel = COLORS.get("panel", DARK_PANEL)
+        panel2 = COLORS.get("panel2", DARK_PANEL_2)
+        field = COLORS.get("field", DARK_FIELD)
+        text = COLORS.get("fg", DARK_TEXT)
+        muted = COLORS.get("muted", DARK_MUTED)
+        accent = COLORS.get("accent", DARK_ACCENT)
+        select = COLORS.get("select", DARK_SELECT)
+        border = COLORS.get("border", DARK_BORDER)
+        button = COLORS.get("button", panel2)
+        button_hover = COLORS.get("button_hover", panel2)
+        button_pressed = COLORS.get("button_pressed", panel)
+        accent_hover = COLORS.get("accent_hover", accent)
+        accent_pressed = COLORS.get("accent_pressed", button_pressed)
+        style.configure(".", background=bg, foreground=text, fieldbackground=field, bordercolor=border, troughcolor=field, selectbackground=select, selectforeground=text, font=("Segoe UI", 9))
+        style.configure("TFrame", background=bg)
+        style.configure("TLabelframe", background=bg, bordercolor=border)
+        style.configure("TLabelframe.Label", background=bg, foreground=text)
+        style.configure("TLabel", background=bg, foreground=text)
+        style.configure("Header.TLabel", background=bg, foreground=COLORS.get("brand", text), font=("Segoe UI", 12, "bold"))
+        style.configure("Small.TLabel", background=bg, foreground=muted, font=("Segoe UI", 9))
+        style.configure("TButton", background=button, foreground=text, bordercolor=border, padding=(8, 4))
+        style.map("TButton", background=[("active", button_hover), ("pressed", button_pressed)], foreground=[("disabled", muted), ("active", text), ("pressed", text)])
+        style.configure("Accent.TButton", background=accent, foreground=text, font=("Segoe UI", 9, "bold"), padding=(9, 4))
+        style.map("Accent.TButton", background=[("active", accent_hover), ("pressed", accent_pressed)], foreground=[("disabled", muted), ("active", text), ("pressed", text)])
+        style.configure("TCheckbutton", background=bg, foreground=text)
+        style.map("TCheckbutton", background=[("active", bg)], foreground=[("disabled", muted), ("active", text)])
+        style.configure("TRadiobutton", background=bg, foreground=text)
+        style.map("TRadiobutton", background=[("active", bg)], foreground=[("active", text)])
+        style.configure("TEntry", fieldbackground=field, foreground=text, insertcolor=text, bordercolor=border)
+        style.map("TEntry", fieldbackground=[("disabled", field), ("readonly", field), ("focus", field)], foreground=[("disabled", muted), ("readonly", text), ("focus", text)])
+        style.configure("TCombobox", fieldbackground=field, background=field, foreground=text, selectbackground=field, selectforeground=text, insertcolor=text, arrowcolor=text, bordercolor=border)
+        style.map("TCombobox", fieldbackground=[("readonly", field), ("disabled", field), ("focus", field)], background=[("readonly", field), ("disabled", field), ("active", panel2)], foreground=[("readonly", text), ("disabled", muted), ("focus", text)], selectbackground=[("readonly", field), ("focus", field)], selectforeground=[("readonly", text), ("focus", text)])
+        try:
+            self.option_add("*TCombobox*Listbox.background", field)
+            self.option_add("*TCombobox*Listbox.foreground", text)
+            self.option_add("*TCombobox*Listbox.selectBackground", select)
+            self.option_add("*TCombobox*Listbox.selectForeground", text)
+            self.option_add("*Entry.background", field)
+            self.option_add("*Entry.foreground", text)
+            self.option_add("*Entry.insertBackground", text)
+        except Exception:
+            pass
+        style.configure("Treeview", background=field, fieldbackground=field, foreground=text, rowheight=24, bordercolor=border)
+        style.configure("Treeview.Heading", background=panel2, foreground=text, bordercolor=border, font=("Segoe UI", 9, "bold"))
+        style.map("Treeview", background=[("selected", select)], foreground=[("selected", text)])
+        style.configure("Horizontal.TScrollbar", background=panel2, troughcolor=field, bordercolor=border, arrowcolor=text)
+        style.configure("Vertical.TScrollbar", background=panel2, troughcolor=field, bordercolor=border, arrowcolor=text)
+        style.configure("TProgressbar", background=accent, troughcolor=field, bordercolor=border)
+
     def _build_ui(self):
         if not self.embedded:
             self._build_menu()
@@ -663,7 +1057,7 @@ class TextureFolderViewerTab(tk.Frame):
 
         ttk.Label(controls, text="Search:").pack(side=tk.LEFT, padx=(16, 4))
         self.search_var = tk.StringVar()
-        self.search_entry = ttk.Entry(controls, textvariable=self.search_var, width=34)
+        self.search_entry = ttk.Entry(controls, textvariable=self.search_var, width=20)
         self.search_entry.pack(side=tk.LEFT)
         self.search_var.trace_add("write", lambda *_: self._debounce_filter())
         ttk.Button(controls, text="Clear", command=self.clear_search).pack(side=tk.LEFT, padx=(5, 0))
@@ -678,32 +1072,37 @@ class TextureFolderViewerTab(tk.Frame):
         ttk.Button(filters, text="Clear Size", command=self.clear_size_search).pack(side=tk.LEFT, padx=(5, 10))
 
         self.format_combo = ttk.Combobox(filters, textvariable=self.format_filter_var, width=15, state="readonly", values=[
-            "All Formats", "DDS", "DXT1 / BC1", "DXT3 / BC2", "DXT5 / BC3", "BGRA/RGBA", "RGB", "L8/R8/Gray", "Compressed DDS", "Uncompressed", "Other"
+            "All Formats", "SM3 .TEX", "DDS",
+            "DXT1 / BC1", "DXT2/DXT3 / BC2", "DXT4/DXT5 / BC3", "BC4", "BC5", "BC6", "BC7",
+            "BGRA/RGBA", "RGB", "L8/R8/Gray", "Compressed DDS", "Uncompressed",
+            "PNG/APNG", "JPG/JPEG", "TIFF", "WEBP", "GIF", "Other Images", "Other"
         ])
         self.format_combo.pack(side=tk.LEFT)
         self.format_combo.bind("<<ComboboxSelected>>", lambda e: self.apply_filter())
 
         self.mip_combo = ttk.Combobox(filters, textvariable=self.mip_filter_var, width=10, state="readonly", values=[
-            "All Mips", "1", "7", "8", "10", "11", ">=8", ">=10", "No Mips/Unknown"
+            "All Mips", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", ">1", ">=8", ">=10", ">=12", "No Mips/Unknown"
         ])
         self.mip_combo.pack(side=tk.LEFT, padx=(5, 0))
         self.mip_combo.bind("<<ComboboxSelected>>", lambda e: self.apply_filter())
 
-        self.status_combo = ttk.Combobox(filters, textvariable=self.status_filter_var, width=12, state="readonly", values=[
+        self.status_combo = ttk.Combobox(filters, textvariable=self.status_filter_var, width=10, state="readonly", values=[
             "All Status", "OK Only", "Problem Only"
         ])
         self.status_combo.pack(side=tk.LEFT, padx=(5, 0))
         self.status_combo.bind("<<ComboboxSelected>>", lambda e: self.apply_filter())
 
         self.category_combo = ttk.Combobox(filters, textvariable=self.category_filter_var, width=20, state="readonly", values=[
-            "All Categories", "Large Body 1024+", "Medium 512", "Small 64/128", "Suit Common Sizes", "Wide/Lookup", "Non-Square", "Alpha-Capable", "Normal-Map Names", "Webbing/Alpha Names", "Spider/Emblem Names"
+            "All Categories",
+            "Diffuse / Color", "Normal Map", "Specular / Gloss", "Reflection / Env", "Alpha / Mask", "AO", "Webbing", "FX", "Atlas / Tile", "Tiny / Lookup", "Raw DDS Preview", "Unknown / General",
+            "Large Body 1024+", "Medium 512", "Small 64/128", "Suit Common Sizes", "Wide/Lookup", "Non-Square", "Alpha-Capable", "Normal-Map Names", "Webbing/Alpha Names", "Spider/Emblem Names"
         ])
         self.category_combo.pack(side=tk.LEFT, padx=(5, 0))
         self.category_combo.bind("<<ComboboxSelected>>", lambda e: self.apply_filter())
 
         ttk.Checkbutton(filters, text="Square", variable=self.square_only_var, command=self.apply_filter).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Checkbutton(filters, text="Power2", variable=self.power2_only_var, command=self.apply_filter).pack(side=tk.LEFT, padx=(5, 0))
-        ttk.Checkbutton(filters, text="Common Suit Sizes", variable=self.common_suit_sizes_var, command=self.apply_filter).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Checkbutton(filters, text="Common Sizes", variable=self.common_suit_sizes_var, command=self.apply_filter).pack(side=tk.LEFT, padx=(5, 0))
 
         actions = ttk.Frame(top)
         actions.pack(side=tk.TOP, fill=tk.X, pady=(5, 0))
@@ -711,11 +1110,11 @@ class TextureFolderViewerTab(tk.Frame):
         ttk.Button(actions, text="Large Preview", command=self.large_preview).pack(side=tk.LEFT, padx=(5, 0))
         ttk.Button(actions, text="Open Externally", command=self.open_selected).pack(side=tk.LEFT, padx=(5, 0))
         ttk.Button(actions, text="Reveal in Explorer", command=self.reveal_selected).pack(side=tk.LEFT, padx=(5, 0))
-        ttk.Button(actions, text="Export Contact Sheet", command=self.export_contact_sheet).pack(side=tk.LEFT, padx=(5, 0))
         ttk.Button(actions, text="Clear Cache", command=self.clear_cache).pack(side=tk.LEFT, padx=(5, 0))
         ttk.Label(actions, text=f"Supported: {EXT_LABELS}", style="Small.TLabel").pack(side=tk.RIGHT)
 
         self.status_var = tk.StringVar(value="Choose a folder to scan textures.")
+        ttk.Label(top, textvariable=self.folder_type_var, style="Small.TLabel").pack(side=tk.TOP, anchor="w", pady=(4, 0))
         self.progress = ttk.Progressbar(top, mode="indeterminate", length=180)
         self.progress.pack(side=tk.RIGHT, padx=(6, 0))
         ttk.Label(top, textvariable=self.status_var).pack(side=tk.LEFT, pady=(4, 0))
@@ -728,12 +1127,13 @@ class TextureFolderViewerTab(tk.Frame):
         paned.add(left, weight=3)
         paned.add(right, weight=2)
 
-        columns = ("ext", "size", "dimensions", "format", "mips", "status", "folder")
+        columns = ("ext", "category", "size", "dimensions", "format", "mips", "status", "folder")
         self.tree = ttk.Treeview(left, columns=columns, show="tree headings", selectmode="extended")
         self.tree.heading("#0", text="Texture Name")
         self.tree.column("#0", width=300, stretch=True)
         for col, text, width in [
             ("ext", "Ext", 62),
+            ("category", "Category", 140),
             ("size", "Size", 84),
             ("dimensions", "Dimensions", 100),
             ("format", "Format", 170),
@@ -742,7 +1142,7 @@ class TextureFolderViewerTab(tk.Frame):
             ("folder", "Folder", 230),
         ]:
             self.tree.heading(col, text=text, command=lambda c=col: self.sort_by(c))
-            self.tree.column(col, width=width, anchor=tk.W, stretch=(col in ("format", "status", "folder")))
+            self.tree.column(col, width=width, anchor=tk.W, stretch=(col in ("category", "format", "status", "folder")))
         self.tree.heading("#0", command=lambda: self.sort_by("name"))
 
         ybar = ttk.Scrollbar(left, orient=tk.VERTICAL, command=self.tree.yview)
@@ -758,12 +1158,14 @@ class TextureFolderViewerTab(tk.Frame):
 
         right_top = ttk.Frame(right)
         right_top.pack(side=tk.TOP, fill=tk.X)
-        ttk.Label(right_top, text="Preview", style="Header.TLabel").pack(side=tk.LEFT)
-        ttk.Radiobutton(right_top, text="Fit", variable=self.zoom_mode, value="fit", command=self.redraw_preview).pack(side=tk.LEFT, padx=(16, 0))
-        ttk.Radiobutton(right_top, text="100%", variable=self.zoom_mode, value="100", command=self.redraw_preview).pack(side=tk.LEFT, padx=(5, 0))
-        ttk.Button(right_top, text="-", width=3, command=lambda: self.adjust_zoom(0.8)).pack(side=tk.LEFT, padx=(12, 0))
-        ttk.Button(right_top, text="+", width=3, command=lambda: self.adjust_zoom(1.25)).pack(side=tk.LEFT, padx=(3, 0))
-        ttk.Button(right_top, text="Reset", command=self.reset_zoom).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Label(right_top, text="Preview", style="Header.TLabel").pack(anchor="w")
+        zoom_bar = ttk.Frame(right_top)
+        zoom_bar.pack(fill=tk.X, pady=(2, 0))
+        ttk.Radiobutton(zoom_bar, text="Fit", variable=self.zoom_mode, value="fit", command=self.redraw_preview).pack(side=tk.LEFT)
+        ttk.Radiobutton(zoom_bar, text="100%", variable=self.zoom_mode, value="100", command=self.redraw_preview).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Button(zoom_bar, text="-", width=3, command=lambda: self.adjust_zoom(0.8)).pack(side=tk.LEFT, padx=(8, 0))
+        ttk.Button(zoom_bar, text="+", width=3, command=lambda: self.adjust_zoom(1.25)).pack(side=tk.LEFT, padx=(3, 0))
+        ttk.Button(zoom_bar, text="Reset", width=6, command=self.reset_zoom).pack(side=tk.LEFT, padx=(3, 0))
 
         canvas_frame = ttk.Frame(right)
         canvas_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=(5, 4))
@@ -782,11 +1184,19 @@ class TextureFolderViewerTab(tk.Frame):
 
         info_frame = ttk.LabelFrame(right, text="Texture Info")
         info_frame.pack(side=tk.BOTTOM, fill=tk.X)
-        self.info_text = tk.Text(info_frame, height=9, wrap="word", font=("Consolas", 9), bg=DARK_FIELD, fg=DARK_TEXT, insertbackground=DARK_TEXT, selectbackground=DARK_SELECT, relief="flat")
+        self.info_text = tk.Text(info_frame, height=4, wrap="word", font=("Consolas", 9), bg=DARK_FIELD, fg=DARK_TEXT, insertbackground=DARK_TEXT, selectbackground=DARK_SELECT, relief="flat")
         info_scroll = ttk.Scrollbar(info_frame, orient=tk.VERTICAL, command=self.info_text.yview)
         self.info_text.configure(yscrollcommand=info_scroll.set)
         self.info_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         info_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Reserve the Texture Info box before giving the preview canvas the
+        # remaining height. Otherwise Tk can let the expanding canvas consume
+        # the whole right pane and leave only the info-frame title visible.
+        canvas_frame.pack_forget()
+        info_frame.pack_forget()
+        info_frame.pack(side=tk.BOTTOM, fill=tk.X)
+        canvas_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=(5, 4))
         self._set_info("No texture selected yet.")
 
     def _build_menu(self):
@@ -804,7 +1214,6 @@ class TextureFolderViewerTab(tk.Frame):
         tools_menu = tk.Menu(menubar, tearoff=0, bg=DARK_PANEL, fg=DARK_TEXT, activebackground=DARK_SELECT, activeforeground="#FFFFFF")
         tools_menu.add_command(label="Preview Selected", command=self.preview_selected)
         tools_menu.add_command(label="Large Preview", command=self.large_preview)
-        tools_menu.add_command(label="Export Contact Sheet", command=self.export_contact_sheet)
         tools_menu.add_command(label="Clear Cache", command=self.clear_cache)
         menubar.add_cascade(label="Tools", menu=tools_menu)
 
@@ -903,6 +1312,23 @@ class TextureFolderViewerTab(tk.Frame):
                     if ok_w and ok_h:
                         return True
                     continue
+                # Range shorthand compares the larger dimension: 256-1024.
+                if "-" in part and not part.startswith("-"):
+                    lo_s, hi_s = part.split("-", 1)
+                    if lo_s.isdigit() and hi_s.isdigit():
+                        lo, hi = sorted((int(lo_s), int(hi_s)))
+                        if lo <= max(w, h) <= hi:
+                            return True
+                        continue
+                # Convenience shorthand: 512+ means max dimension >= 512; 128- means <= 128.
+                if part.endswith("+") and part[:-1].isdigit():
+                    if max(w, h) >= int(part[:-1]):
+                        return True
+                    continue
+                if part.endswith("-") and part[:-1].isdigit():
+                    if max(w, h) <= int(part[:-1]):
+                        return True
+                    continue
                 handled = False
                 for op in (">=", "<=", ">", "<"):
                     if part.startswith(op):
@@ -933,26 +1359,48 @@ class TextureFolderViewerTab(tk.Frame):
             return True
         ext = str(rec.get("ext", "")).upper()
         fmt = str(meta.get("format", "")).upper()
+        if filt == "SM3 .TEX":
+            return ext == "TEX"
         if filt == "DDS":
             return ext == "DDS"
         if filt == "DXT1 / BC1":
             return "DXT1" in fmt or "BC1" in fmt
-        if filt == "DXT3 / BC2":
-            return "DXT3" in fmt or "BC2" in fmt
-        if filt == "DXT5 / BC3":
-            return "DXT5" in fmt or "BC3" in fmt
+        if filt == "DXT2/DXT3 / BC2":
+            return "DXT2" in fmt or "DXT3" in fmt or "BC2" in fmt
+        if filt == "DXT4/DXT5 / BC3":
+            return "DXT4" in fmt or "DXT5" in fmt or "BC3" in fmt
+        if filt == "BC4":
+            return "BC4" in fmt or "ATI1" in fmt
+        if filt == "BC5":
+            return "BC5" in fmt or "ATI2" in fmt
+        if filt == "BC6":
+            return "BC6" in fmt
+        if filt == "BC7":
+            return "BC7" in fmt
         if filt == "BGRA/RGBA":
-            return "BGRA" in fmt or "B8G8R8A8" in fmt or "RGBA" in fmt or "R8G8B8A8" in fmt
+            return any(x in fmt for x in ("BGRA", "B8G8R8A8", "B8G8R8X8", "RGBA", "R8G8B8A8"))
         if filt == "RGB":
             return "RGB" in fmt and "RGBA" not in fmt and "BGRA" not in fmt
         if filt == "L8/R8/Gray":
-            return "L8" in fmt or "R8" in fmt or "GRAY" in fmt or "GREY" in fmt or "LUMINANCE" in fmt
+            return any(x in fmt for x in ("L8", "R8", "GRAY", "GREY", "LUMINANCE"))
         if filt == "Compressed DDS":
-            return any(x in fmt for x in ("DXT", "BC1", "BC2", "BC3", "BC4", "BC5", "BC6", "BC7"))
+            return ext == "DDS" and any(x in fmt for x in ("DXT", "BC1", "BC2", "BC3", "BC4", "BC5", "BC6", "BC7"))
         if filt == "Uncompressed":
             return not any(x in fmt for x in ("DXT", "BC1", "BC2", "BC3", "BC4", "BC5", "BC6", "BC7"))
+        if filt == "PNG/APNG":
+            return ext in ("PNG", "APNG")
+        if filt == "JPG/JPEG":
+            return ext in ("JPG", "JPEG", "JPE", "JFIF")
+        if filt == "TIFF":
+            return ext in ("TIF", "TIFF")
+        if filt == "WEBP":
+            return ext == "WEBP"
+        if filt == "GIF":
+            return ext == "GIF"
+        if filt == "Other Images":
+            return ext not in ("TEX", "DDS")
         if filt == "Other":
-            return ext != "DDS" or fmt in ("DDS", "UNKNOWN") or not fmt
+            return fmt in ("DDS", "UNKNOWN") or not fmt or str(meta.get("status", "")).startswith("Unsupported")
         return True
 
     def _mip_filter_matches(self, meta) -> bool:
@@ -966,6 +1414,8 @@ class TextureFolderViewerTab(tk.Frame):
             mips = 0
         if filt == "No Mips/Unknown":
             return mips <= 1 or raw in ("", "?", "0")
+        if filt == ">1":
+            return mips > 1
         if filt.startswith(">="):
             try:
                 return mips >= int(filt[2:])
@@ -980,6 +1430,12 @@ class TextureFolderViewerTab(tk.Frame):
         cat = self.category_filter_var.get()
         if cat == "All Categories":
             return True
+        label = str(rec.get("category", ""))
+        if cat in {
+            "Diffuse / Color", "Normal Map", "Specular / Gloss", "Reflection / Env", "Alpha / Mask",
+            "AO", "Webbing", "FX", "Atlas / Tile", "Tiny / Lookup", "Raw DDS Preview", "Unknown / General",
+        }:
+            return label == cat
         name = str(rec.get("name", "")).lower()
         fmt = str(meta.get("format", "")).upper()
         w = self._parse_int_safe(meta.get("width"))
@@ -1006,6 +1462,59 @@ class TextureFolderViewerTab(tk.Frame):
             return any(x in name for x in ("web", "webbing", "alpha"))
         if cat == "Spider/Emblem Names":
             return any(x in name for x in ("spider", "emblem", "logo"))
+        return True
+
+    @staticmethod
+    def _search_tokens(query: str):
+        """Split search text into AND terms, quoted phrases and optional -exclude terms."""
+        q = str(query or "").strip()
+        if not q:
+            return []
+        try:
+            return shlex.split(q, posix=True)
+        except Exception:
+            return q.split()
+
+    def _smart_search_matches(self, rec, meta, query: str) -> bool:
+        tokens = self._search_tokens(query)
+        if not tokens:
+            return True
+        fields = {
+            "name": str(rec.get("name", "")),
+            "path": str(rec.get("path", "")),
+            "folder": str(rec.get("folder", "")),
+            "ext": str(rec.get("ext", "")),
+            "cat": str(rec.get("category", "")),
+            "category": str(rec.get("category", "")),
+            "type": str(rec.get("folder_type", "")),
+            "fmt": str(meta.get("format", "")),
+            "format": str(meta.get("format", "")),
+            "width": str(meta.get("width", "")),
+            "height": str(meta.get("height", "")),
+            "mips": str(meta.get("mips", "")),
+            "status": str(meta.get("status", "")),
+            "hash": str(meta.get("resource_hash", "")),
+            "extra": str(meta.get("extra", "")),
+        }
+        fields["size"] = f"{fields['width']}x{fields['height']}"
+        all_text = " ".join(fields.values()).lower()
+        for raw in tokens:
+            negative = raw.startswith("-") and len(raw) > 1
+            token = raw[1:] if negative else raw
+            token = token.strip().lower()
+            if not token:
+                continue
+            target_text = all_text
+            if ":" in token:
+                prefix, value = token.split(":", 1)
+                if prefix in fields and value:
+                    target_text = fields[prefix].lower()
+                    token = value
+            found = token in target_text
+            if negative and found:
+                return False
+            if not negative and not found:
+                return False
         return True
 
     def clear_cache(self):
@@ -1040,10 +1549,13 @@ class TextureFolderViewerTab(tk.Frame):
         self.current_pil_image = None
         self.current_tk_image = None
         self.canvas.delete("all")
-        self._set_info("Scanning folder...\n\n" + folder + "\n\nv0.8 will preload supported textures into RAM after scan, with disk cache and size/format/mip filters ready.")
+        self.folder_context = detect_texture_folder_type(folder)
+        self.folder_type_var.set(f"Folder type: {self.folder_context.get('kind')} — {self.folder_context.get('warning')}")
+        self._set_info("Scanning folder...\n\n" + folder + "\n\nFolder type: " + str(self.folder_context.get('kind')) + "\n" + str(self.folder_context.get('warning')) + "\n\nViewer only: no reports, contact sheets, patching, or side-by-side outputs are created here.")
         self.progress.start(12)
         self.status_var.set(f"Scanning {folder} ...")
-        self.scan_thread = threading.Thread(target=self._scan_worker, args=(folder,), daemon=True)
+        recursive = bool(self.recursive.get())
+        self.scan_thread = threading.Thread(target=self._scan_worker, args=(folder, recursive), daemon=True)
         self.scan_thread.start()
 
     def _load_folder_cache(self, folder: str) -> dict:
@@ -1065,13 +1577,13 @@ class TextureFolderViewerTab(tk.Frame):
         except Exception:
             pass
 
-    def _scan_worker(self, folder: str):
+    def _scan_worker(self, folder: str, recursive: bool = True):
         started = time.time()
         total = 0
         cache_items = self._load_folder_cache(folder)
         new_cache = {}
         try:
-            walker = os.walk(folder) if self.recursive.get() else [(folder, [], os.listdir(folder))]
+            walker = os.walk(folder) if recursive else [(folder, [], os.listdir(folder))]
             for root, dirs, files in walker:
                 if self.stop_scan.is_set():
                     break
@@ -1098,10 +1610,14 @@ class TextureFolderViewerTab(tk.Frame):
                         meta = cached.get("meta", {})
                     else:
                         meta = parse_image_meta(path)
+                    folder_short = str(self.folder_context.get("short", ""))
+                    category = guess_texture_category(filename, meta, folder_short)
                     rec = {
                         "path": path,
                         "name": filename,
                         "ext": ext.upper().lstrip("."),
+                        "category": category,
+                        "folder_type": folder_short,
                         "size_bytes": st.st_size,
                         "size": fmt_size(st.st_size),
                         "mtime": st.st_mtime,
@@ -1178,13 +1694,7 @@ class TextureFolderViewerTab(tk.Frame):
             if status_filter == "Problem Only" and status == "OK":
                 continue
 
-            hay = " ".join([
-                rec.get("name", ""), rec.get("ext", ""), rec.get("folder", ""),
-                str(meta.get("format", "")), str(meta.get("width", "")), str(meta.get("height", "")),
-                f"{meta.get('width','?')}x{meta.get('height','?')}",
-                str(meta.get("mips", "")), status, str(meta.get("extra", "")),
-            ]).lower()
-            if q and q not in hay:
+            if not self._smart_search_matches(rec, meta, q):
                 continue
             if not self._size_query_matches(width, height, size_q):
                 continue
@@ -1236,6 +1746,7 @@ class TextureFolderViewerTab(tk.Frame):
                 text=rec.get("name", ""),
                 values=(
                     rec.get("ext", ""),
+                    rec.get("category", ""),
                     rec.get("size", ""),
                     dimensions,
                     meta.get("format", ""),
@@ -1256,6 +1767,8 @@ class TextureFolderViewerTab(tk.Frame):
                 return rec.get("name", "").lower()
             if col == "size":
                 return rec.get("size_bytes", 0)
+            if col == "category":
+                return str(rec.get("category", "")).lower()
             if col == "dimensions":
                 try:
                     return int(meta.get("width", 0)) * int(meta.get("height", 0))
@@ -1305,6 +1818,8 @@ class TextureFolderViewerTab(tk.Frame):
         text.append(f"Name: {rec.get('name','')}")
         text.append(f"Path: {rec.get('path','')}")
         text.append(f"Folder: {rec.get('folder','')}")
+        text.append(f"Folder Type: {self.folder_context.get('kind','')}")
+        text.append(f"Category Label: {rec.get('category','')}")
         text.append(f"Extension: {rec.get('ext','')}")
         text.append(f"Size: {rec.get('size','')} ({rec.get('size_bytes',0)} bytes)")
         text.append(f"Dimensions: {meta.get('width','?')} x {meta.get('height','?')}")
@@ -1314,7 +1829,7 @@ class TextureFolderViewerTab(tk.Frame):
         if meta.get("extra"):
             text.append(f"Extra: {meta.get('extra')}")
         text.append("")
-        text.append("SM3 note: use this viewer to inspect exported texture files only. Patch game packs with your texture swapper/tool after confirming format/size/mips.")
+        text.append("SM3 note: this viewer only previews and labels texture folders. It does not make reports, contact sheets, side-by-side outputs, or patched packs.")
         self._set_info("\n".join(text))
 
     def preview_selected(self):
@@ -1444,7 +1959,7 @@ class TextureFolderViewerTab(tk.Frame):
         return os.path.join(folder, THUMB_CACHE_DIRNAME, name)
 
     def _load_preview_from_disk_cache(self, path: str):
-        if not PIL_OK or not self.disk_cache_enabled.get():
+        if not PIL_OK or not self._disk_cache_enabled_value:
             return None
         try:
             cp = self._thumb_cache_path(path)
@@ -1457,7 +1972,7 @@ class TextureFolderViewerTab(tk.Frame):
             return None
 
     def _save_preview_to_disk_cache(self, path: str, im):
-        if not PIL_OK or not self.disk_cache_enabled.get():
+        if not PIL_OK or not self._disk_cache_enabled_value:
             return
         try:
             cp = self._thumb_cache_path(path)
@@ -1588,7 +2103,7 @@ class TextureFolderViewerTab(tk.Frame):
 
     def export_contact_sheet(self):
         if not PIL_OK:
-            messagebox.showerror("Missing Pillow", "Pillow is required. Install requirements with: py -3 -m pip install -r requirements.txt")
+            messagebox.showerror("Missing Pillow", "Pillow is required. Run READY_LAUNCH_SM3_TOOLKIT.bat so the toolkit can install Pillow automatically.")
             return
         if not self.filtered:
             messagebox.showwarning("No Files", "No visible textures to export.")
@@ -1651,4 +2166,3 @@ class TextureFolderViewerTab(tk.Frame):
             self.destroy()
         else:
             self.window.destroy()
-

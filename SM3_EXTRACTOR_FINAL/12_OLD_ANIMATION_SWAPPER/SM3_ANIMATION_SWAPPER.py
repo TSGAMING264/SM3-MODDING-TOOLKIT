@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # ============================================================
 # SM3 ANIMATION SWAPPER RELEASE v1.14
 # CREATED BY TSGAMING264 + LIGHT/DARK MODE + CLEAN PRESETS
@@ -30,13 +30,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 APP_DISPLAY_NAME = "SM3 ANIMATION SWAPPER"
-APP_VERSION = "RELEASE v1.14"
+APP_VERSION = "RELEASE v1.18_SELECTION_CSV_BUTTON_LAYOUT_FIX"
 APP_ICON_NAME = "SM3_ANIMATION_SWAPPER.ico"
 APP_CREATOR = "Created by TSGAMING264"
 
 # Release-safe Xbox source workflow:
 # The tool does NOT ship Xbox/RVB source packs. Users select their own folder
-# containing these ZIPs, then choose one as Pack B/source.
+# containing ZIPs or extracted source folders, then choose one as Pack B/source.
 XBOX_SOURCE_ZIP_DEFINITIONS = [
     ("Xbox Spider-Man", ["CH_SPIDERMANXE.zip", "CH_SPIDERMAN_XE.zip", "CH_SPIDERMAN.XE.zip"]),
     ("Xbox Black Suit", ["CH_BLACKSUITXE.zip", "CH_BLACKSUIT_XE.zip", "CH_BLACKSUIT.XE.zip"]),
@@ -1417,21 +1417,82 @@ def patch_pc_anim_copy(dest_pack, source_pack, dest, src, output, strict_compone
 
 
 
+# WOS-informed family filters.
+# Updated from the WOS Toolkit known Spider-Man animation reference list:
+# Dive/Fall, Idle, Jog/Run, Run Jump, Double Jump, Swing Intro, Low Swing,
+# Web Dash/Vertical Zip, punches, black-suit combat, etc.
 FAMILY_KEYWORDS = {
     "combat": [
-        "atck", "attack", "punch", "kick", "hit", "block", "rage", "beatdown",
-        "uppercut", "stomp", "pummel", "smratck", "smbatck", "bs_rage"
-    ],
-    "walk": [
-        "walk", "run", "idle2run", "run2idle", "walk2idle", "idle2walk",
-        "tapback", "tapforward", "tapleft", "tapright"
+        "atck", "atk", "attack", "punch", "kick", "hit", "hurt", "block", "rage", "beatdown",
+        "uppercut", "stomp", "pummel", "deflect", "fury", "smash", "elbow", "backhand",
+        "crosspunch", "spinpunch", "kickender", "ichor", "exploder", "ender", "rightpunch", "leftpunch"
     ],
     "swing": [
-        "swing", "swg", "webswing", "poleswg"
+        "swing", "swg", "webswing", "poleswg", "slowswing", "swingrun", "swgrun",
+        "swgrls", "rintro", "lintro", "swing_left", "swing_idle", "dangle", "rls45", "rlsb", "rlsv"
     ],
     "jump": [
-        "jump", "jmp", "land", "fall", "dive", "launch", "lnch", "fly"
+        "jump", "jmp", "doublejump", "runjmp", "jmplnch", "jmpland", "floorbounce", "bncjm", "bounc", "fly"
     ],
+    "dive_fall": [
+        "dive", "fall", "divefall", "2dive", "fall_land", "flail", "rls2dive", "rslv", "rlsv"
+    ],
+    "web_zip": [
+        "web", "zip", "webdash", "web_dash", "vertweb", "verticalweb", "webzip", "zipintro", "vertwebzip", "webf"
+    ],
+    "wall_crawl": [
+        "wall", "crawl", "crwl", "climb", "hang", "grind", "wallrun", "wallslide", "wallatck"
+    ],
+    "walk": [
+        "walk", "run", "sprint", "jog", "idle2run", "run2idle", "walk2idle", "idle2walk",
+        "tapback", "tapforward", "tapleft", "tapright", "tapfwd", "meta_anim"
+    ],
+    "idle": [
+        "idle", "idl", "tapleft", "tapright", "tapback", "tapforward", "tapfwd", "tap", "seated", "dangle"
+    ],
+    "black_suit": [
+        "smb", "bs3", "black", "blacksuit", "ichor", "bsm", "smbichor", "smbstomp", "smbbackhand"
+    ],
+    "goblin": [
+        "gob", "goblin", "gobair", "airswrd", "sword", "turbo", "throw"
+    ],
+    "peter": [
+        "peter", "sm3p", "sm3pp", "winded", "face", "bellow"
+    ],
+}
+
+FAMILY_LABELS = {
+    "combat": "combat",
+    "swing": "swing",
+    "jump": "jump",
+    "dive_fall": "dive/fall",
+    "web_zip": "web/zip",
+    "wall_crawl": "wall/crawl",
+    "walk": "walk/run",
+    "idle": "idle",
+    "black_suit": "black suit",
+    "goblin": "goblin",
+    "peter": "peter",
+}
+
+FAMILY_PRIORITY = [
+    "black_suit", "goblin", "peter", "combat", "swing", "web_zip",
+    "wall_crawl", "dive_fall", "jump", "walk", "idle",
+]
+
+FILTER_TO_FAMILY = {
+    "combat": "combat",
+    "swing": "swing",
+    "jump": "jump",
+    "walk": "walk",
+    "walk/run": "walk",
+    "idle": "idle",
+    "web/zip": "web_zip",
+    "wall/crawl": "wall_crawl",
+    "dive/fall": "dive_fall",
+    "black suit": "black_suit",
+    "goblin": "goblin",
+    "peter": "peter",
 }
 
 
@@ -1441,8 +1502,8 @@ def anim_in_family(name: str, family: str) -> bool:
 
 
 def family_label_for_name(name: str) -> str:
-    hits = [fam for fam in FAMILY_KEYWORDS if anim_in_family(name, fam)]
-    return ",".join(hits) if hits else "other"
+    hits = [fam for fam in FAMILY_PRIORITY if anim_in_family(name, fam)]
+    return ",".join(FAMILY_LABELS.get(fam, fam) for fam in hits[:4]) if hits else "other"
 
 
 SAFE_LITE_ALLOW = {
@@ -2920,7 +2981,10 @@ class App:
         self.view_b = []
         self.selection_center_pairs = []
         self.selection_center_active = False
-        self.dark_mode_var = tk.BooleanVar(value=False)
+        self.dark_mode_var = tk.BooleanVar(value=True)
+        # Release UI: keep Old Animation Swapper themed internally, but hide the old local Dark Mode checkbox.
+        # Main Toolkit global Theme selector controls the release-level theme now.
+        self.dark_mode_var.set(True)
         self.style = ttk.Style(self.root)
         self.build_ui()
         self.apply_theme()
@@ -2930,30 +2994,87 @@ class App:
             yield child
             yield from self.iter_child_widgets(child)
 
+    def theme_palette(self):
+        dark = bool(getattr(self, "dark_mode_var", tk.BooleanVar(value=False)).get())
+        if dark:
+            return {
+                "bg": "#1E1E1E",
+                "panel": "#252526",
+                "fg": "#EDEDED",
+                "field": "#111111",
+                "accent": "#3A7AFE",
+                "warn": "#FF9A9A",
+                "info": "#8EC5FF",
+            }
+        # v1.12: release light mode uses neutral slate, not bright blue.
+        # This keeps the light mode from fighting the rest of SM3 Toolkit.
+        return {
+            "bg": "#F1F1F1",
+            "panel": "#FFFFFF",
+            "fg": "#111111",
+            "field": "#FFFFFF",
+            "accent": "#3A3D45",
+            "warn": "#8A1F1F",
+            "info": "#30343B",
+        }
+
+    def style_classic_widget(self, widget):
+        c = self.theme_palette()
+        try:
+            if isinstance(widget, (tk.Text, tk.Listbox)):
+                widget.configure(
+                    bg=c["panel"],
+                    fg=c["fg"],
+                    insertbackground=c["fg"],
+                    selectbackground=c["accent"],
+                    selectforeground="#FFFFFF",
+                    highlightbackground=c["accent"],
+                    highlightcolor=c["accent"],
+                )
+            elif isinstance(widget, tk.Entry):
+                widget.configure(bg=c["field"], fg=c["fg"], insertbackground=c["fg"])
+        except Exception:
+            pass
+
+    def theme_popup(self, window):
+        c = self.theme_palette()
+        try:
+            window.configure(bg=c["bg"])
+        except Exception:
+            pass
+        def walk(w):
+            for ch in w.winfo_children():
+                self.style_classic_widget(ch)
+                walk(ch)
+        walk(window)
+
+    def bind_text_mousewheel(self, widget):
+        def _wheel(event, box=widget):
+            if getattr(event, "num", None) == 4:
+                box.yview_scroll(-3, "units")
+            elif getattr(event, "num", None) == 5:
+                box.yview_scroll(3, "units")
+            else:
+                box.yview_scroll(int(-1 * (event.delta / 120)) * 3, "units")
+            return "break"
+        widget.bind("<MouseWheel>", _wheel)
+        widget.bind("<Button-4>", _wheel)
+        widget.bind("<Button-5>", _wheel)
+
     def apply_theme(self):
         dark = bool(getattr(self, "dark_mode_var", tk.BooleanVar(value=False)).get())
         try:
             self.style.theme_use("clam")
         except Exception:
             pass
-        if dark:
-            bg = "#1E1E1E"
-            panel = "#252526"
-            fg = "#EDEDED"
-            field = "#111111"
-            accent = "#3A7AFE"
-            # v1.14: final About / How To Use guide update.
-            # Only the red/blue message labels are changed; normal UI text keeps the same theme.
-            warn = "#FF9A9A"
-            info = "#8EC5FF"
-        else:
-            bg = "#F3F3F3"
-            panel = "#FFFFFF"
-            fg = "#111111"
-            field = "#FFFFFF"
-            accent = "#005A9E"
-            warn = "#B00000"
-            info = "#005A9E"
+        c = self.theme_palette()
+        bg = c["bg"]
+        panel = c["panel"]
+        fg = c["fg"]
+        field = c["field"]
+        accent = c["accent"]
+        warn = c["warn"]
+        info = c["info"]
         try:
             self.root.configure(bg=bg)
         except Exception:
@@ -2970,7 +3091,8 @@ class App:
         except Exception:
             pass
         try:
-            self.style.configure("TButton", padding=4)
+            self.style.configure("TButton", padding=4, background="#30343B" if not dark else "#2E2E2E", foreground="#FFFFFF" if not dark else fg)
+            self.style.map("TButton", background=[("pressed", "#23262C"), ("active", "#3A3D45" if not dark else "#3A3A3A")], foreground=[("active", "#FFFFFF")])
             self.style.configure("TEntry", fieldbackground=field, foreground=fg)
             self.style.configure("TCombobox", fieldbackground=field, foreground=fg)
             self.style.configure("Treeview", background=panel, foreground=fg, fieldbackground=panel)
@@ -2980,10 +3102,7 @@ class App:
             pass
         for w in self.iter_child_widgets(self.root):
             try:
-                if isinstance(w, (tk.Text, tk.Listbox)):
-                    w.configure(bg=panel, fg=fg, insertbackground=fg, selectbackground=accent, selectforeground="#FFFFFF")
-                elif isinstance(w, tk.Entry):
-                    w.configure(bg=field, fg=fg, insertbackground=fg)
+                self.style_classic_widget(w)
             except Exception:
                 pass
         if hasattr(self, "status"):
@@ -3003,21 +3122,19 @@ class App:
         brand = ttk.Frame(top)
         brand.grid(row=0, column=0, columnspan=6, sticky="ew", pady=(0, 6))
         ttk.Label(brand, text="SM3 ANIMATION SWAPPER", font=("Segoe UI", 13, "bold")).pack(side="left")
-        ttk.Label(brand, text="   Created by TSGAMING264", font=("Segoe UI", 10, "bold")).pack(side="left")
-        ttk.Checkbutton(brand, text="Dark Mode", variable=self.dark_mode_var, command=self.toggle_dark_mode).pack(side="right")
         ttk.Label(top, text="Pack A / PC destination pack:").grid(row=1, column=0, sticky="w")
         ttk.Entry(top, textvariable=self.a_var).grid(row=1, column=1, sticky="ew", padx=4)
         ttk.Button(top, text="Browse PC Pack A", command=lambda: self.browse(self.a_var)).grid(row=1, column=2, padx=4)
         ttk.Button(top, text="Clear Pack A", command=self.clear_pack_a).grid(row=1, column=3, padx=4)
-        ttk.Label(top, text="Pack B / source pack (manual PC/source option):").grid(row=2, column=0, sticky="w")
+        ttk.Label(top, text="Pack B / source pack (manual PC/Xbox file option):").grid(row=2, column=0, sticky="w")
         ttk.Entry(top, textvariable=self.b_var).grid(row=2, column=1, sticky="ew", padx=4)
         ttk.Button(top, text="Browse Pack B", command=lambda: self.browse(self.b_var)).grid(row=2, column=2, padx=4)
         ttk.Button(top, text="Clear Pack B", command=self.clear_pack_b).grid(row=2, column=3, padx=4)
 
-        ttk.Label(top, text="Xbox Pack Folder (optional):").grid(row=3, column=0, sticky="w", pady=(6, 0))
+        ttk.Label(top, text="Xbox Source Folder (optional):").grid(row=3, column=0, sticky="w", pady=(6, 0))
         ttk.Entry(top, textvariable=self.xbox_source_folder_var).grid(row=3, column=1, sticky="ew", padx=4, pady=(6, 0))
-        ttk.Button(top, text="Select Xbox Pack Folder", command=self.browse_xbox_source_folder).grid(row=3, column=2, padx=4, pady=(6, 0))
-        ttk.Button(top, text="Clear Xbox Pack Folder", command=self.clear_xbox_source_folder).grid(row=3, column=3, padx=4, pady=(6, 0))
+        ttk.Button(top, text="Browse Xbox Source Folder", command=self.browse_xbox_source_folder).grid(row=3, column=2, padx=4, pady=(6, 0))
+        ttk.Button(top, text="Clear Xbox Source Folder", command=self.clear_xbox_source_folder).grid(row=3, column=3, padx=4, pady=(6, 0))
 
         xbox_row = ttk.Frame(top)
         xbox_row.grid(row=4, column=1, columnspan=2, sticky="ew", padx=4, pady=(3, 0))
@@ -3025,13 +3142,13 @@ class App:
         self.xbox_source_combo = ttk.Combobox(xbox_row, textvariable=self.xbox_source_choice_var, state="readonly", values=["Manual Pack B"], width=42)
         self.xbox_source_combo.grid(row=0, column=0, sticky="ew")
         self.xbox_source_combo.bind("<<ComboboxSelected>>", self.selected_xbox_source_changed)
-        ttk.Button(xbox_row, text="Use Selected Xbox Source as Pack B", command=self.use_selected_xbox_source_as_pack_b).grid(row=0, column=1, padx=(6, 0))
+        ttk.Button(xbox_row, text="Use Selected Xbox Folder/Pack as Pack B", command=self.use_selected_xbox_source_as_pack_b).grid(row=0, column=1, padx=(6, 0))
 
         ttk.Button(top, text="Clear All Pack Inputs", command=self.clear_all_pack_inputs).grid(row=4, column=3, padx=4, pady=(3, 0), sticky="ew")
         ttk.Button(top, text="LOAD / VERIFY PACKS", command=self.scan).grid(row=1, column=4, rowspan=4, padx=8, sticky="ns")
         ttk.Checkbutton(top, text="Strict same component sizes", variable=self.strict_var).grid(row=5, column=0, sticky="w", pady=(6, 0))
         top.columnconfigure(1, weight=1)
-        ttk.Label(self.root, text="Created by TSGAMING264. Select your PC destination pack, choose your Xbox Pack Folder or manual Pack B, then save a new patched copy.", style="Warn.TLabel").pack(fill="x", padx=10)
+        ttk.Label(self.root, text="Select your PC destination pack, choose your Xbox Source Folder or manual Pack B, then save a new patched copy.", style="Warn.TLabel").pack(fill="x", padx=10)
 
         paned = ttk.PanedWindow(self.root, orient="horizontal")
         paned.pack(fill="both", expand=True, padx=8, pady=4)
@@ -3044,14 +3161,14 @@ class App:
 
         bottom = ttk.Frame(self.root, padding=8)
         bottom.pack(fill="x")
-        ttk.Button(bottom, text="Preview Selected Pair", command=self.preview).pack(side="left", padx=4)
+        ttk.Button(bottom, text="Preview Selected", command=self.preview).pack(side="left", padx=4)
         ttk.Button(bottom, text="PATCH SELECTED PAIR -> NEW PC COPY", command=self.rvb_to_pc_patch).pack(side="left", padx=4)
         ttk.Button(bottom, text="MULTI SELECTION CENTER", command=self.multi_selection_center).pack(side="left", padx=4)
         ttk.Button(bottom, text="ABOUT / INFO", command=self.show_about_info).pack(side="left", padx=4)
 
         self.status = tk.Text(self.root, height=11, wrap="word")
         self.status.pack(fill="both", expand=False, padx=8, pady=(0,8))
-        self.write("SM3 ANIMATION SWAPPER RELEASE v1.14 ready. Created by TSGAMING264. Light Mode default, Dark Mode toggle available. Only real animation-changing presets are listed. Imported same-name/no-change presets are blocked.\n")
+        self.write("SM3 ANIMATION SWAPPER RELEASE v1.18 ready. Only real animation-changing presets are listed. Imported same-name/no-change presets are blocked.\n")
 
     def open_external_link(self, url: str) -> None:
         try:
@@ -3064,8 +3181,8 @@ class App:
         win = tk.Toplevel(self.root)
         win.title("About / Info - SM3 ANIMATION SWAPPER")
         apply_app_icon(win)
-        win.geometry("760x680")
-        win.minsize(620, 520)
+        win.geometry("1280x780")
+        win.minsize(1100, 700)
         win.transient(self.root)
 
         outer = ttk.Frame(win, padding=10)
@@ -3073,26 +3190,22 @@ class App:
 
         ttk.Label(
             outer,
-            text="SM3 ANIMATION SWAPPER",
+            text="SM3 ANIMATION SWAPPER - ABOUT / INFO",
             font=("Segoe UI", 16, "bold"),
-        ).pack(anchor="w")
-        ttk.Label(
-            outer,
-            text="Created by TSGAMING264",
-            font=("Segoe UI", 10, "bold"),
         ).pack(anchor="w", pady=(0, 8))
 
         text_frame = ttk.Frame(outer)
         text_frame.pack(fill="both", expand=True)
         scroll = ttk.Scrollbar(text_frame, orient="vertical")
-        info = tk.Text(text_frame, wrap="word", height=24, yscrollcommand=scroll.set)
+        info = tk.Text(text_frame, wrap="word", height=16, yscrollcommand=scroll.set)
         scroll.config(command=info.yview)
         info.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
 
-        about_text = 'SM3 ANIMATION SWAPPER - HOW TO USE\n============================================================\n\n1. OPEN THE TOOL\n============================================================\n\nOpen:\n\nSM3 ANIMATION SWAPPER.bat\n\nOptional:\nRun the shortcut creator if you want a desktop shortcut:\n\nCREATE_DESKTOP_SHORTCUT_SM3_ANIMATION_SWAPPER.bat\n\n\n============================================================\n2. PICK PACK A - YOUR PC DESTINATION PACK\n============================================================\n\nPack A is the PC pack you want to modify.\n\nChoose one clean PC pack, for example:\n\nCH_SPIDERMAN.PCPACK\nCH_BLACKSUIT.PCPACK\nCH_PETER.PCPACK\nCH_PLAYERGOBLIN.PCPACK\n\nImportant:\nPack A can also be a previously patched PC pack if you want to add more changes later.\n\nExample:\n\nFirst patch:\nClean CH_SPIDERMAN.PCPACK -> patched copy\n\nFollow-up patch:\nLoad the patched copy as Pack A -> apply another preset\n\n\n============================================================\n3. PICK YOUR XBOX PACK FOLDER\n============================================================\n\nClick the Xbox Pack Folder button.\n\nChoose the folder that contains your Xbox source ZIPs.\n\nDO NOT UNZIP the ZIP files inside this folder.\n\nLeave them zipped.\n\nExpected Xbox Pack Folder contents:\n\nCH_SPIDERMANXE.zip\nCH_BLACKSUITXE.zip\nCH_PETERXE.zip\nCH_PLAYERGOBLINXE.zip\nCH_SPIDERMAN_RVBXE.zip\nCH_RVBBLACKXE.zip\n\nThe tool will read the ZIPs from the folder.\n\n\n============================================================\n4. PACK B / SOURCE SIDE\n============================================================\n\nPack B is the source side.\n\nYou can use:\n\n- Xbox pack ZIP from the Xbox Pack Folder\n- manually selected source pack\n- another PC pack\n- a previously patched PC pack\n\nFor normal release presets, the tool usually uses the correct source based on the preset/source you select.\n\n\n============================================================\n5. LOAD / VERIFY PACKS\n============================================================\n\nAfter Pack A and Pack B/source are selected, click:\n\nLOAD / VERIFY PACKS\n\nThe tool should show the animation lists for Pack A and Pack B.\n\nIf you picked the wrong pack, use:\n\nClear Pack A\nClear Pack B\nClear Source Folder\nClear All Pack Inputs\n\n\n============================================================\n6. OPEN RELEASE PRESET CENTER\n============================================================\n\nClick:\n\nRELEASE PRESET CENTER\n\nPick a preset.\n\nGood first preset:\n\nRVB_RED_COMBAT_RESTORED_5PACK\n\nThis is the most stable release preset.\n\n\n============================================================\n7. USE MULTI SELECTION CENTER IF NEEDED\n============================================================\n\nClick:\n\nMULTI SELECTION CENTER\n\nUse this when you want to add several preset rows together or manage selected swaps more easily.\n\nThe tool blocks same-name/no-change rows.\n\nExample of blocked no-change row:\n\ngobairturbo <- gobairturbo\n\nThat would patch the same animation back into itself, so the tool correctly blocks it.\n\n\n============================================================\n8. PATCH A NEW COPY\n============================================================\n\nWhen ready, click the patch button.\n\nThe tool should save a NEW patched PC copy.\n\nImportant:\nDo not overwrite your clean original pack.\n\nAlways keep backups.\n\n\n============================================================\n9. INSTALL THE PATCHED PACK\n============================================================\n\nAfter the new patched pack is created:\n\n1. Back up your original game pack.\n2. Rename the patched copy if needed.\n3. Put it in your Spider-Man 3 PC packs folder.\n4. Test in-game.\n\nExample game folder:\n\nYour Spider-Man 3 PC packs folder\n\n\n============================================================\nBEST FIRST TEST\n============================================================\n\nStart with:\n\nPack A:\nCH_SPIDERMAN.PCPACK\n\nXbox Pack Folder:\nfolder containing the zipped Xbox packs\n\nPreset:\nRVB_RED_COMBAT_RESTORED_5PACK\n\nOutput:\nnew patched CH_SPIDERMAN copy\n\nThis is the safest main release preset.\n\n\n============================================================\nIMPORTANT SAFETY NOTES\n============================================================\n\n- Do not unzip the Xbox Pack Folder ZIPs.\n- Do not overwrite your original PC packs.\n- Use clean PC packs for first-time patching.\n- Use Clear Pack buttons if you select the wrong pack.\n- Same-name/no-change presets are blocked.\n\n\n============================================================\nBOTTOM LINE\n============================================================\n\nPack A = PC pack you want to change.\n\nXbox Pack Folder = folder with zipped Xbox source packs.\n\nPreset Center = choose animation preset.\n\nMulti Selection Center = manage multiple selected swaps.\n\nPatch = save a new PC pack copy.\n============================================================\n\n\nMESSAGE FROM TSGAMING264\n============================================================\n\nI really wanted this game to get some more mod support. Hopefully you all like and enjoy the tool.\n\nSupport my YouTube channel. Drop a like on the breakdown video whenever it is released.\n\nI will try to make a video of me using this tool. I know these text examples might not be the best at explaining everything, but the tool works and is simple to use.\n\nJoin my Discord, and follow my pages below.'
+        about_text = 'SM3 ANIMATION SWAPPER - ABOUT / INFO\n============================================================\n\nThis is the legacy/manual animation swapper included inside SM3 Modding Toolkit.\nIt is kept for compatibility with old workflows, old presets, manual source/target selection, and Multi Selection Center.\n\nUse this tab when you specifically need the older animation swapper workflow.\nFor the cleaner release animation patch workflow, use New Animation Swapper.\n\n============================================================\nBASIC WORKFLOW\n============================================================\n\n1. Pick Pack A / PC destination pack.\n   This is the PC pack you want to patch into a new copy.\n\n2. Pick Pack B / source side.\n   This can be another compatible PC pack, a manual source, or an Xbox source folder when using the legacy source workflow.\n\n3. Load / verify the animation lists.\n   Make sure Pack A and Pack B/source are what you expected.\n\n4. Pick a PC destination animation and a source animation.\n   Safe swaps need a real existing PC destination slot.\n\n5. Preview/analyze the selected pair if needed.\n   Same-size / same-layout style swaps are safer.\n\n6. Patch a new PC copy.\n   Do not overwrite your clean original pack.\n\n============================================================\nMULTI SELECTION CENTER\n============================================================\n\nUse Multi Selection Center to manage several selected swaps.\n\nCurrent release controls include:\n- Add Current Selection\n- Preview Selected\n- Save Selection Preset CSV\n- Load Selection Preset CSV\n- Sync Selection To Main Lists (No Patch)\n- BUILD NAS CSV\n\nBUILD NAS CSV can bridge selected old-swapper pairs into the New Animation Swapper CSV workflow.\n\n============================================================\nSAFETY RULES\n============================================================\n\n- Original PC packs are never supposed to be modified directly.\n- Always patch into a new PC pack copy.\n- Keep backups before replacing files in the game folder.\n- Xbox sources are source-only.\n- A safe swap needs an existing PC destination slot.\n- Same-name/no-change rows should stay blocked.\n- Bigger/different-size or cross-family swaps are higher risk and should be tested carefully.\n\n============================================================\nCURRENT TOOLKIT NOTE\n============================================================\n\nThis is no longer a standalone-only workflow. Inside SM3 Modding Toolkit, open the toolkit normally and use the Old Animation Swapper tab from the main tab bar.\n\nOld separate-launcher instructions are outdated for this integrated toolkit build.\n\n============================================================\nMESSAGE FROM TSGAMING264\n============================================================\n\nI really wanted this game to get more mod support. Hopefully you all like and enjoy the tool.\n\nSupport my YouTube channel and mod pages if this helped you.\n'
         info.insert("1.0", about_text)
         info.configure(state="disabled")
+        self.bind_text_mousewheel(info)
 
         links = ttk.LabelFrame(outer, text="Links", padding=8)
         links.pack(fill="x", pady=(8, 0))
@@ -3102,17 +3215,29 @@ class App:
             ("X / Twitter", "https://x.com/tsgaming0416?s=21"),
             ("Instagram", "https://www.instagram.com/tsgaming0416?igsh=aGRjM29pcmR6aXh4&utm_source=qr"),
             ("Reddit", "https://www.reddit.com/u/TSGAMING264/s/IJogsEHNtp"),
+            ("TikTok", "https://www.tiktok.com/@tsgaming264?_r=1&_t=ZP-96pR4Oegdmp"),
+            ("Nexus Mods", "https://www.nexusmods.com/profile/TSGAMING264"),
+            ("GameBanana", "https://gamebanana.com/members/5514794"),
         ]
-        for label, url in link_rows:
-            row = ttk.Frame(links)
-            row.pack(fill="x", pady=2)
-            ttk.Label(row, text=f"{label}:", width=14).pack(side="left")
-            ttk.Label(row, text=url).pack(side="left", fill="x", expand=True)
-            ttk.Button(row, text="Open", command=lambda u=url: self.open_external_link(u)).pack(side="right")
+        def _short_link_text(url: str) -> str:
+            text = url.replace("https://", "").replace("http://", "")
+            return text if len(text) <= 42 else text[:39] + "..."
+
+        for i, (label, url) in enumerate(link_rows):
+            r = i // 2
+            c = i % 2
+            cell = ttk.Frame(links)
+            cell.grid(row=r, column=c, sticky="ew", padx=(0, 16), pady=3)
+            links.columnconfigure(c, weight=1, minsize=520)
+            cell.columnconfigure(1, weight=1)
+            ttk.Label(cell, text=f"{label}:", width=12).grid(row=0, column=0, sticky="w")
+            ttk.Label(cell, text=_short_link_text(url), width=44).grid(row=0, column=1, sticky="w", padx=(4, 8))
+            ttk.Button(cell, text="Open", command=lambda u=url: self.open_external_link(u), width=10).grid(row=0, column=2, sticky="e")
 
         ttk.Button(outer, text="Close", command=win.destroy).pack(anchor="e", pady=(8, 0))
         try:
             self.apply_theme()
+            self.theme_popup(win)
         except Exception:
             pass
 
@@ -3133,8 +3258,8 @@ class App:
             sf,
             textvariable=filter_var,
             state="readonly",
-            width=10,
-            values=["All", "Combat", "Swing", "Jump", "Walk", "Idle"]
+            width=16,
+            values=["All", "Combat", "Swing", "Jump", "Dive/Fall", "Web/Zip", "Wall/Crawl", "Walk/Run", "Idle", "Black Suit", "Goblin", "Peter"]
         )
         combo.pack(side="left")
         combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_preserve_selection())
@@ -3211,24 +3336,18 @@ class App:
         self.refresh_preserve_selection()
 
     def anim_matches_real_filter(self, entry, filter_name):
-        f = (filter_name or "All").lower()
+        f = (filter_name or "All").lower().strip()
         if f == "all":
             return True
+        family = FILTER_TO_FAMILY.get(f, f.replace(" ", "_"))
         low = (entry.display_name or "").lower()
-        if f == "combat":
-            return any(k in low for k in [
-                "atck", "attack", "punch", "kick", "hit", "block", "uppercut",
-                "stomp", "pummel", "rage", "fury", "smash", "beatdown", "deflect"
-            ])
-        if f == "swing":
-            return any(k in low for k in ["swing", "swg", "webswing", "poleswg"])
-        if f == "jump":
-            return any(k in low for k in ["jump", "jmp", "dive", "fall", "land", "launch", "lnch", "rls"])
-        if f == "walk":
-            return any(k in low for k in ["walk", "run", "sprint"]) and not any(k in low for k in ["wall", "swg", "swing"])
-        if f == "idle":
-            return any(k in low for k in ["idle", "idl", "tapleft", "tapright", "tapback", "tapfwd"])
-        return True
+        if family == "walk":
+            # Keep walk/run from being polluted by wall-run and swing-run names.
+            return anim_in_family(low, "walk") and not any(k in low for k in ["wall", "swg", "swing", "vertweb"])
+        if family == "jump":
+            # Jump filter keeps pure jump/launch names; dive/fall has its own WOS-accurate lane now.
+            return anim_in_family(low, "jump") and not anim_in_family(low, "dive_fall")
+        return anim_in_family(low, family)
 
     def entry_key(self, e):
         return (e.platform, e.display_name, int(e.filename_hash or 0), int(e.total_size or 0), tuple(e.component_sizes or []))
@@ -3341,7 +3460,7 @@ class App:
         self.reset_tree_panel(False)
         self.xbox_source_choice_var.set("Manual Pack B")
         self.clear_selection_center_state()
-        self.write("\nPack B cleared. Choose a manual source pack or select one from the Xbox Pack Folder.\n")
+        self.write("\nPack B cleared. Choose a manual source pack/file or select one from the Xbox Source Folder.\n")
 
     def clear_xbox_source_folder(self):
         self.xbox_source_folder_var.set("")
@@ -3351,7 +3470,7 @@ class App:
             self.xbox_source_combo.configure(values=["Manual Pack B"])
         except Exception:
             pass
-        self.write("\nXbox Pack Folder cleared. Manual Pack B is still available.\n")
+        self.write("\nXbox Source Folder cleared. Manual Pack B is still available.\n")
 
     def clear_all_pack_inputs(self):
         self.a_var.set("")
@@ -3369,13 +3488,13 @@ class App:
         self.write("\nAll pack inputs cleared. Start again with the correct PC Pack A and source Pack B.\n")
 
     def browse_xbox_source_folder(self):
-        folder = filedialog.askdirectory(title="Choose folder containing your own Xbox/XE source ZIPs")
+        folder = filedialog.askdirectory(title="Choose Xbox Source Folder: zipped Xbox packs or extracted animation source folder")
         if folder:
             self.xbox_source_folder_var.set(folder)
             self.scan_xbox_source_folder(Path(folder))
 
     def scan_xbox_source_folder(self, folder: Path):
-        """Scan a user-provided folder for Xbox/XE source ZIPs.
+        """Scan a user-provided folder for Xbox/XE source packs or extracted sources.
 
         This is release-safe: the tool does not include source packs. It only
         detects files the user selected from their own folder and lets one be
@@ -3384,10 +3503,17 @@ class App:
         self.xbox_source_map = {}
         values = ["Manual Pack B"]
         if not folder.exists() or not folder.is_dir():
-            messagebox.showerror("Xbox Pack Folder", "Selected Xbox Pack Folder does not exist.")
+            messagebox.showerror("Xbox Source Folder", "Selected Xbox Source Folder does not exist.")
             return
-        lower_to_path = {p.name.lower(): p for p in folder.iterdir() if p.is_file() and p.suffix.lower() == ".zip"}
-        status_lines = []
+
+        # v1.15: not everyone will have exact Xbox source ZIP names.
+        # Always allow the selected folder itself to become Pack B/source.
+        folder_display = f"Xbox Source Folder - USE THIS FOLDER ({folder.name})"
+        self.xbox_source_map[folder_display] = folder
+        values.append(folder_display)
+
+        lower_to_path = {p.name.lower(): p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in (".zip", ".xepack")}
+        status_lines = [f"Selected folder option: AVAILABLE ({folder})"]
         for label, aliases in XBOX_SOURCE_ZIP_DEFINITIONS:
             found = None
             for alias in aliases:
@@ -3406,10 +3532,11 @@ class App:
             self.xbox_source_combo.configure(values=values)
         except Exception:
             pass
-        self.xbox_source_choice_var.set(values[1] if len(values) > 1 else "Manual Pack B")
+        # Default to the folder option so user-provided extracted Xbox/source folders work immediately.
+        self.xbox_source_choice_var.set(folder_display if folder_display in self.xbox_source_map else (values[1] if len(values) > 1 else "Manual Pack B"))
         if len(values) > 1:
             self.use_selected_xbox_source_as_pack_b(silent=True)
-        self.write("\nXbox Pack Folder scanned:\n" + "\n".join(status_lines) + "\n")
+        self.write("\nXbox Source Folder scanned:\n" + "\n".join(status_lines) + "\n")
 
     def selected_xbox_source_changed(self, _event=None):
         self.use_selected_xbox_source_as_pack_b(silent=True)
@@ -3423,7 +3550,7 @@ class App:
             return
         self.b_var.set(str(p))
         if not silent:
-            self.write(f"\nPack B set from Xbox Pack Folder: {p.name}\n")
+            self.write(f"\nPack B set from Xbox Source Folder: {p.name}\n")
 
     def browse(self, var):
         p = filedialog.askopenfilename(title="Choose pack or output zip", filetypes=[("SM3 pack/output zip/hex txt", "*.PCPACK *.XEPACK *.zip *.txt"), ("All files", "*.*")])
@@ -3508,20 +3635,31 @@ class App:
 
     def preview(self):
         try:
-            a = self.selected(True)
-            b = self.selected(False)
-            ok, reason = same_size_ok(b, a, self.strict_var.get())
+            if not self.pack_a or not self.pack_b:
+                raise ValueError("Load/verify packs first.")
+            entry_pairs = self.current_main_selection_entries_by_order()
+            rows = []
+            for i, (a, b) in enumerate(entry_pairs, start=1):
+                ok, reason = same_size_ok(b, a, self.strict_var.get())
+                rows.append(
+                    f"{i}. A/DEST: {a.platform} {a.display_name} size={a.total_size} comps={a.component_sizes}\n"
+                    f"   B/SRC : {b.platform} {b.display_name} size={b.total_size} comps={b.component_sizes}\n"
+                    f"   Validation: {'PASS' if ok else 'FAIL'} - {reason}\n"
+                    f"   Safety: {safety_label(a.display_name, b.display_name)}"
+                )
+            note = getattr(self, "_last_multi_selection_pairing_note", "")
             msg = (
-                f"A/DEST: {a.platform} {a.display_name} size={a.total_size} comps={a.component_sizes}\n"
-                f"B/SRC : {b.platform} {b.display_name} size={b.total_size} comps={b.component_sizes}\n\n"
-                f"Validation: {'PASS' if ok else 'FAIL'} - {reason}\n"
-                f"Safety: {safety_label(a.display_name,b.display_name)}\n\n"
-                "Patch only works when both A and B are PC packs."
+                f"Preview selected animation pair(s): {len(entry_pairs)}\n"
+                f"{note}\n\n"
+                + "\n\n".join(rows[:25])
             )
+            if len(rows) > 25:
+                msg += f"\n\n...and {len(rows)-25} more selected pair(s)."
+            msg += "\n\nThis preview does not write a PCPACK. Use the patch button or Multi Selection Center after checking the rows."
             self.write("\n" + msg + "\n")
-            messagebox.showinfo("Preview", msg)
+            messagebox.showinfo("Preview Selected", msg)
         except Exception as e:
-            messagebox.showerror("Preview failed", str(e))
+            messagebox.showerror("Preview selected failed", str(e))
 
     def patch(self):
         try:
@@ -3731,7 +3869,7 @@ class App:
         if self.pack_a.platform != "PC":
             raise ValueError("Pack A must be the PC destination pack. Clear Pack A and choose the clean/current PC pack you want to patch.")
         if self.pack_b.platform not in ("PC", "X360"):
-            raise ValueError("Pack B must be a valid source pack. Choose a PC source pack manually, or choose an Xbox/RVB ZIP from the Xbox Pack Folder.")
+            raise ValueError("Pack B must be a valid source pack. Choose a PC source pack manually, or choose an Xbox/RVB ZIP/folder from the Xbox Source Folder.")
         return True, False   # destination is A, source is B
 
     def entry_by_exact_name(self, pack, name):
@@ -3895,19 +4033,47 @@ class App:
         self.write(f"\nSelection Center applied {len(pc_iids)} pair(s) to main lists. Pair order stored by exact names for v2.2 direct patch.\n")
         return len(pc_iids), missing
 
-    def current_main_selection_pairs_by_order(self):
-        """Build (pc destination name, source name) pairs from the current main list selections."""
+    def current_main_selection_entries_by_order(self):
+        """Build destination/source Entry pairs from the current main list selections.
+
+        v1.18/v5.2.67: Multi Selection Center should work from plain current
+        list selections and should not require loading a preset or CSV first.
+        Pairing rules:
+        - same count on both sides: pair by order
+        - one destination + many sources: test many sources against that slot
+        - many destinations + one source: apply that one source to many slots
+        - uneven multi/multi: pair up to the shorter list instead of hard failing
+        """
         pc_is_a, rvb_is_a = self.side_for_pc_and_rvb()
         pc_entries = self.selected_many(pc_is_a)
         rvb_entries = self.selected_many(rvb_is_a)
 
-        if len(pc_entries) != len(rvb_entries):
-            raise ValueError(
-                f"Main selection count mismatch.\n\nPack A destination selected: {len(pc_entries)}\n"
-                f"Pack B source selected: {len(rvb_entries)}\n\n"
-                "Select the same number on both sides before using Add Current Main Selection."
-            )
-        return [(d.display_name, s.display_name) for d, s in zip(pc_entries, rvb_entries)]
+        if len(pc_entries) == len(rvb_entries):
+            pairs = list(zip(pc_entries, rvb_entries))
+            self._last_multi_selection_pairing_note = f"Paired {len(pairs)} selected row(s) by order."
+            return pairs
+        if len(pc_entries) == 1 and len(rvb_entries) > 1:
+            pairs = [(pc_entries[0], src) for src in rvb_entries]
+            self._last_multi_selection_pairing_note = f"Paired 1 destination slot with {len(rvb_entries)} selected source row(s)."
+            return pairs
+        if len(rvb_entries) == 1 and len(pc_entries) > 1:
+            pairs = [(dest, rvb_entries[0]) for dest in pc_entries]
+            self._last_multi_selection_pairing_note = f"Paired {len(pc_entries)} destination slot(s) with 1 selected source row."
+            return pairs
+
+        count = min(len(pc_entries), len(rvb_entries))
+        if count <= 0:
+            raise ValueError("Select at least one Pack A destination and one Pack B source animation.")
+        pairs = list(zip(pc_entries[:count], rvb_entries[:count]))
+        self._last_multi_selection_pairing_note = (
+            f"Selection counts were uneven: Pack A={len(pc_entries)}, Pack B={len(rvb_entries)}. "
+            f"Paired the first {count} row(s) by order."
+        )
+        return pairs
+
+    def current_main_selection_pairs_by_order(self):
+        """Build (pc destination name, source name) pairs from current main list selections."""
+        return [(d.display_name, s.display_name) for d, s in self.current_main_selection_entries_by_order()]
 
 
 
@@ -3923,24 +4089,25 @@ class App:
             return
 
         win = tk.Toplevel(self.root)
-        win.title("SM3 ANIMATION SWAPPER RELEASE v1.14 - Multi Selection Center")
+        win.title("SM3 ANIMATION SWAPPER RELEASE v1.18 - Multi Selection Center")
         apply_app_icon(win)
-        win.geometry("1120x680")
-        win.minsize(940, 540)
+        win.geometry("1220x740")
+        win.minsize(980, 600)
         win.transient(self.root)
 
         selected_pairs = []
+        user_presets = {}  # name -> list[(destination, source)] loaded/saved from Selection CSV files during this Multi Selection session
 
         top = ttk.Frame(win, padding=8)
         top.pack(fill="x")
         ttk.Label(
             top,
-            text="Multi Selection Center: add release presets or manual pairs, review swaps, then patch one new copy. Pack B can be PC or Xbox/RVB. Same-name/no-change rows are blocked.",
+            text="Multi Selection Center: add current Pack A / Pack B selections, review swaps, then patch one new copy. Built-in presets are hidden for release cleanup. Pack B can be PC or Xbox/RVB.",
             font=("Segoe UI", 10, "bold"),
         ).pack(anchor="w")
         ttk.Label(
             top,
-            text="Release workflow: choose presets, verify selected pairs, and save a new patched copy.",
+            text="Release workflow: add current selected pair(s), verify the box, and save a new patched copy.",
             style="Warn.TLabel",
         ).pack(anchor="w", pady=(2, 0))
 
@@ -3950,7 +4117,7 @@ class App:
         body.columnconfigure(1, weight=2)
         body.rowconfigure(1, weight=1)
 
-        ttk.Label(body, text="Release presets").grid(row=0, column=0, sticky="w")
+        ttk.Label(body, text="Selection CSV list (empty until you save/load)").grid(row=0, column=0, sticky="w")
         # Release v1.8 scrollbar fix: both list boxes now have dedicated vertical + horizontal scrollbars.
         preset_frame = ttk.Frame(body)
         preset_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
@@ -3963,11 +4130,8 @@ class App:
         preset_list.grid(row=0, column=0, sticky="nsew")
         preset_y.grid(row=0, column=1, sticky="ns")
         preset_x.grid(row=1, column=0, sticky="ew")
-        for name, pairs in MULTI_SELECTION_PRESETS.items():
-            status, real, reference = preset_patchability_status(pairs)
-            # Release UI should only show real animation-changing presets.
-            if real:
-                preset_list.insert("end", name)
+        # v1.12: built-in old presets are intentionally not shown in the release UI.
+        # They are saved in source/history but the list starts empty so users build from current selections.
 
         ttk.Label(body, text="Selection box - Pack A destination <- Pack B source payload").grid(row=0, column=1, sticky="w")
         pair_frame = ttk.Frame(body)
@@ -3978,6 +4142,25 @@ class App:
         pair_y = ttk.Scrollbar(pair_frame, orient="vertical", command=pair_list.yview)
         pair_x = ttk.Scrollbar(pair_frame, orient="horizontal", command=pair_list.xview)
         pair_list.configure(yscrollcommand=pair_y.set, xscrollcommand=pair_x.set)
+        # v1.16/v5.2.65: force Listbox colors now so dark mode does not leave white boxes.
+        # Light mode intentionally keeps the listboxes white/near-white like the Tex Swapper light view.
+        try:
+            c = self.theme_palette()
+            dark_now = bool(getattr(self, "dark_mode_var", tk.BooleanVar(value=False)).get())
+            list_bg = c["panel"] if dark_now else "#FFFFFF"
+            list_fg = c["fg"]
+            for lb in (preset_list, pair_list):
+                lb.configure(
+                    bg=list_bg,
+                    fg=list_fg,
+                    insertbackground=list_fg,
+                    selectbackground=c["accent"],
+                    selectforeground="#FFFFFF",
+                    highlightbackground=c["accent"],
+                    highlightcolor=c["accent"],
+                )
+        except Exception:
+            pass
         pair_list.grid(row=0, column=0, sticky="nsew")
         pair_y.grid(row=0, column=1, sticky="ns")
         pair_x.grid(row=1, column=0, sticky="ew")
@@ -3998,7 +4181,7 @@ class App:
         _bind_listbox_mousewheel(preset_list)
         _bind_listbox_mousewheel(pair_list)
 
-        status_var = tk.StringVar(value="No preset loaded.")
+        status_var = tk.StringVar(value="Selection CSV list starts empty. Use Add Current Selection directly from the main Pack A / Pack B lists, or save/load your own Selection CSV.")
         ttk.Label(body, textvariable=status_var, style="Info.TLabel").grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 0))
 
         def refresh_pair_box():
@@ -4022,13 +4205,13 @@ class App:
                 messagebox.showinfo("Select preset", "Select a release preset first.", parent=win)
                 return
             name = preset_list.get(sel[0])
-            pairs = list(MULTI_SELECTION_PRESETS.get(name, []))
+            pairs = list(user_presets.get(name, MULTI_SELECTION_PRESETS.get(name, [])))
             status, real, reference = preset_patchability_status(pairs)
             selected_pairs.clear()
-            selected_pairs.extend(real)
+            selected_pairs.extend(pairs)
             refresh_pair_box()
             info = PRESET_RELEASE_INFO.get(name, {})
-            status_var.set(f"Loaded {name}: {len(real)} real swap(s). Risk: {info.get('risk', 'UNKNOWN')}")
+            status_var.set(f"Loaded {name}: {len(pairs)} pair(s), {len(real)} real, {len(reference)} blocked same-name. Risk: {info.get('risk', 'UNKNOWN')}")
 
         def add_selected_preset():
             sel = preset_list.curselection()
@@ -4036,14 +4219,15 @@ class App:
                 messagebox.showinfo("Select preset", "Select a release preset first.", parent=win)
                 return
             name = preset_list.get(sel[0])
-            status, real, reference = preset_patchability_status(MULTI_SELECTION_PRESETS.get(name, []))
+            pairs_from_preset = list(user_presets.get(name, MULTI_SELECTION_PRESETS.get(name, [])))
+            status, real, reference = preset_patchability_status(pairs_from_preset)
             added = 0
-            for pair in real:
+            for pair in pairs_from_preset:
                 if pair not in selected_pairs:
                     selected_pairs.append(pair)
                     added += 1
             refresh_pair_box()
-            status_var.set(f"Added {added} real swap pair(s) from {name}.")
+            status_var.set(f"Added {added} pair(s) from {name}: {len(real)} real, {len(reference)} blocked same-name.")
 
         def remove_selected_pair():
             sel = list(pair_list.curselection())
@@ -4056,12 +4240,18 @@ class App:
 
         def clear_pairs():
             selected_pairs.clear()
+            user_presets.clear()
+            try:
+                preset_list.delete(0, "end")
+            except Exception:
+                pass
             refresh_pair_box()
+            status_var.set("Cleared selection box and loaded/saved Selection CSV list.")
 
         def patchable_pairs_or_warn(action_name):
             status, real, reference = preset_patchability_status(selected_pairs)
             if not selected_pairs:
-                messagebox.showinfo("Selection box empty", "Load or add a release preset first.", parent=win)
+                messagebox.showinfo("Selection box empty", "Add current selected pair(s) first, or load a Selection CSV. Built-in old presets are hidden in this release UI.", parent=win)
                 return None
             if status == "REFERENCE_ONLY_NO_PATCH":
                 messagebox.showwarning(
@@ -4082,19 +4272,21 @@ class App:
             return real
 
         def apply_to_main():
-            pairs_to_apply = patchable_pairs_or_warn("Apply To Main Lists")
-            if pairs_to_apply is None:
+            if not selected_pairs:
+                messagebox.showinfo("Selection box empty", "Add selected pair(s) first. No CSV or preset is required.", parent=win)
                 return
-            count, missing = self.apply_pair_names_to_main_selection(pairs_to_apply)
+            count, missing = self.apply_pair_names_to_main_selection(selected_pairs)
             if count:
+                real, reference = split_real_and_reference_pairs(selected_pairs)
                 messagebox.showinfo(
-                    "Applied",
-                    f"Applied {count} real swap pair(s) to the main lists.\n\n"
-                    "Now use PATCH SELECTED PAIR or Apply + Patch Now.",
+                    "Selection applied to main lists",
+                    f"Selected {count} pair(s) in the main Pack A / Pack B lists.\n\n"
+                    "This does not write a PCPACK by itself; it only selects the matching rows in the main Pack A / Pack B lists so you can preview or use the main patch button.\n\n"
+                    f"Patchable real rows: {len(real)}\nBlocked same-name rows: {len(reference)}",
                     parent=win,
                 )
             else:
-                messagebox.showwarning("Nothing applied", "No matching real swap pairs were found in the loaded packs.", parent=win)
+                messagebox.showwarning("Nothing applied", "No matching pairs were found in the loaded Pack A / Pack B lists.", parent=win)
 
         def apply_and_patch():
             pairs_to_patch = patchable_pairs_or_warn("Apply + Patch Now")
@@ -4112,85 +4304,147 @@ class App:
         def add_current_main_selection():
             try:
                 pairs = self.current_main_selection_pairs_by_order()
-                # Keep only real, different-source rows.
-                real, reference = split_real_and_reference_pairs(pairs)
+                # v1.18/v5.2.67: Add whatever the user selected into the selection box.
+                # Same-name/no-change rows are shown as blocked in the box and are skipped
+                # only when patching/saving patchable real rows.
                 added = 0
-                for pair in real:
+                duplicates = 0
+                for pair in pairs:
                     if pair not in selected_pairs:
                         selected_pairs.append(pair)
                         added += 1
+                    else:
+                        duplicates += 1
+                real, reference = split_real_and_reference_pairs(pairs)
                 refresh_pair_box()
-                status_var.set(f"Added {added} real pair(s) from current main selection. Same-name rows ignored.")
+                pairing_note = getattr(self, "_last_multi_selection_pairing_note", "")
+                status_var.set(
+                    f"Added {added} selected pair(s). {len(real)} real / {len(reference)} blocked same-name. "
+                    f"{duplicates} duplicate(s) skipped. {pairing_note}"
+                )
             except Exception as exc:
                 messagebox.showerror("Add Current Selection failed", str(exc), parent=win)
+
+        def _selection_csv_rows(pairs_to_write):
+            rows = []
+            for idx, (d, src) in enumerate(pairs_to_write, start=1):
+                same = is_noop_same_name_pair((d, src))
+                rows.append({
+                    "enabled": "0" if same else "1",
+                    "mode": "blocked_same_name_no_change" if same else "slot_preserve",
+                    "pc_destination": d,
+                    "source_payload": src,
+                    "destination": d,
+                    "replacement": src,
+                    "row_kind": "BLOCKED_SAME_NAME_NO_CHANGE" if same else "REAL_SWAP_DIFFERENT_SOURCE",
+                    "note": "Blocked same-name/no-change row" if same else "Loaded from Old Animation Swapper Multi Selection CSV",
+                    "row": idx,
+                })
+            return rows
+
+        def _name_from_csv_anim_ref(value):
+            raw = str(value or "").strip().strip('"')
+            if not raw:
+                return ""
+            raw = raw.replace("\\", "/")
+            name = raw.split("/")[-1]
+            if name.lower().endswith(".anim"):
+                name = name[:-5]
+            m = re.match(r"0x[0-9A-Fa-f]{8}[._-](.+)$", name)
+            if m:
+                name = m.group(1)
+            return name.strip()
+
+        def save_selection_as_preset():
+            if not selected_pairs:
+                messagebox.showinfo("Selection box empty", "Add selected pair(s) first. No CSV or preset is required to build a Multi Selection CSV.", parent=win)
+                return
+            pairs_to_save = list(selected_pairs)
+            real_to_save, reference_to_save = split_real_and_reference_pairs(pairs_to_save)
+            default_name = "CUSTOM_SELECTION.csv"
+            out = filedialog.asksaveasfilename(
+                title="Save current selection as CSV",
+                defaultextension=".csv",
+                initialfile=default_name,
+                filetypes=[("Selection CSV", "*.csv"), ("All files", "*.*")],
+            )
+            if not out:
+                return
+            selection_name = Path(out).stem
+            write_csv(Path(out), _selection_csv_rows(pairs_to_save))
+            user_presets[selection_name] = list(pairs_to_save)
+            existing = list(preset_list.get(0, "end"))
+            if selection_name not in existing:
+                preset_list.insert("end", selection_name)
+            preset_list.selection_clear(0, "end")
+            try:
+                idx = list(preset_list.get(0, "end")).index(selection_name)
+                preset_list.selection_set(idx)
+                preset_list.see(idx)
+            except Exception:
+                pass
+            status_var.set(f"Saved Selection CSV: {Path(out).name} ({len(pairs_to_save)} pair(s), {len(real_to_save)} real, {len(reference_to_save)} blocked same-name).")
+            self.write(f"\nSaved Multi Selection CSV: {out}\n")
 
         def export_selected_preset_json():
             sel = preset_list.curselection()
             if not sel:
-                messagebox.showinfo("Select preset", "Select a release preset first.", parent=win)
+                messagebox.showinfo("Select Selection CSV", "Select a loaded/saved Selection CSV first.", parent=win)
                 return
             name = preset_list.get(sel[0])
-            pairs = MULTI_SELECTION_PRESETS.get(name, [])
-            status, real, reference = preset_patchability_status(pairs)
+            pairs = user_presets.get(name, MULTI_SELECTION_PRESETS.get(name, []))
             out = filedialog.asksaveasfilename(
-                title="Export selected preset JSON",
-                defaultextension=".json",
-                initialfile=re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_") + ".json",
-                filetypes=[("JSON preset", "*.json"), ("All files", "*.*")],
+                title="Export selected Selection CSV",
+                defaultextension=".csv",
+                initialfile=re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_") + ".csv",
+                filetypes=[("Selection CSV", "*.csv"), ("All files", "*.*")],
             )
             if not out:
                 return
-            payload = {
-                "schema": "SM3_ANIM_SWAP_RELEASE_PRESET_v1",
-                "tool_build": "SM3_ANIMATION_SWAPPER_RELEASE_v1_14",
-                "preset_name": name,
-                "release_info": PRESET_RELEASE_INFO.get(name, {}),
-                "real_swap_pair_count": len(real),
-                "pairs": [
-                    {"pc_destination": d, "source_payload": src, "row_kind": "REAL_SWAP_DIFFERENT_SOURCE"}
-                    for d, src in real
-                ],
-                "warnings": [
-                    "Patch the user's own clean PC pack and save a new copy.",
-                    "Do not distribute original game PCPACK/XEPACK files.",
-                    "Same-name/no-change rows are blocked.",
-                ],
-            }
-            Path(out).write_text(json.dumps(payload, indent=2), encoding="utf-8")
-            status_var.set(f"Exported preset JSON: {Path(out).name}")
-            self.write(f"\nExported preset JSON: {out}\n")
+            write_csv(Path(out), _selection_csv_rows(list(pairs)))
+            status_var.set(f"Exported Selection CSV: {Path(out).name}")
+            self.write(f"\nExported Selection CSV: {out}\n")
 
         def load_preset_json():
             path = filedialog.askopenfilename(
-                title="Load preset JSON",
-                filetypes=[("JSON preset", "*.json"), ("All files", "*.*")],
+                title="Load Selection Preset CSV",
+                filetypes=[("Selection CSV", "*.csv"), ("All files", "*.*")],
             )
             if not path:
                 return
             try:
-                data = json.loads(Path(path).read_text(encoding="utf-8"))
-                raw_pairs = data.get("pairs") or []
                 parsed = []
-                for item in raw_pairs:
-                    if isinstance(item, dict):
-                        d = item.get("pc_destination") or item.get("dest") or item.get("destination")
-                        src = item.get("source_payload") or item.get("source_payload") or item.get("source")
-                    elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                        d, src = item[0], item[1]
-                    else:
-                        continue
-                    if d and src:
-                        parsed.append((str(d), str(src)))
+                with Path(path).open("r", encoding="utf-8-sig", newline="") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        d = row.get("pc_destination") or row.get("destination") or row.get("dest") or row.get("target") or row.get("source_out")
+                        src = row.get("source_payload") or row.get("replacement") or row.get("source") or row.get("replacement_in") or row.get("new_anim")
+                        d = _name_from_csv_anim_ref(d)
+                        src = _name_from_csv_anim_ref(src)
+                        if d and src:
+                            parsed.append((str(d), str(src)))
                 real, reference = split_real_and_reference_pairs(parsed)
-                if not real:
-                    raise ValueError("No real animation-changing pairs found. Same-name/no-change rows are blocked.")
+                if not parsed:
+                    raise ValueError("No valid animation pairs found in Selection CSV.")
+                selection_name = Path(path).stem
+                user_presets[selection_name] = list(parsed)
+                existing = list(preset_list.get(0, "end"))
+                if selection_name not in existing:
+                    preset_list.insert("end", selection_name)
+                preset_list.selection_clear(0, "end")
+                try:
+                    idx = list(preset_list.get(0, "end")).index(selection_name)
+                    preset_list.selection_set(idx)
+                    preset_list.see(idx)
+                except Exception:
+                    pass
                 selected_pairs.clear()
-                selected_pairs.extend(real)
+                selected_pairs.extend(parsed)
                 refresh_pair_box()
-                status_var.set(f"Loaded JSON preset: {Path(path).name} ({len(real)} real swap pair(s))")
-                self.write(f"\nLoaded preset JSON: {path}\n")
+                status_var.set(f"Loaded Selection CSV: {Path(path).name} ({len(parsed)} pair(s), {len(real)} real, {len(reference)} blocked same-name). Added to Selection CSV list.")
+                self.write(f"\nLoaded Selection CSV: {path}\n")
             except Exception as exc:
-                messagebox.showerror("Load preset JSON failed", str(exc), parent=win)
+                messagebox.showerror("Load Selection Preset CSV failed", str(exc), parent=win)
 
         def load_red_5pack():
             key = "RVB_RED_COMBAT_RESTORED_5PACK - RELEASE STABLE"
@@ -4202,14 +4456,20 @@ class App:
 
         btns = ttk.Frame(win, padding=8)
         btns.pack(fill="x")
-        ttk.Button(btns, text="Load Preset", command=load_selected_preset).pack(side="left", padx=4)
-        ttk.Button(btns, text="Add Preset", command=add_selected_preset).pack(side="left", padx=4)
-        ttk.Button(btns, text="Load Red 5-Pack", command=load_red_5pack).pack(side="left", padx=4)
-        ttk.Button(btns, text="Add Current Selection", command=add_current_main_selection).pack(side="left", padx=4)
-        ttk.Button(btns, text="Remove Selected Pair", command=remove_selected_pair).pack(side="left", padx=4)
-        ttk.Button(btns, text="Clear", command=clear_pairs).pack(side="left", padx=4)
-        ttk.Button(btns, text="Apply To Main Lists", command=apply_to_main).pack(side="right", padx=4)
-        ttk.Button(btns, text="Apply + Patch Now", command=apply_and_patch).pack(side="right", padx=4)
+        multi_buttons = [
+            ("Add Current Selection", add_current_main_selection),
+            ("Save Selection Preset CSV", save_selection_as_preset),
+            ("Load Selection Preset CSV", load_preset_json),
+            ("Remove Selected Pair", remove_selected_pair),
+            ("Clear", clear_pairs),
+            ("Sync Selection To Main Lists (No Patch)", apply_to_main),
+            ("Apply + Patch Now", apply_and_patch),
+        ]
+        for i, (label, cmd) in enumerate(multi_buttons):
+            row = i // 4
+            col = i % 4
+            btns.columnconfigure(col, weight=1)
+            ttk.Button(btns, text=label, command=cmd).grid(row=row, column=col, sticky="ew", padx=3, pady=3)
 
         note = (
             "Release preset list reviewed: no same-name/no-change presets are shown. "

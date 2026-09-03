@@ -1,0 +1,30 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(5, 2, 182, 0),
+    prodvers=(5, 2, 182, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        u'040904B0',
+        [
+          StringStruct(u'CompanyName', u'TSGAMING264'),
+          StringStruct(u'FileDescription', u'Spider-Man 3 Modding Toolkit'),
+          StringStruct(u'FileVersion', u'5.2.182.0'),
+          StringStruct(u'InternalName', u'SM3 Toolkit'),
+          StringStruct(u'LegalCopyright', u'Created by TSGAMING264'),
+          StringStruct(u'OriginalFilename', u'SM3 Toolkit.exe'),
+          StringStruct(u'ProductName', u'SM3 Toolkit'),
+          StringStruct(u'ProductVersion', u'5.2.182')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)

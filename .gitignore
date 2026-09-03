@@ -65,5 +65,21 @@ PATCHED*/
 # Local editor/cache
 .vscode/
 .idea/
+.venv/
+.venv-*/
+.pytest_cache/
+.mypy_cache/
+.cache/
 .DS_Store
 Thumbs.db
+
+# Audio/model downloads and generated stems
+separated/
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.th
+*.pt
+*.ckpt
+*.safetensors

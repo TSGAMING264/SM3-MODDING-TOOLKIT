@@ -4,12 +4,12 @@
 # CREATED BY TSGAMING264 + LIGHT/DARK MODE + CLEAN PRESETS
 #
 # Purpose:
-#   - PC .PCPACK ANIM list/compare/same-size PC patch
-#   - Xbox .XEPACK ANIM list/compare READ-ONLY
+#   - PC/Xbox pack ANIM list/compare through one unified loader
+#   - PC destination patching with PC or Xbox source payloads
 #   - Same-pack diff scan
 #   - Fixes Xbox 0-ANIM issue with fallback scan + extracted-output support
 #
-# Xbox patching/conversion is intentionally disabled.
+# Xbox packs are source/list inputs; NEW PC PACK output always targets a PC pack.
 # ============================================================
 
 from __future__ import annotations
@@ -26,26 +26,16 @@ import sys
 import webbrowser
 import tkinter as tk
 from sm3_toolkit import paths
+from sm3_toolkit.sm3_pack_guard import WRONG_GAME_GUARD_MESSAGE, looks_like_wrong_game_or_unsupported_sm3_path, wrong_game_detail
+from sm3_toolkit.theme import COLORS
 from dataclasses import dataclass
 from pathlib import Path
 
 APP_DISPLAY_NAME = "SM3 ANIMATION SWAPPER"
-APP_VERSION = "RELEASE v1.10"
+APP_VERSION = "RELEASE v1.19_SIMPLE_PAIR_OUTPUTS"
 APP_ICON_NAME = "SM3_ANIMATION_SWAPPER.ico"
-APP_ABOUT_INFO_NAME = "ABOUT_INFO_RELEASE_v1_14.txt"
 APP_CREATOR = "Created by TSGAMING264"
-
-# Release-safe Xbox source workflow:
-# The tool does NOT ship Xbox/RVB source packs. Users select their own folder
-# containing these XEPACK files, then choose one as Pack B/source.
-XBOX_SOURCE_PACK_DEFINITIONS = [
-    ("Xbox Spider-Man", ["CH_SPIDERMAN.XEPACK", "CH_SPIDERMANXE.XEPACK", "CH_SPIDERMAN_XE.XEPACK", "CH_SPIDERMANXE.zip", "CH_SPIDERMAN_XE.zip", "CH_SPIDERMAN.XE.zip"]),
-    ("Xbox Black Suit", ["CH_BLACKSUIT.XEPACK", "CH_BLACKSUITXE.XEPACK", "CH_BLACKSUIT_XE.XEPACK", "CH_BLACKSUITXE.zip", "CH_BLACKSUIT_XE.zip", "CH_BLACKSUIT.XE.zip"]),
-    ("Xbox Peter", ["CH_PETER.XEPACK", "CH_PETERXE.XEPACK", "CH_PETER_XE.XEPACK", "CH_PETERXE.zip", "CH_PETER_XE.zip", "CH_PETER.XE.zip"]),
-    ("Xbox Player Goblin", ["CH_PLAYERGOBLIN.XEPACK", "CH_PLAYERGOBLINXE.XEPACK", "CH_PLAYERGOBLIN_XE.XEPACK", "CH_PLAYERGOBLINXE.zip", "CH_PLAYERGOBLIN_XE.zip", "CH_PLAYERGOBLIN.XE.zip"]),
-    ("Xbox RVB Red", ["CH_SPIDERMAN_RVB.XEPACK", "CH_SPIDERMAN_RVBXE.XEPACK", "CH_SPIDERMAN_RVB_XE.XEPACK", "CH_SPIDERMAN_RVBXE.zip", "CH_SPIDERMAN_RVB_XE.zip", "CH_SPIDERMAN_RVB.XE.zip"]),
-    ("Xbox RVB Black", ["CH_RVBBLACK.XEPACK", "CH_RVBBLACKXE.XEPACK", "CH_RVBBLACK_XE.XEPACK", "CH_RVBBLACKXE.zip", "CH_RVBBLACK_XE.zip", "CH_RVBBLACK.XE.zip"]),
-]
+APP_ABOUT_INFO_TEXT = 'SM3 ANIMATION SWAPPER - ABOUT / INFO\n\nThis is the legacy/manual animation swapper included inside SM3 Modding Toolkit.\nUse it for direct Pack A / Pack B animation browsing and selected-pair patching.\n\nBASIC WORKFLOW\n1. Load supported Pack A and Pack B files. PC/Xbox is detected automatically.\n2. Click LOAD / VERIFY PACKS.\n3. Select one destination animation and one replacement animation.\n4. Preview/check the selected pair.\n5. PATCH SELECTED PAIR -> NEW PC PACK to create a separate patched PC pack when a PC destination is loaded.\n6. Or PATCH SELECTED PAIR -> NEW ANIM COPY for a standalone loose ANIM copy.\n\nSAFETY\n- Keep backups.\n- Clean original packs are not supposed to be overwritten.\n- NEW PC PACK writes a separate output file.\n- Xbox packs can be loaded in either slot, but PC-pack output requires a real PC destination pack.\n- Test loose ANIM output carefully through your normal mod-loader workflow.\n\nFor simple XESM3 target -> replacement mods or guided motion editing, use New Animation Swapper.\n\nCreated by TSGAMING264\n'
 
 
 def resource_path(filename: str) -> Path:
@@ -1160,7 +1150,7 @@ class SM3Pack:
             else:
                 self.errors.append(
                     f"Direct XEPACK parse found 0 ANIM. Found {len(positions)} APKF signatures but recovered 0 ANIM, "
-                    f"and raw string scan found 0 animation-like names. Use v0.3 focused extractor output zip/folder as Pack B."
+                    f"and raw string scan found 0 animation-like names. Use a focused extractor output ZIP/folder in either pack slot."
                 )
 
     def component_blob(self, entry, i):
@@ -1283,6 +1273,24 @@ def try_load_hxd_hex_dump_as_pack(blob: bytes, original_path: Path, source_name:
     pack.detect_info["hex_dump_decoded_size"] = len(data)
     pack.path = original_path
     return pack
+
+def preferred_platform_for_input(path: Path) -> str:
+    """Choose a neutral fallback hint for ambiguous extracted inputs.
+
+    Direct PCPACK/XEPACK files are platform-detected from their actual magic by
+    SM3Pack. This hint matters only when an extracted folder/ZIP/TXT does not
+    identify its own platform.
+    """
+    suffix = path.suffix.lower()
+    if suffix == ".xepack":
+        return "X360"
+    if suffix in (".pcpack", ".pcapk", ".apkf"):
+        return "PC"
+    text = str(path).upper()
+    if any(k in text for k in ("X360", "XBOX", "XEPACK", "_XE")):
+        return "X360"
+    return "PC"
+
 
 def load_pack_or_extracted(path: Path, preferred_platform="PC"):
     """Load a direct pack, extracted-output folder/zip, zip containing a pack, or HxD hex-dump TXT.
@@ -1433,21 +1441,87 @@ def patch_pc_anim_copy(dest_pack, source_pack, dest, src, output, strict_compone
 
 
 
+# WOS-informed family filters.
+# Updated from the WOS Toolkit known Spider-Man animation reference list:
+# Dive/Fall, Idle, Jog/Run, Run Jump, Double Jump, Swing Intro, Low Swing,
+# Web Dash/Vertical Zip, punches, black-suit combat, etc.
 FAMILY_KEYWORDS = {
     "combat": [
-        "atck", "attack", "punch", "kick", "hit", "block", "rage", "beatdown",
-        "uppercut", "stomp", "pummel", "smratck", "smbatck", "bs_rage"
-    ],
-    "walk": [
-        "walk", "run", "idle2run", "run2idle", "walk2idle", "idle2walk",
-        "tapback", "tapforward", "tapleft", "tapright"
+        "atck", "atk", "attack", "punch", "kick", "hit", "hurt", "block", "rage", "beatdown",
+        "uppercut", "stomp", "pummel", "deflect", "fury", "smash", "elbow", "backhand",
+        "crosspunch", "spinpunch", "spinpunchfaster", "kickender", "ichor", "exploder", "ender",
+        "rightpunch", "leftpunch", "charge_attack", "air_charge", "backhandender"
     ],
     "swing": [
-        "swing", "swg", "webswing", "poleswg"
+        "swing", "swg", "webswing", "poleswg", "slowswing", "swingrun", "swgrun",
+        "swgrls", "rintro", "lintro", "swing_left", "swing_idle", "dangle", "rls45", "rlsb", "rlsv",
+        "swgmid", "midrls", "poleswing", "swingexit", "swing2hang", "hang2swing", "swgl", "swgr"
     ],
     "jump": [
-        "jump", "jmp", "land", "fall", "dive", "launch", "lnch", "fly"
+        "jump", "jmp", "doublejump", "runjmp", "jmplnch", "jmpland", "floorbounce", "bncjm", "bounc", "fly",
+        "jumpbackflip", "backflipbounce", "jmpchglndloop", "jumpoff"
     ],
+    "dive_fall": [
+        "dive", "fall", "divefall", "2dive", "fall_land", "flail", "rls2dive", "rslv", "rlsv"
+    ],
+    "web_zip": [
+        "web", "zip", "webdash", "web_dash", "vertweb", "verticalweb", "webzip", "webzipshort", "zipintro",
+        "vertwebzip", "webf", "webidl", "webclimb"
+    ],
+    "wall_crawl": [
+        "wall", "crawl", "crwl", "climb", "hang", "hangclimb", "grind", "wallgrind", "wallrun", "wallslide", "wallatck"
+    ],
+    "walk": [
+        "walk", "run", "sprint", "jog", "idle2run", "run2idle", "walk2idle", "idle2walk",
+        "tapback", "tapforward", "tapleft", "tapright", "tapfwd", "meta_anim"
+    ],
+    "idle": [
+        "idle", "idl", "tapleft", "tapright", "tapback", "tapforward", "tapfwd", "tap", "seated", "dangle",
+        "relax", "introidl", "fidgit", "fidget", "webidl", "ppidl", "idlrelax", "idl2tight"
+    ],
+    "black_suit": [
+        "smb", "bs3", "black", "blacksuit", "ichor", "bsm", "smbichor", "smbstomp", "smbbackhand"
+    ],
+    "goblin": [
+        "gob", "goblin", "gobair", "airswrd", "sword", "turbo", "throw"
+    ],
+    "peter": [
+        "peter", "sm3p", "sm3pp", "sm3ppidl", "ppidl", "winded", "face", "bellow"
+    ],
+}
+
+FAMILY_LABELS = {
+    "combat": "combat",
+    "swing": "swing",
+    "jump": "jump",
+    "dive_fall": "dive/fall",
+    "web_zip": "web/zip",
+    "wall_crawl": "wall/crawl",
+    "walk": "walk/run",
+    "idle": "idle",
+    "black_suit": "black suit",
+    "goblin": "goblin",
+    "peter": "peter",
+}
+
+FAMILY_PRIORITY = [
+    "black_suit", "goblin", "peter", "combat", "swing", "web_zip",
+    "wall_crawl", "dive_fall", "jump", "walk", "idle",
+]
+
+FILTER_TO_FAMILY = {
+    "combat": "combat",
+    "swing": "swing",
+    "jump": "jump",
+    "walk": "walk",
+    "walk/run": "walk",
+    "idle": "idle",
+    "web/zip": "web_zip",
+    "wall/crawl": "wall_crawl",
+    "dive/fall": "dive_fall",
+    "black suit": "black_suit",
+    "goblin": "goblin",
+    "peter": "peter",
 }
 
 
@@ -1457,8 +1531,8 @@ def anim_in_family(name: str, family: str) -> bool:
 
 
 def family_label_for_name(name: str) -> str:
-    hits = [fam for fam in FAMILY_KEYWORDS if anim_in_family(name, fam)]
-    return ",".join(hits) if hits else "other"
+    hits = [fam for fam in FAMILY_PRIORITY if anim_in_family(name, fam)]
+    return ",".join(FAMILY_LABELS.get(fam, fam) for fam in hits[:4]) if hits else "other"
 
 
 SAFE_LITE_ALLOW = {
@@ -1544,15 +1618,21 @@ def build_safe_lite_matches(dest_pack, src_pack, group: str, max_count: int = 20
 
 
 def source_dest_for_rvb_mode(pack_a, pack_b):
-    """Release source mode: Pack A is always the PC destination; Pack B can be PC or Xbox/RVB source."""
+    """Return (PC destination, source) independent of A/B slot order.
+
+    Both slots accept PC or Xbox inputs. If both are PC, Pack A remains the
+    destination for backwards compatibility. PC-pack output requires at least
+    one PC pack.
+    """
     if not pack_a or not pack_b:
         raise ValueError("Load/verify packs first.")
-    if pack_a.platform != "PC":
-        raise ValueError("Pack A must be the PC destination pack. Pack B can be a PC source pack or an Xbox/RVB source pack.")
-    if pack_b.platform not in ("PC", "X360"):
-        raise ValueError("Pack B must be a supported source pack: PC or Xbox/RVB.")
-    return pack_a, pack_b
-
+    if pack_a.platform not in ("PC", "X360") or pack_b.platform not in ("PC", "X360"):
+        raise ValueError("Both inputs must be supported SM3 PC or Xbox animation sources.")
+    if pack_a.platform == "PC":
+        return pack_a, pack_b
+    if pack_b.platform == "PC":
+        return pack_b, pack_a
+    raise ValueError("A NEW PC PACK needs one PC pack. Load a PC pack in either A or B; the other side may be PC or Xbox.")
 
 
 MULTI_SELECTION_PRESETS = {
@@ -2915,14 +2995,33 @@ class OldAnimationSwapperTab(ttk.Frame):
     def __init__(self, parent, app_state=None):
         super().__init__(parent)
         self.app_state = app_state
-        self.root = self
+
+        # Release UI: the legacy swapper has a tall pack-setup + dual-list +
+        # patch-actions layout. Put the whole page in one vertical scroll host so
+        # no control is sacrificed when the main Toolkit is running on a laptop.
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        self._page_canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0, bg=COLORS.get("bg", "#1E1E1E"))
+        self._page_scroll = ttk.Scrollbar(self, orient="vertical", command=self._page_canvas.yview)
+        self._page_canvas.configure(yscrollcommand=self._page_scroll.set)
+        self._page_canvas.grid(row=0, column=0, sticky="nsew")
+        self._page_scroll.grid(row=0, column=1, sticky="ns")
+        self.root = ttk.Frame(self._page_canvas)
+        self._page_window = self._page_canvas.create_window((0, 0), window=self.root, anchor="nw")
+
+        def _sync_page(_event=None):
+            try:
+                self._page_canvas.itemconfigure(self._page_window, width=max(1, self._page_canvas.winfo_width()))
+                self._page_canvas.configure(scrollregion=self._page_canvas.bbox("all"))
+            except Exception:
+                pass
+
+        self.root.bind("<Configure>", _sync_page, add="+")
+        self._page_canvas.bind("<Configure>", _sync_page, add="+")
         apply_app_icon(self.root)
 
         self.a_var = tk.StringVar()
         self.b_var = tk.StringVar()
-        self.xbox_source_folder_var = tk.StringVar()
-        self.xbox_source_choice_var = tk.StringVar(value="Manual Pack B")
-        self.xbox_source_map = {}
         self.search_a = tk.StringVar()
         self.search_b = tk.StringVar()
         self.filter_a = tk.StringVar(value="All")
@@ -2936,6 +3035,9 @@ class OldAnimationSwapperTab(ttk.Frame):
         self.selection_center_pairs = []
         self.selection_center_active = False
         self.dark_mode_var = tk.BooleanVar(value=True)
+        # Release UI: keep Old Animation Swapper themed internally, but hide the old local Dark Mode checkbox.
+        # Main Toolkit global Theme selector controls the release-level theme now.
+        self.dark_mode_var.set(True)
         self.style = ttk.Style(self.root)
         self.build_ui()
         self.apply_theme()
@@ -2945,30 +3047,76 @@ class OldAnimationSwapperTab(ttk.Frame):
             yield child
             yield from self.iter_child_widgets(child)
 
+    def theme_palette(self):
+        # v5.2.102: Old Animation Swapper now follows the global Toolkit Theme.
+        # This keeps release colors consistent and removes the old fixed red/blue split.
+        return {
+            "bg": COLORS.get("bg", "#1E1E1E"),
+            "panel": COLORS.get("panel", "#252526"),
+            "fg": COLORS.get("fg", "#EDEDED"),
+            "field": COLORS.get("field", "#111111"),
+            "accent": COLORS.get("select", COLORS.get("accent", "#3A7AFE")),
+            "warn": COLORS.get("warn", COLORS.get("brand", COLORS.get("accent_hover", "#EDEDED"))),
+            "info": COLORS.get("notice", COLORS.get("muted", "#8EC5FF")),
+        }
+
+    def style_classic_widget(self, widget):
+        c = self.theme_palette()
+        try:
+            if isinstance(widget, (tk.Text, tk.Listbox)):
+                widget.configure(
+                    bg=c["panel"],
+                    fg=c["fg"],
+                    insertbackground=c["fg"],
+                    selectbackground=c["accent"],
+                    selectforeground="#FFFFFF",
+                    highlightbackground=c["accent"],
+                    highlightcolor=c["accent"],
+                )
+            elif isinstance(widget, tk.Entry):
+                widget.configure(bg=c["field"], fg=c["fg"], insertbackground=c["fg"])
+        except Exception:
+            pass
+
+    def theme_popup(self, window):
+        c = self.theme_palette()
+        try:
+            window.configure(bg=c["bg"])
+        except Exception:
+            pass
+        def walk(w):
+            for ch in w.winfo_children():
+                self.style_classic_widget(ch)
+                walk(ch)
+        walk(window)
+
+    def bind_text_mousewheel(self, widget):
+        def _wheel(event, box=widget):
+            if getattr(event, "num", None) == 4:
+                box.yview_scroll(-3, "units")
+            elif getattr(event, "num", None) == 5:
+                box.yview_scroll(3, "units")
+            else:
+                box.yview_scroll(int(-1 * (event.delta / 120)) * 3, "units")
+            return "break"
+        widget.bind("<MouseWheel>", _wheel)
+        widget.bind("<Button-4>", _wheel)
+        widget.bind("<Button-5>", _wheel)
+
     def apply_theme(self):
         dark = bool(getattr(self, "dark_mode_var", tk.BooleanVar(value=False)).get())
         try:
             self.style.theme_use("clam")
         except Exception:
             pass
-        if dark:
-            bg = "#1E1E1E"
-            panel = "#252526"
-            fg = "#EDEDED"
-            field = "#111111"
-            accent = "#3A7AFE"
-            # v1.10: brighter release warning/info colors for Dark Mode readability.
-            # Only the red/blue message labels are changed; normal UI text keeps the same theme.
-            warn = "#FF9A9A"
-            info = "#8EC5FF"
-        else:
-            bg = "#F3F3F3"
-            panel = "#FFFFFF"
-            fg = "#111111"
-            field = "#FFFFFF"
-            accent = "#005A9E"
-            warn = "#B00000"
-            info = "#005A9E"
+        c = self.theme_palette()
+        bg = c["bg"]
+        panel = c["panel"]
+        fg = c["fg"]
+        field = c["field"]
+        accent = c["accent"]
+        warn = c["warn"]
+        info = c["info"]
         try:
             self.root.configure(bg=bg)
         except Exception:
@@ -2985,20 +3133,22 @@ class OldAnimationSwapperTab(ttk.Frame):
         except Exception:
             pass
         try:
-            self.style.configure("TButton", padding=4)
+            self.style.configure("TButton", padding=4, background=COLORS.get("button", panel), foreground=fg)
+            self.style.map(
+                "TButton",
+                background=[("pressed", COLORS.get("button_pressed", panel)), ("active", COLORS.get("button_hover", panel))],
+                foreground=[("active", fg), ("pressed", fg)],
+            )
             self.style.configure("TEntry", fieldbackground=field, foreground=fg)
             self.style.configure("TCombobox", fieldbackground=field, foreground=fg)
             self.style.configure("Treeview", background=panel, foreground=fg, fieldbackground=panel)
             self.style.configure("Treeview.Heading", background=bg, foreground=fg)
-            self.style.map("Treeview", background=[("selected", accent)], foreground=[("selected", "#FFFFFF")])
+            self.style.map("Treeview", background=[("selected", accent)], foreground=[("selected", fg)])
         except Exception:
             pass
         for w in self.iter_child_widgets(self.root):
             try:
-                if isinstance(w, (tk.Text, tk.Listbox)):
-                    w.configure(bg=panel, fg=fg, insertbackground=fg, selectbackground=accent, selectforeground="#FFFFFF")
-                elif isinstance(w, tk.Entry):
-                    w.configure(bg=field, fg=fg, insertbackground=fg)
+                self.style_classic_widget(w)
             except Exception:
                 pass
         if hasattr(self, "status"):
@@ -3018,35 +3168,25 @@ class OldAnimationSwapperTab(ttk.Frame):
         brand = ttk.Frame(top)
         brand.grid(row=0, column=0, columnspan=6, sticky="ew", pady=(0, 6))
         ttk.Label(brand, text="SM3 ANIMATION SWAPPER", font=("Segoe UI", 13, "bold")).pack(side="left")
-        ttk.Label(brand, text="   Created by TSGAMING264", font=("Segoe UI", 10, "bold")).pack(side="left")
-        ttk.Checkbutton(brand, text="Dark Mode", variable=self.dark_mode_var, command=self.toggle_dark_mode).pack(side="right")
-        ttk.Label(top, text="Pack A / PC destination pack:").grid(row=1, column=0, sticky="w")
+        ttk.Label(top, text="Pack A:").grid(row=1, column=0, sticky="w")
         ttk.Entry(top, textvariable=self.a_var).grid(row=1, column=1, sticky="ew", padx=4)
-        ttk.Button(top, text="Browse PC Pack A", command=lambda: self.browse(self.a_var)).grid(row=1, column=2, padx=4)
+        ttk.Button(top, text="Browse Pack A", command=lambda: self.browse(self.a_var)).grid(row=1, column=2, padx=4)
         ttk.Button(top, text="Clear Pack A", command=self.clear_pack_a).grid(row=1, column=3, padx=4)
-        ttk.Label(top, text="Pack B / source pack (manual PC/source option):").grid(row=2, column=0, sticky="w")
+        ttk.Label(top, text="Pack B:").grid(row=2, column=0, sticky="w")
         ttk.Entry(top, textvariable=self.b_var).grid(row=2, column=1, sticky="ew", padx=4)
         ttk.Button(top, text="Browse Pack B", command=lambda: self.browse(self.b_var)).grid(row=2, column=2, padx=4)
         ttk.Button(top, text="Clear Pack B", command=self.clear_pack_b).grid(row=2, column=3, padx=4)
 
-        ttk.Label(top, text="Xbox Pack Folder (optional):").grid(row=3, column=0, sticky="w", pady=(6, 0))
-        ttk.Entry(top, textvariable=self.xbox_source_folder_var).grid(row=3, column=1, sticky="ew", padx=4, pady=(6, 0))
-        ttk.Button(top, text="Select Xbox Pack Folder", command=self.browse_xbox_source_folder).grid(row=3, column=2, padx=4, pady=(6, 0))
-        ttk.Button(top, text="Clear Xbox Pack Folder", command=self.clear_xbox_source_folder).grid(row=3, column=3, padx=4, pady=(6, 0))
-
-        xbox_row = ttk.Frame(top)
-        xbox_row.grid(row=4, column=1, columnspan=2, sticky="ew", padx=4, pady=(3, 0))
-        xbox_row.columnconfigure(0, weight=1)
-        self.xbox_source_combo = ttk.Combobox(xbox_row, textvariable=self.xbox_source_choice_var, state="readonly", values=["Manual Pack B"], width=42)
-        self.xbox_source_combo.grid(row=0, column=0, sticky="ew")
-        self.xbox_source_combo.bind("<<ComboboxSelected>>", self.selected_xbox_source_changed)
-        ttk.Button(xbox_row, text="Use Selected Xbox Source as Pack B", command=self.use_selected_xbox_source_as_pack_b).grid(row=0, column=1, padx=(6, 0))
-
-        ttk.Button(top, text="Clear All Pack Inputs", command=self.clear_all_pack_inputs).grid(row=4, column=3, padx=4, pady=(3, 0), sticky="ew")
-        ttk.Button(top, text="LOAD / VERIFY PACKS", command=self.scan).grid(row=1, column=4, rowspan=4, padx=8, sticky="ns")
-        ttk.Checkbutton(top, text="Strict same component sizes", variable=self.strict_var).grid(row=5, column=0, sticky="w", pady=(6, 0))
+        ttk.Button(top, text="Clear All Pack Inputs", command=self.clear_all_pack_inputs).grid(row=3, column=3, padx=4, pady=(6, 0), sticky="ew")
+        ttk.Button(top, text="LOAD / VERIFY PACKS", command=self.scan).grid(row=1, column=4, rowspan=3, padx=8, sticky="ns")
+        ttk.Checkbutton(top, text="Strict same component sizes", variable=self.strict_var).grid(row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
         top.columnconfigure(1, weight=1)
-        ttk.Label(self.root, text="Created by TSGAMING264. Select your PC destination pack, choose your Xbox Pack Folder or manual Pack B, then save a new patched copy.", style="Warn.TLabel").pack(fill="x", padx=10)
+        ttk.Label(
+            self.root,
+            text="Load any supported SM3 PC or Xbox pack in either slot. Platform is detected automatically; when building a NEW PC PACK, the PC side becomes the destination automatically.",
+            style="Warn.TLabel",
+            wraplength=1250,
+        ).pack(fill="x", padx=10)
 
         paned = ttk.PanedWindow(self.root, orient="horizontal")
         paned.pack(fill="both", expand=True, padx=8, pady=4)
@@ -3059,14 +3199,22 @@ class OldAnimationSwapperTab(ttk.Frame):
 
         bottom = ttk.Frame(self.root, padding=8)
         bottom.pack(fill="x")
-        ttk.Button(bottom, text="Preview Selected Pair", command=self.preview).pack(side="left", padx=4)
-        ttk.Button(bottom, text="PATCH SELECTED PAIR -> NEW PC COPY", command=self.rvb_to_pc_patch).pack(side="left", padx=4)
-        ttk.Button(bottom, text="MULTI SELECTION CENTER", command=self.multi_selection_center).pack(side="left", padx=4)
-        ttk.Button(bottom, text="ABOUT / INFO", command=self.show_about_info).pack(side="left", padx=4)
+        bottom_buttons = [
+            ("Preview Selected", self.preview),
+            ("PATCH SELECTED PAIR -> NEW PC PACK", self.rvb_to_pc_patch),
+            ("PATCH SELECTED PAIR -> NEW ANIM COPY", self.patch_selected_pair_to_new_anim_copy),
+            ("ABOUT / INFO", self.show_about_info),
+        ]
+        for i, (label, cmd) in enumerate(bottom_buttons):
+            bottom.columnconfigure(i, weight=1)
+            ttk.Button(bottom, text=label, command=cmd).grid(row=0, column=i, sticky="ew", padx=3, pady=2)
 
-        self.status = tk.Text(self.root, height=11, wrap="word")
-        self.status.pack(fill="both", expand=False, padx=8, pady=(0,8))
-        self.write("SM3 ANIMATION SWAPPER RELEASE v1.10 ready. Created by TSGAMING264. Dark Mode default, Light Mode toggle available. Only real animation-changing presets are listed. Imported same-name/no-change presets are blocked.\n")
+        # Release UI: keep the patch actions visible on laptop-height windows.
+        # The log remains scrollable, but no longer reserves eleven text rows.
+        self.status = tk.Text(self.root, height=4, wrap="word")
+        self.status.pack(fill="x", expand=False, padx=8, pady=(0,8))
+
+        self.write("SM3 ANIMATION SWAPPER ready. Load supported SM3 PC/Xbox packs in A and B; platform is detected automatically. For PC output, the PC side becomes the destination automatically and the other side supplies replacement bytes.\n")
 
     def open_external_link(self, url: str) -> None:
         try:
@@ -3079,8 +3227,8 @@ class OldAnimationSwapperTab(ttk.Frame):
         win = tk.Toplevel(self.root)
         win.title("About / Info - SM3 ANIMATION SWAPPER")
         apply_app_icon(win)
-        win.geometry("760x680")
-        win.minsize(620, 520)
+        win.geometry("1280x780")
+        win.minsize(1100, 700)
         win.transient(self.root)
 
         outer = ttk.Frame(win, padding=10)
@@ -3088,35 +3236,22 @@ class OldAnimationSwapperTab(ttk.Frame):
 
         ttk.Label(
             outer,
-            text="SM3 ANIMATION SWAPPER",
+            text="SM3 ANIMATION SWAPPER - ABOUT / INFO",
             font=("Segoe UI", 16, "bold"),
-        ).pack(anchor="w")
-        ttk.Label(
-            outer,
-            text="Created by TSGAMING264",
-            font=("Segoe UI", 10, "bold"),
         ).pack(anchor="w", pady=(0, 8))
 
         text_frame = ttk.Frame(outer)
         text_frame.pack(fill="both", expand=True)
         scroll = ttk.Scrollbar(text_frame, orient="vertical")
-        info = tk.Text(text_frame, wrap="word", height=24, yscrollcommand=scroll.set)
+        info = tk.Text(text_frame, wrap="word", height=16, yscrollcommand=scroll.set)
         scroll.config(command=info.yview)
         info.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
 
-        about_path = resource_path(APP_ABOUT_INFO_NAME)
-        try:
-            about_text = about_path.read_text(encoding="utf-8")
-        except Exception:
-            about_text = (
-                "SM3 ANIMATION SWAPPER\n\n"
-                "Created by TSGAMING264.\n\n"
-                "Use Pack A as your PC destination pack, choose your Xbox Pack Folder "
-                "or manual Pack B source, then patch a new PC copy. Always keep backups."
-            )
+        about_text = APP_ABOUT_INFO_TEXT
         info.insert("1.0", about_text)
         info.configure(state="disabled")
+        self.bind_text_mousewheel(info)
 
         links = ttk.LabelFrame(outer, text="Links", padding=8)
         links.pack(fill="x", pady=(8, 0))
@@ -3126,17 +3261,29 @@ class OldAnimationSwapperTab(ttk.Frame):
             ("X / Twitter", "https://x.com/tsgaming0416?s=21"),
             ("Instagram", "https://www.instagram.com/tsgaming0416?igsh=aGRjM29pcmR6aXh4&utm_source=qr"),
             ("Reddit", "https://www.reddit.com/u/TSGAMING264/s/IJogsEHNtp"),
+            ("TikTok", "https://www.tiktok.com/@tsgaming264?_r=1&_t=ZP-96pR4Oegdmp"),
+            ("Nexus Mods", "https://www.nexusmods.com/profile/TSGAMING264"),
+            ("GameBanana", "https://gamebanana.com/members/5514794"),
         ]
-        for label, url in link_rows:
-            row = ttk.Frame(links)
-            row.pack(fill="x", pady=2)
-            ttk.Label(row, text=f"{label}:", width=14).pack(side="left")
-            ttk.Label(row, text=url).pack(side="left", fill="x", expand=True)
-            ttk.Button(row, text="Open", command=lambda u=url: self.open_external_link(u)).pack(side="right")
+        def _short_link_text(url: str) -> str:
+            text = url.replace("https://", "").replace("http://", "")
+            return text if len(text) <= 42 else text[:39] + "..."
+
+        for i, (label, url) in enumerate(link_rows):
+            r = i // 2
+            c = i % 2
+            cell = ttk.Frame(links)
+            cell.grid(row=r, column=c, sticky="ew", padx=(0, 16), pady=3)
+            links.columnconfigure(c, weight=1, minsize=520)
+            cell.columnconfigure(1, weight=1)
+            ttk.Label(cell, text=f"{label}:", width=12).grid(row=0, column=0, sticky="w")
+            ttk.Label(cell, text=_short_link_text(url), width=44).grid(row=0, column=1, sticky="w", padx=(4, 8))
+            ttk.Button(cell, text="Open", command=lambda u=url: self.open_external_link(u), width=10).grid(row=0, column=2, sticky="e")
 
         ttk.Button(outer, text="Close", command=win.destroy).pack(anchor="e", pady=(8, 0))
         try:
             self.apply_theme()
+            self.theme_popup(win)
         except Exception:
             pass
 
@@ -3144,26 +3291,27 @@ class OldAnimationSwapperTab(ttk.Frame):
         ttk.Label(parent, text=title, font=("Segoe UI", 11, "bold")).pack(anchor="w")
         sf = ttk.Frame(parent)
         sf.pack(fill="x", pady=3)
-        ttk.Label(sf, text="Search:").pack(side="left")
+        sf.columnconfigure(1, weight=1)
+        ttk.Label(sf, text="Search:").grid(row=0, column=0, sticky="w", padx=(0, 4), pady=2)
         ent = ttk.Entry(sf, textvariable=var)
-        ent.pack(side="left", fill="x", expand=True, padx=4)
+        ent.grid(row=0, column=1, sticky="ew", padx=4, pady=2)
         ent.bind("<KeyRelease>", lambda e: self.refresh_preserve_selection())
-        ttk.Button(sf, text="Search", command=self.refresh_preserve_selection).pack(side="left")
-        ttk.Button(sf, text="Clear Search", command=lambda v=var: self.clear_search(v)).pack(side="left", padx=4)
+        ttk.Button(sf, text="Search", command=self.refresh_preserve_selection).grid(row=0, column=2, padx=3, pady=2)
+        ttk.Button(sf, text="Clear Search", command=lambda v=var: self.clear_search(v)).grid(row=0, column=3, padx=(3, 0), pady=2)
 
-        ttk.Label(sf, text="Filter:").pack(side="left", padx=(10, 2))
+        ttk.Label(sf, text="Filter:").grid(row=1, column=0, sticky="w", padx=(0, 4), pady=2)
         filter_var = self.filter_a if is_a else self.filter_b
         combo = ttk.Combobox(
             sf,
             textvariable=filter_var,
             state="readonly",
-            width=10,
-            values=["All", "Combat", "Swing", "Jump", "Walk", "Idle"]
+            width=16,
+            values=["All", "Combat", "Swing", "Jump", "Dive/Fall", "Web/Zip", "Wall/Crawl", "Walk/Run", "Idle", "Black Suit", "Goblin", "Peter"]
         )
-        combo.pack(side="left")
+        combo.grid(row=1, column=1, sticky="ew", padx=4, pady=2)
         combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_preserve_selection())
-        ttk.Button(sf, text="Apply Filter", command=self.refresh_preserve_selection).pack(side="left", padx=4)
-        ttk.Button(sf, text="Clear Filter", command=lambda side=is_a: self.clear_filter(side)).pack(side="left", padx=4)
+        ttk.Button(sf, text="Apply Filter", command=self.refresh_preserve_selection).grid(row=1, column=2, padx=3, pady=2)
+        ttk.Button(sf, text="Clear Filter", command=lambda side=is_a: self.clear_filter(side)).grid(row=1, column=3, padx=(3, 0), pady=2)
 
         sel_var = tk.StringVar(value="Selected: none")
         sel_label = ttk.Label(parent, textvariable=sel_var, style="Info.TLabel")
@@ -3235,24 +3383,18 @@ class OldAnimationSwapperTab(ttk.Frame):
         self.refresh_preserve_selection()
 
     def anim_matches_real_filter(self, entry, filter_name):
-        f = (filter_name or "All").lower()
+        f = (filter_name or "All").lower().strip()
         if f == "all":
             return True
+        family = FILTER_TO_FAMILY.get(f, f.replace(" ", "_"))
         low = (entry.display_name or "").lower()
-        if f == "combat":
-            return any(k in low for k in [
-                "atck", "attack", "punch", "kick", "hit", "block", "uppercut",
-                "stomp", "pummel", "rage", "fury", "smash", "beatdown", "deflect"
-            ])
-        if f == "swing":
-            return any(k in low for k in ["swing", "swg", "webswing", "poleswg"])
-        if f == "jump":
-            return any(k in low for k in ["jump", "jmp", "dive", "fall", "land", "launch", "lnch", "rls"])
-        if f == "walk":
-            return any(k in low for k in ["walk", "run", "sprint"]) and not any(k in low for k in ["wall", "swg", "swing"])
-        if f == "idle":
-            return any(k in low for k in ["idle", "idl", "tapleft", "tapright", "tapback", "tapfwd"])
-        return True
+        if family == "walk":
+            # Keep walk/run from being polluted by wall-run and swing-run names.
+            return anim_in_family(low, "walk") and not any(k in low for k in ["wall", "swg", "swing", "vertweb"])
+        if family == "jump":
+            # Jump filter keeps pure jump/launch names; dive/fall has its own WOS-accurate lane now.
+            return anim_in_family(low, "jump") and not anim_in_family(low, "dive_fall")
+        return anim_in_family(low, family)
 
     def entry_key(self, e):
         return (e.platform, e.display_name, int(e.filename_hash or 0), int(e.total_size or 0), tuple(e.component_sizes or []))
@@ -3355,28 +3497,15 @@ class OldAnimationSwapperTab(ttk.Frame):
         self.filter_a.set("All")
         self.reset_tree_panel(True)
         self.clear_selection_center_state()
-        self.write("\nPack A cleared. Choose the correct PC destination pack before loading again.\n")
-
+        self.write("\nPack A cleared. Choose any supported SM3 PC/Xbox pack or supported extracted output.\n")
     def clear_pack_b(self):
         self.b_var.set("")
         self.pack_b = None
         self.search_b.set("")
         self.filter_b.set("All")
         self.reset_tree_panel(False)
-        self.xbox_source_choice_var.set("Manual Pack B")
         self.clear_selection_center_state()
-        self.write("\nPack B cleared. Choose a manual source pack or select one from the Xbox Pack Folder.\n")
-
-    def clear_xbox_source_folder(self):
-        self.xbox_source_folder_var.set("")
-        self.xbox_source_map = {}
-        self.xbox_source_choice_var.set("Manual Pack B")
-        try:
-            self.xbox_source_combo.configure(values=["Manual Pack B"])
-        except Exception:
-            pass
-        self.write("\nXbox Pack Folder cleared. Manual Pack B is still available.\n")
-
+        self.write("\nPack B cleared. Choose any supported SM3 PC/Xbox pack or supported extracted output.\n")
     def clear_all_pack_inputs(self):
         self.a_var.set("")
         self.b_var.set("")
@@ -3388,98 +3517,71 @@ class OldAnimationSwapperTab(ttk.Frame):
         self.filter_b.set("All")
         self.reset_tree_panel(True)
         self.reset_tree_panel(False)
-        self.clear_xbox_source_folder()
         self.clear_selection_center_state()
-        self.write("\nAll pack inputs cleared. Start again with the correct PC Pack A and source Pack B.\n")
-
-    def browse_xbox_source_folder(self):
-        folder = filedialog.askdirectory(title="Choose folder containing your Xbox .XEPACK source packs")
-        if folder:
-            self.xbox_source_folder_var.set(folder)
-            self.scan_xbox_source_folder(Path(folder))
-
-    def scan_xbox_source_folder(self, folder: Path):
-        """Scan a user-provided folder for Xbox/XE source packs.
-
-        This is release-safe: the tool does not include source packs. It only
-        detects files the user selected from their own folder and lets one be
-        loaded as Pack B.
-        """
-        self.xbox_source_map = {}
-        values = ["Manual Pack B"]
-        if not folder.exists() or not folder.is_dir():
-            messagebox.showerror("Xbox Pack Folder", "Selected Xbox Pack Folder does not exist.")
-            return
-        lower_to_path = {
-            p.name.lower(): p
-            for p in folder.iterdir()
-            if p.is_file() and p.suffix.lower() in (".xepack", ".zip")
-        }
-        status_lines = []
-        for label, aliases in XBOX_SOURCE_PACK_DEFINITIONS:
-            found = None
-            for alias in aliases:
-                p = lower_to_path.get(alias.lower())
-                if p:
-                    found = p
-                    break
-            if found:
-                display = f"{label}  - FOUND ({found.name})"
-                self.xbox_source_map[display] = found
-                values.append(display)
-                status_lines.append(f"{label}: FOUND ({found.name})")
-            else:
-                status_lines.append(f"{label}: missing")
-        try:
-            self.xbox_source_combo.configure(values=values)
-        except Exception:
-            pass
-        self.xbox_source_choice_var.set(values[1] if len(values) > 1 else "Manual Pack B")
-        if len(values) > 1:
-            self.use_selected_xbox_source_as_pack_b(silent=True)
-        self.write("\nXbox Pack Folder scanned:\n" + "\n".join(status_lines) + "\n")
-
-    def selected_xbox_source_changed(self, _event=None):
-        self.use_selected_xbox_source_as_pack_b(silent=True)
-
-    def use_selected_xbox_source_as_pack_b(self, silent: bool = False):
-        choice = self.xbox_source_choice_var.get()
-        p = self.xbox_source_map.get(choice)
-        if not p:
-            if not silent and choice != "Manual Pack B":
-                messagebox.showinfo("Xbox source", "Select a detected Xbox source pack first.")
-            return
-        self.b_var.set(str(p))
-        if not silent:
-            self.write(f"\nPack B set from Xbox Pack Folder: {p.name}\n")
-
+        self.write("\nAll pack inputs cleared. Load any supported SM3 PC/Xbox packs in A and B.\n")
     def browse(self, var):
-        p = filedialog.askopenfilename(title="Choose pack or output zip", filetypes=[("SM3 pack/output zip/hex txt", "*.PCPACK *.XEPACK *.zip *.txt"), ("All files", "*.*")])
+        p = filedialog.askopenfilename(
+            title="Choose SM3 animation pack",
+            filetypes=[
+                ("SM3 PC/Xbox packs", "*.PCPACK *.XEPACK *.zip *.txt *.hex"),
+                ("PC packs", "*.PCPACK"),
+                ("Xbox packs", "*.XEPACK"),
+                ("Pack/output ZIP", "*.zip"),
+                ("HxD text dump", "*.txt *.hex"),
+                ("All files", "*.*"),
+            ],
+        )
         if p:
             var.set(p)
-
     def scan(self):
         try:
             a = Path(self.a_var.get())
             b = Path(self.b_var.get())
-            if not a.exists(): raise ValueError("Pack A does not exist.")
-            if not b.exists(): raise ValueError("Pack B does not exist.")
-            self.write("\nScanning A...\n")
-            self.pack_a = load_pack_or_extracted(a, "PC")
-            self.write(f"A: {self.pack_a.platform} {self.pack_a.kind} resources={len(self.pack_a.resources)} ANIM={len(self.pack_a.anim_files)}\n")
+            if not a.exists():
+                raise ValueError("Pack A does not exist.")
+            if not b.exists():
+                raise ValueError("Pack B does not exist.")
+
+            # The old guard is specifically for SM3 PC pack signatures. Valid
+            # XEPACK inputs use reversed magic and must not be rejected here.
+            for path in (a, b):
+                if path.is_file() and path.suffix.lower() in (".pcpack", ".pcapk", ".apkf"):
+                    if looks_like_wrong_game_or_unsupported_sm3_path(path):
+                        self.write(wrong_game_detail(path) + "\n")
+                        messagebox.showerror("SM3 pack route not recognized", WRONG_GAME_GUARD_MESSAGE)
+                        return
+
+            self.write("\nScanning A (auto platform)...\n")
+            self.pack_a = load_pack_or_extracted(a, preferred_platform_for_input(a))
+            self.write(
+                f"A: detected={self.pack_a.platform} {self.pack_a.kind} "
+                f"resources={len(self.pack_a.resources)} ANIM={len(self.pack_a.anim_files)}\n"
+            )
             if getattr(self.pack_a, "errors", None):
                 self.write("A warnings:\n" + "\n".join(self.pack_a.errors[:8]) + "\n")
-            self.write("Scanning B...\n")
-            pref = "X360" if b.suffix.lower() in (".xepack", ".zip") else "PC"
-            self.pack_b = load_pack_or_extracted(b, pref)
-            self.write(f"B: {self.pack_b.platform} {self.pack_b.kind} resources={len(self.pack_b.resources)} ANIM={len(self.pack_b.anim_files)}\n")
+
+            self.write("Scanning B (auto platform)...\n")
+            self.pack_b = load_pack_or_extracted(b, preferred_platform_for_input(b))
+            self.write(
+                f"B: detected={self.pack_b.platform} {self.pack_b.kind} "
+                f"resources={len(self.pack_b.resources)} ANIM={len(self.pack_b.anim_files)}\n"
+            )
             if getattr(self.pack_b, "errors", None):
                 self.write("B warnings:\n" + "\n".join(self.pack_b.errors[:8]) + "\n")
+
+            if self.pack_a.platform == "PC" and self.pack_b.platform == "X360":
+                self.write("Auto route: Pack A = PC destination, Pack B = Xbox source.\n")
+            elif self.pack_a.platform == "X360" and self.pack_b.platform == "PC":
+                self.write("Auto route: Pack B = PC destination, Pack A = Xbox source.\n")
+            elif self.pack_a.platform == "PC" and self.pack_b.platform == "PC":
+                self.write("Auto route: both packs are PC; Pack A is destination, Pack B is source.\n")
+            elif self.pack_a.platform == "X360" and self.pack_b.platform == "X360":
+                self.write("Both loaded packs are Xbox. Listing/preview works; NEW PC PACK needs one PC destination.\n")
+
             self.refresh()
         except Exception as e:
             messagebox.showerror("Scan failed", str(e))
             self.write(f"ERROR: {e}\n")
-
     def filter_list(self, entries, term, filter_name="All"):
         term = (term or "").lower().strip()
         out = []
@@ -3536,35 +3638,47 @@ class OldAnimationSwapperTab(ttk.Frame):
 
     def preview(self):
         try:
-            a = self.selected(True)
-            b = self.selected(False)
-            ok, reason = same_size_ok(b, a, self.strict_var.get())
+            if not self.pack_a or not self.pack_b:
+                raise ValueError("Load/verify packs first.")
+            entry_pairs = self.current_main_selection_entries_by_order()
+            rows = []
+            for i, (a, b) in enumerate(entry_pairs, start=1):
+                ok, reason = same_size_ok(b, a, self.strict_var.get())
+                rows.append(
+                    f"{i}. A/DEST: {a.platform} {a.display_name} size={a.total_size} comps={a.component_sizes}\n"
+                    f"   B/SRC : {b.platform} {b.display_name} size={b.total_size} comps={b.component_sizes}\n"
+                    f"   Validation: {'PASS' if ok else 'FAIL'} - {reason}\n"
+                    f"   Safety: {safety_label(a.display_name, b.display_name)}"
+                )
+            note = getattr(self, "_last_multi_selection_pairing_note", "")
             msg = (
-                f"A/DEST: {a.platform} {a.display_name} size={a.total_size} comps={a.component_sizes}\n"
-                f"B/SRC : {b.platform} {b.display_name} size={b.total_size} comps={b.component_sizes}\n\n"
-                f"Validation: {'PASS' if ok else 'FAIL'} - {reason}\n"
-                f"Safety: {safety_label(a.display_name,b.display_name)}\n\n"
-                "Patch only works when both A and B are PC packs."
+                f"Preview selected animation pair(s): {len(entry_pairs)}\n"
+                f"{note}\n\n"
+                + "\n\n".join(rows[:25])
             )
+            if len(rows) > 25:
+                msg += f"\n\n...and {len(rows)-25} more selected pair(s)."
+            msg += "\n\nThis preview does not write anything. After checking the rows, use NEW PC PACK or NEW ANIM COPY."
             self.write("\n" + msg + "\n")
-            messagebox.showinfo("Preview", msg)
+            messagebox.showinfo("Preview Selected", msg)
         except Exception as e:
-            messagebox.showerror("Preview failed", str(e))
+            messagebox.showerror("Preview selected failed", str(e))
 
     def patch(self):
         try:
-            if self.pack_a.platform != "PC" or self.pack_b.platform != "PC":
-                raise ValueError("Patching is PC destination + PC source only. Xbox is read/list/compare only.")
-            a = self.selected(True)
-            b = self.selected(False)
+            dest_is_a, src_is_a = self.side_for_pc_and_rvb()
+            dest_pack = self.pack_a if dest_is_a else self.pack_b
+            src_pack = self.pack_a if src_is_a else self.pack_b
+            a = self.selected(dest_is_a)
+            b = self.selected(src_is_a)
             ok, reason = same_size_ok(b, a, self.strict_var.get())
             if not ok:
                 raise ValueError(reason)
-            out = filedialog.asksaveasfilename(title="Save patched PC PCPACK copy", defaultextension=".PCPACK", initialfile=Path(self.pack_a.path).stem + "_ANIM_SWAP_TEST.PCPACK", filetypes=[("PCPACK","*.PCPACK"),("All files","*.*")])
+            out = filedialog.asksaveasfilename(title="Save new patched PC pack", defaultextension=".PCPACK", initialfile=Path(dest_pack.path).stem + "_ANIM_SWAP_TEST.PCPACK", filetypes=[("PCPACK","*.PCPACK"),("All files","*.*")])
             if not out:
                 return
-            patch_pc_anim_copy(self.pack_a, self.pack_b, a, b, Path(out), self.strict_var.get(), allow_x360_source=False)
-            self.write(f"\nPatched PC copy saved: {out}\n")
+            patch_pc_anim_copy(dest_pack, src_pack, a, b, Path(out), self.strict_var.get(), allow_x360_source=True)
+            self.write(f"\nNew patched PC pack saved: {out}\n")
             messagebox.showinfo("Patch complete", f"Saved:\n{out}")
         except Exception as e:
             messagebox.showerror("Patch failed", str(e))
@@ -3685,14 +3799,11 @@ class OldAnimationSwapperTab(ttk.Frame):
             if not self.pack_a or not self.pack_b:
                 raise ValueError("Load/verify packs first.")
 
-            if self.pack_a.platform != "PC":
-                raise ValueError("Pack A must be the PC destination pack. Pack B is the source side.")
-            if self.pack_b.platform not in ("PC", "X360"):
-                raise ValueError("Pack B must be a PC source pack or Xbox/RVB source pack.")
-
-            dest_pack, src_pack = self.pack_a, self.pack_b
-            dest_entry = self.selected(True)
-            src_entry = self.selected(False)
+            dest_is_a, src_is_a = self.side_for_pc_and_rvb()
+            dest_pack = self.pack_a if dest_is_a else self.pack_b
+            src_pack = self.pack_a if src_is_a else self.pack_b
+            dest_entry = self.selected(dest_is_a)
+            src_entry = self.selected(src_is_a)
 
             # Release guard: same-name rows are normally reference/no-change controls.
             if dest_entry.display_name.lower() == src_entry.display_name.lower():
@@ -3719,10 +3830,63 @@ class OldAnimationSwapperTab(ttk.Frame):
             patch_pc_anim_copy(dest_pack, src_pack, dest_entry, src_entry, Path(out), self.strict_var.get(), allow_x360_source=True)
             self.write(f"\nPatched PC copy saved: {out}\n")
             self.write(f"{dest_entry.display_name} <- {src_entry.display_name}\n")
-            messagebox.showinfo("Patch complete", f"Saved patched PC copy:\n{out}\n\nSource side used: {src_pack.platform}")
+            messagebox.showinfo("Patch complete", f"Saved new patched PC pack:\n{out}\n\nSource side used: {src_pack.platform}")
         except Exception as e:
             messagebox.showerror("Patch failed", str(e))
             self.write(f"ERROR: {e}\n")
+
+    def patch_selected_pair_to_new_anim_copy(self):
+        """Export source ANIM bytes under the automatically chosen PC target identity.
+
+        Either input may be PC or Xbox. The PC side supplies destination
+        hash/name; the other side supplies replacement bytes. If both are PC,
+        Pack A remains destination for backwards compatibility.
+        """
+        try:
+            if not self.pack_a or not self.pack_b:
+                raise ValueError("Load/verify packs first.")
+            dest_is_a, src_is_a = self.side_for_pc_and_rvb()
+            dest_pack = self.pack_a if dest_is_a else self.pack_b
+            src_pack = self.pack_a if src_is_a else self.pack_b
+            dest_entry = self.selected(dest_is_a)
+            src_entry = self.selected(src_is_a)
+            replacement_blob = src_pack.combined_blob(src_entry)
+            if not replacement_blob:
+                raise ValueError(
+                    "The selected Pack B animation has no readable payload bytes. "
+                    "Choose a parsed PC/Xbox pack or extracted animation source, not a name-only entry."
+                )
+
+            target_name = clean_name(dest_entry.display_name, "anim")
+            target_hash = hex32(dest_entry.filename_hash)
+            default_name = f"{target_hash}.{target_name}.anim"
+            out = filedialog.asksaveasfilename(
+                title="Save selected pair as new loose ANIM copy",
+                defaultextension=".anim",
+                initialfile=default_name,
+                filetypes=[("SM3 ANIM", "*.anim"), ("All files", "*.*")],
+            )
+            if not out:
+                return
+
+            Path(out).write_bytes(replacement_blob)
+            self.write(
+                f"\nNew ANIM copy saved: {out}\n"
+                f"Target identity: {target_hash}.{dest_entry.display_name}.anim\n"
+                f"Replacement payload: {src_entry.display_name} ({len(replacement_blob)} bytes)\n"
+                "No PCPACK was modified.\n"
+            )
+            messagebox.showinfo(
+                "ANIM copy complete",
+                f"Saved new loose ANIM copy:\n{out}\n\n"
+                f"Target: {dest_entry.display_name}\n"
+                f"Replacement: {src_entry.display_name}\n\n"
+                "The output filename uses the Pack A target identity; the file bytes come from Pack B.",
+            )
+        except Exception as e:
+            messagebox.showerror("ANIM copy failed", str(e))
+            self.write(f"ERROR: {e}\n")
+
 
     def find_visible_iid_by_name(self, is_a, name):
         view = self.view_a if is_a else self.view_b
@@ -3749,19 +3913,20 @@ class OldAnimationSwapperTab(ttk.Frame):
         self.refresh(a_keys=[], b_keys=[])
 
     def side_for_pc_and_rvb(self):
-        """Return booleans for release pair mode. Pack A is PC destination; Pack B is the source side.
+        """Return (destination_is_a, source_is_a) using automatic platform routing.
 
-        Older internal code calls this pc/rvb, but release v1.10 makes it universal:
-        Pack B may be Xbox/RVB or a normal PC character pack / previously patched PC pack.
+        Either slot may hold PC or Xbox. If both are PC, A remains destination
+        for backwards compatibility.
         """
         if not self.pack_a or not self.pack_b:
             raise ValueError("Load/verify packs first.")
-        if self.pack_a.platform != "PC":
-            raise ValueError("Pack A must be the PC destination pack. Clear Pack A and choose the clean/current PC pack you want to patch.")
-        if self.pack_b.platform not in ("PC", "X360"):
-            raise ValueError("Pack B must be a valid source pack. Choose a PC source pack manually, or choose an Xbox/RVB pack from the Xbox Pack Folder.")
-        return True, False   # destination is A, source is B
-
+        if self.pack_a.platform not in ("PC", "X360") or self.pack_b.platform not in ("PC", "X360"):
+            raise ValueError("Both inputs must be supported SM3 PC or Xbox animation sources.")
+        if self.pack_a.platform == "PC":
+            return True, False
+        if self.pack_b.platform == "PC":
+            return False, True
+        raise ValueError("A PC destination is required for this output. Load a PC pack in either A or B.")
     def entry_by_exact_name(self, pack, name):
         if not pack:
             return None
@@ -3923,338 +4088,55 @@ class OldAnimationSwapperTab(ttk.Frame):
         self.write(f"\nSelection Center applied {len(pc_iids)} pair(s) to main lists. Pair order stored by exact names for v2.2 direct patch.\n")
         return len(pc_iids), missing
 
-    def current_main_selection_pairs_by_order(self):
-        """Build (pc destination name, source name) pairs from the current main list selections."""
+    def current_main_selection_entries_by_order(self):
+        """Build destination/source Entry pairs from the current main list selections.
+
+        v1.18/v5.2.67: Multi Selection Center should work from plain current
+        list selections and should not require loading a preset or CSV first.
+        Pairing rules:
+        - same count on both sides: pair by order
+        - one destination + many sources: test many sources against that slot
+        - many destinations + one source: apply that one source to many slots
+        - uneven multi/multi: pair up to the shorter list instead of hard failing
+        """
         pc_is_a, rvb_is_a = self.side_for_pc_and_rvb()
         pc_entries = self.selected_many(pc_is_a)
         rvb_entries = self.selected_many(rvb_is_a)
 
-        if len(pc_entries) != len(rvb_entries):
-            raise ValueError(
-                f"Main selection count mismatch.\n\nPack A destination selected: {len(pc_entries)}\n"
-                f"Pack B source selected: {len(rvb_entries)}\n\n"
-                "Select the same number on both sides before using Add Current Main Selection."
-            )
-        return [(d.display_name, s.display_name) for d, s in zip(pc_entries, rvb_entries)]
+        if len(pc_entries) == len(rvb_entries):
+            pairs = list(zip(pc_entries, rvb_entries))
+            self._last_multi_selection_pairing_note = f"Paired {len(pairs)} selected row(s) by order."
+            return pairs
+        if len(pc_entries) == 1 and len(rvb_entries) > 1:
+            pairs = [(pc_entries[0], src) for src in rvb_entries]
+            self._last_multi_selection_pairing_note = f"Paired 1 destination slot with {len(rvb_entries)} selected source row(s)."
+            return pairs
+        if len(rvb_entries) == 1 and len(pc_entries) > 1:
+            pairs = [(dest, rvb_entries[0]) for dest in pc_entries]
+            self._last_multi_selection_pairing_note = f"Paired {len(pc_entries)} destination slot(s) with 1 selected source row."
+            return pairs
 
-
-
-    def multi_selection_center(self):
-        """Release-only preset center with clean animation-changing presets and no same-name/no-change patching."""
-        try:
-            if not self.pack_a or not self.pack_b:
-                messagebox.showinfo("Load packs first", "Use LOAD / VERIFY PACKS first, then open Release Preset Center.")
-                return
-            self.side_for_pc_and_rvb()
-        except Exception as e:
-            messagebox.showerror("Release Preset Center", str(e))
-            return
-
-        win = tk.Toplevel(self.root)
-        win.title("SM3 ANIMATION SWAPPER RELEASE v1.10 - Multi Selection Center")
-        apply_app_icon(win)
-        win.geometry("1120x680")
-        win.minsize(940, 540)
-        win.transient(self.root)
-
-        selected_pairs = []
-
-        top = ttk.Frame(win, padding=8)
-        top.pack(fill="x")
-        ttk.Label(
-            top,
-            text="Multi Selection Center: add release presets or manual pairs, review swaps, then patch one new copy. Pack B can be PC or Xbox/RVB. Same-name/no-change rows are blocked.",
-            font=("Segoe UI", 10, "bold"),
-        ).pack(anchor="w")
-        ttk.Label(
-            top,
-            text="Release workflow: choose presets, verify selected pairs, and save a new patched copy.",
-            style="Warn.TLabel",
-        ).pack(anchor="w", pady=(2, 0))
-
-        body = ttk.Frame(win, padding=8)
-        body.pack(fill="both", expand=True)
-        body.columnconfigure(0, weight=1)
-        body.columnconfigure(1, weight=2)
-        body.rowconfigure(1, weight=1)
-
-        ttk.Label(body, text="Release presets").grid(row=0, column=0, sticky="w")
-        # Release v1.8 scrollbar fix: both list boxes now have dedicated vertical + horizontal scrollbars.
-        preset_frame = ttk.Frame(body)
-        preset_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
-        preset_frame.rowconfigure(0, weight=1)
-        preset_frame.columnconfigure(0, weight=1)
-        preset_list = tk.Listbox(preset_frame, exportselection=False, height=18, selectmode="browse")
-        preset_y = ttk.Scrollbar(preset_frame, orient="vertical", command=preset_list.yview)
-        preset_x = ttk.Scrollbar(preset_frame, orient="horizontal", command=preset_list.xview)
-        preset_list.configure(yscrollcommand=preset_y.set, xscrollcommand=preset_x.set)
-        preset_list.grid(row=0, column=0, sticky="nsew")
-        preset_y.grid(row=0, column=1, sticky="ns")
-        preset_x.grid(row=1, column=0, sticky="ew")
-        for name, pairs in MULTI_SELECTION_PRESETS.items():
-            status, real, reference = preset_patchability_status(pairs)
-            # Release UI should only show real animation-changing presets.
-            if real:
-                preset_list.insert("end", name)
-
-        ttk.Label(body, text="Selection box - Pack A destination <- Pack B source payload").grid(row=0, column=1, sticky="w")
-        pair_frame = ttk.Frame(body)
-        pair_frame.grid(row=1, column=1, sticky="nsew")
-        pair_frame.rowconfigure(0, weight=1)
-        pair_frame.columnconfigure(0, weight=1)
-        pair_list = tk.Listbox(pair_frame, exportselection=False, height=18, selectmode="extended")
-        pair_y = ttk.Scrollbar(pair_frame, orient="vertical", command=pair_list.yview)
-        pair_x = ttk.Scrollbar(pair_frame, orient="horizontal", command=pair_list.xview)
-        pair_list.configure(yscrollcommand=pair_y.set, xscrollcommand=pair_x.set)
-        pair_list.grid(row=0, column=0, sticky="nsew")
-        pair_y.grid(row=0, column=1, sticky="ns")
-        pair_x.grid(row=1, column=0, sticky="ew")
-
-        def _bind_listbox_mousewheel(lb):
-            def _wheel(event, box=lb):
-                if getattr(event, "num", None) == 4:
-                    box.yview_scroll(-3, "units")
-                elif getattr(event, "num", None) == 5:
-                    box.yview_scroll(3, "units")
-                else:
-                    box.yview_scroll(int(-1 * (event.delta / 120)) * 3, "units")
-                return "break"
-            lb.bind("<MouseWheel>", _wheel)
-            lb.bind("<Button-4>", _wheel)
-            lb.bind("<Button-5>", _wheel)
-
-        _bind_listbox_mousewheel(preset_list)
-        _bind_listbox_mousewheel(pair_list)
-
-        status_var = tk.StringVar(value="No preset loaded.")
-        ttk.Label(body, textvariable=status_var, style="Info.TLabel").grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 0))
-
-        def refresh_pair_box():
-            pair_list.delete(0, "end")
-            real, reference = split_real_and_reference_pairs(selected_pairs)
-            for dest, src in selected_pairs:
-                label = f"{dest} <- {src}"
-                if is_noop_same_name_pair((dest, src)):
-                    label += "   [BLOCKED: SAME-NAME / NO CHANGE]"
-                pair_list.insert("end", label)
-            if reference and not real:
-                status_var.set(f"Blocked: {len(reference)} same-name/no-change row(s). Nothing real to patch.")
-            elif reference and real:
-                status_var.set(f"Ready: {len(real)} real swap(s). {len(reference)} same-name row(s) will be skipped.")
-            else:
-                status_var.set(f"Ready: {len(real)} real swap pair(s).")
-
-        def load_selected_preset():
-            sel = preset_list.curselection()
-            if not sel:
-                messagebox.showinfo("Select preset", "Select a release preset first.", parent=win)
-                return
-            name = preset_list.get(sel[0])
-            pairs = list(MULTI_SELECTION_PRESETS.get(name, []))
-            status, real, reference = preset_patchability_status(pairs)
-            selected_pairs.clear()
-            selected_pairs.extend(real)
-            refresh_pair_box()
-            info = PRESET_RELEASE_INFO.get(name, {})
-            status_var.set(f"Loaded {name}: {len(real)} real swap(s). Risk: {info.get('risk', 'UNKNOWN')}")
-
-        def add_selected_preset():
-            sel = preset_list.curselection()
-            if not sel:
-                messagebox.showinfo("Select preset", "Select a release preset first.", parent=win)
-                return
-            name = preset_list.get(sel[0])
-            status, real, reference = preset_patchability_status(MULTI_SELECTION_PRESETS.get(name, []))
-            added = 0
-            for pair in real:
-                if pair not in selected_pairs:
-                    selected_pairs.append(pair)
-                    added += 1
-            refresh_pair_box()
-            status_var.set(f"Added {added} real swap pair(s) from {name}.")
-
-        def remove_selected_pair():
-            sel = list(pair_list.curselection())
-            if not sel:
-                return
-            for idx in sorted(sel, reverse=True):
-                if 0 <= idx < len(selected_pairs):
-                    selected_pairs.pop(idx)
-            refresh_pair_box()
-
-        def clear_pairs():
-            selected_pairs.clear()
-            refresh_pair_box()
-
-        def patchable_pairs_or_warn(action_name):
-            status, real, reference = preset_patchability_status(selected_pairs)
-            if not selected_pairs:
-                messagebox.showinfo("Selection box empty", "Load or add a release preset first.", parent=win)
-                return None
-            if status == "REFERENCE_ONLY_NO_PATCH":
-                messagebox.showwarning(
-                    "No-change preset blocked",
-                    "This selection contains only same-name/no-change rows.\n\n"
-                    "Example: gobairturbo <- gobairturbo\n\n"
-                    "That patches the same animation back into itself, so Release v1.10 blocks it.",
-                    parent=win,
-                )
-                self.write(f"\nRelease v1.10 blocked no-change preset for: {action_name}\n")
-                return None
-            if reference and real:
-                messagebox.showinfo(
-                    "Same-name rows skipped",
-                    f"Using {len(real)} real swap row(s). Skipping {len(reference)} same-name/no-change row(s).",
-                    parent=win,
-                )
-            return real
-
-        def apply_to_main():
-            pairs_to_apply = patchable_pairs_or_warn("Apply To Main Lists")
-            if pairs_to_apply is None:
-                return
-            count, missing = self.apply_pair_names_to_main_selection(pairs_to_apply)
-            if count:
-                messagebox.showinfo(
-                    "Applied",
-                    f"Applied {count} real swap pair(s) to the main lists.\n\n"
-                    "Now use PATCH SELECTED PAIR or Apply + Patch Now.",
-                    parent=win,
-                )
-            else:
-                messagebox.showwarning("Nothing applied", "No matching real swap pairs were found in the loaded packs.", parent=win)
-
-        def apply_and_patch():
-            pairs_to_patch = patchable_pairs_or_warn("Apply + Patch Now")
-            if pairs_to_patch is None:
-                return
-            count, missing = self.apply_pair_names_to_main_selection(pairs_to_patch)
-            if count:
-                win.destroy()
-                try:
-                    self.patch_selection_center_pairs_direct(list(pairs_to_patch))
-                except Exception as exc:
-                    messagebox.showerror("Release preset patch failed", str(exc))
-                    self.write(f"ERROR: {exc}\n")
-
-        def add_current_main_selection():
-            try:
-                pairs = self.current_main_selection_pairs_by_order()
-                # Keep only real, different-source rows.
-                real, reference = split_real_and_reference_pairs(pairs)
-                added = 0
-                for pair in real:
-                    if pair not in selected_pairs:
-                        selected_pairs.append(pair)
-                        added += 1
-                refresh_pair_box()
-                status_var.set(f"Added {added} real pair(s) from current main selection. Same-name rows ignored.")
-            except Exception as exc:
-                messagebox.showerror("Add Current Selection failed", str(exc), parent=win)
-
-        def export_selected_preset_json():
-            sel = preset_list.curselection()
-            if not sel:
-                messagebox.showinfo("Select preset", "Select a release preset first.", parent=win)
-                return
-            name = preset_list.get(sel[0])
-            pairs = MULTI_SELECTION_PRESETS.get(name, [])
-            status, real, reference = preset_patchability_status(pairs)
-            out = filedialog.asksaveasfilename(
-                title="Export selected preset JSON",
-                defaultextension=".json",
-                initialfile=re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_") + ".json",
-                filetypes=[("JSON preset", "*.json"), ("All files", "*.*")],
-            )
-            if not out:
-                return
-            payload = {
-                "schema": "SM3_ANIM_SWAP_RELEASE_PRESET_v1",
-                "tool_build": "SM3_ANIMATION_SWAPPER_RELEASE_v1_2",
-                "preset_name": name,
-                "release_info": PRESET_RELEASE_INFO.get(name, {}),
-                "real_swap_pair_count": len(real),
-                "pairs": [
-                    {"pc_destination": d, "source_payload": src, "row_kind": "REAL_SWAP_DIFFERENT_SOURCE"}
-                    for d, src in real
-                ],
-                "warnings": [
-                    "Patch the user's own clean PC pack and save a new copy.",
-                    "Do not distribute original game PCPACK/XEPACK files.",
-                    "Same-name/no-change rows are blocked.",
-                ],
-            }
-            Path(out).write_text(json.dumps(payload, indent=2), encoding="utf-8")
-            status_var.set(f"Exported preset JSON: {Path(out).name}")
-            self.write(f"\nExported preset JSON: {out}\n")
-
-        def load_preset_json():
-            path = filedialog.askopenfilename(
-                title="Load preset JSON",
-                filetypes=[("JSON preset", "*.json"), ("All files", "*.*")],
-            )
-            if not path:
-                return
-            try:
-                data = json.loads(Path(path).read_text(encoding="utf-8"))
-                raw_pairs = data.get("pairs") or []
-                parsed = []
-                for item in raw_pairs:
-                    if isinstance(item, dict):
-                        d = item.get("pc_destination") or item.get("dest") or item.get("destination")
-                        src = item.get("source_payload") or item.get("source_payload") or item.get("source")
-                    elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                        d, src = item[0], item[1]
-                    else:
-                        continue
-                    if d and src:
-                        parsed.append((str(d), str(src)))
-                real, reference = split_real_and_reference_pairs(parsed)
-                if not real:
-                    raise ValueError("No real animation-changing pairs found. Same-name/no-change rows are blocked.")
-                selected_pairs.clear()
-                selected_pairs.extend(real)
-                refresh_pair_box()
-                status_var.set(f"Loaded JSON preset: {Path(path).name} ({len(real)} real swap pair(s))")
-                self.write(f"\nLoaded preset JSON: {path}\n")
-            except Exception as exc:
-                messagebox.showerror("Load preset JSON failed", str(exc), parent=win)
-
-        def load_red_5pack():
-            key = "RVB_RED_COMBAT_RESTORED_5PACK - RELEASE STABLE"
-            status, real, reference = preset_patchability_status(MULTI_SELECTION_PRESETS[key])
-            selected_pairs.clear()
-            selected_pairs.extend(real)
-            refresh_pair_box()
-            status_var.set("Loaded RVB Red Combat Restored 5-Pack.")
-
-        btns = ttk.Frame(win, padding=8)
-        btns.pack(fill="x")
-        ttk.Button(btns, text="Load Preset", command=load_selected_preset).pack(side="left", padx=4)
-        ttk.Button(btns, text="Add Preset", command=add_selected_preset).pack(side="left", padx=4)
-        ttk.Button(btns, text="Load Red 5-Pack", command=load_red_5pack).pack(side="left", padx=4)
-        ttk.Button(btns, text="Add Current Selection", command=add_current_main_selection).pack(side="left", padx=4)
-        ttk.Button(btns, text="Remove Selected Pair", command=remove_selected_pair).pack(side="left", padx=4)
-        ttk.Button(btns, text="Clear", command=clear_pairs).pack(side="left", padx=4)
-        ttk.Button(btns, text="Apply To Main Lists", command=apply_to_main).pack(side="right", padx=4)
-        ttk.Button(btns, text="Apply + Patch Now", command=apply_and_patch).pack(side="right", padx=4)
-
-        note = (
-            "Release preset list reviewed: no same-name/no-change presets are shown. "
-            "Only real animation-changing presets are shown. Same-name/no-change rows stay blocked."
+        count = min(len(pc_entries), len(rvb_entries))
+        if count <= 0:
+            raise ValueError("Select at least one Pack A destination and one Pack B source animation.")
+        pairs = list(zip(pc_entries[:count], rvb_entries[:count]))
+        self._last_multi_selection_pairing_note = (
+            f"Selection counts were uneven: Pack A={len(pc_entries)}, Pack B={len(rvb_entries)}. "
+            f"Paired the first {count} row(s) by order."
         )
-        ttk.Label(win, text=note, wraplength=860, foreground="#C7CCD6", padding=8).pack(fill="x")
+        return pairs
 
-        if preset_list.size():
-            preset_list.selection_set(0)
-            preset_list.see(0)
+    def current_main_selection_pairs_by_order(self):
+        """Build (pc destination name, source name) pairs from current main list selections."""
+        return [(d.display_name, s.display_name) for d, s in self.current_main_selection_entries_by_order()]
+
 
 
     def swing_test_lab(self):
         """v2.2 wider one-slot swing/dive/jump testing window."""
         try:
             if not self.pack_a or not self.pack_b:
-                messagebox.showinfo("Scan packs first", "Scan one PC destination pack and one source pack first.")
+                messagebox.showinfo("Scan packs first", "Scan two supported SM3 packs first. One must be PC for PC-pack output.")
                 return
             dest_pack, src_pack = source_dest_for_rvb_mode(self.pack_a, self.pack_b)
         except Exception as e:
@@ -4594,14 +4476,11 @@ class OldAnimationSwapperTab(ttk.Frame):
             if not self.pack_a or not self.pack_b:
                 raise ValueError("Load/verify packs first.")
 
-            if self.pack_a.platform != "PC":
-                raise ValueError("Pack A must be the PC destination pack. Pack B is the source side.")
-            if self.pack_b.platform not in ("PC", "X360"):
-                raise ValueError("Pack B must be a supported source pack: PC or Xbox/RVB.")
-
-            dest_pack, src_pack = self.pack_a, self.pack_b
-            dest_entries = self.selected_many(True)
-            src_entries = self.selected_many(False)
+            dest_is_a, src_is_a = self.side_for_pc_and_rvb()
+            dest_pack = self.pack_a if dest_is_a else self.pack_b
+            src_pack = self.pack_a if src_is_a else self.pack_b
+            dest_entries = self.selected_many(dest_is_a)
+            src_entries = self.selected_many(src_is_a)
 
             if len(dest_entries) != len(src_entries):
                 raise ValueError(
@@ -4878,6 +4757,3 @@ class OldAnimationSwapperTab(ttk.Frame):
         except Exception as e:
             messagebox.showerror("Diff failed", str(e))
             self.write(f"ERROR: {e}\n")
-
-
-

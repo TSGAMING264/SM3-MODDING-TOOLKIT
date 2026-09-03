@@ -26,11 +26,11 @@ What it does:
   - v3.0 adds Manual Old Folder Texture Picker: load every DDS from an old/replacement folder, manually choose which DDS maps to which current TEX target, then export one patched PCPACK copy.
   - v3.1 adds one-file manual replacement and one-file auto-select patching.
   - v3.2 adds multi-file manual replacement: select multiple DDS files at once, auto-map them to current/selected TEX targets, review, and patch them into one PCPACK copy.
-  - v3.4 adds an explicit OLD ONE FILE AUTO option that uses the original v3.1 one-DDS auto-select workflow.
+  - v3.4 adds an explicit OLD legacy one-file auto option that uses the original v3.1 one-DDS auto-select workflow.
   - v3.6 fixes false 'No texture selected' errors.
   - v3.7 cleans up the UI by removing the extra SAME FILE(S) select button and making the old selected one-file direct export the primary one-file workflow.
   - v3.8 fixes the selected one-file workflow by offering Target-Format Convert when the chosen DDS/image does not match the selected slot.
-  - v3.9 restores file-first ONE FILE AUTO so selecting a texture first is not required.
+  - v3.9 restores file-first legacy one-file auto so selecting a texture first is not required.
   - v4.0 Stable Final separates exact DDS patching, selected-target conversion, and file-first auto replacement so each workflow behaves consistently.
   - v4.7 Manual Options Audit adds clearer selection display, Clear Search, stronger selection resolving, improved exact/convert fallback, and a sanity check report.
   - v4.8 Preview Output Safety Fix stops PREVIEW_OUTPUT nesting, avoids deleting user-selected folders, improves manual DDS preview fallback, and normalizes hash logging.
@@ -39,9 +39,37 @@ What it does:
   - THE TEX SWAPPER build adds visible TSGAMING264 branding and a refreshed header/status interface.
   - This base tool does NOT include red-suit-to-black-suit swap/comparison logic; that remains separate.
 
+WOS toolkit dev clue added in v5.2.14:
+  - Texture repacking/patching must preserve the game-expected format and structure.
+  - If a texture preview becomes black/white, gray-only, or channel-wrong, treat it as a format interpretation problem, not a safe patch result.
+  - Some numeric formats may need DXT candidate review before trusting the preview.
+
 Insert safety rules:
   - Exact same-size replacement only.
   - Original PCPACK is never modified.
+
+  - v5.2.33 adds EDIT-READY DDS export/reimport: the DDS header must match the target/export header, not just width/height/format/payload.
+  - v5.2.34 adds Paint.NET/GIMP overwrite recovery: if an edited DDS still has the right target name, dimensions, mips, format, and payload size but its DDS header changed, the tool can rebuild a GAME-FORMAT DDS by writing the original SM3 target header plus the edited payload.
+  - v5.2.36 fixes FINAL SAFE REIMPORT folder handling: GAME_FORMAT_NORMALIZED_DDS/AUTO_NORMALIZED_DDS folders can be selected directly, while nested reports/work folders are still skipped.
+  - v5.2.37 makes FINAL SAFE REIMPORT auto-write the patched .PCPACK into FINAL_PATCHED_PCPACK_OUTPUT so the final pack is obvious and the route cannot end at only DDS files.
+  - v5.2.38 adds Editor-safe source-pixel rebuild: if Paint.NET/GIMP overwrites a suit DDS into the wrong header/format/mips/payload, FINAL EDITOR-SAFE REIMPORT can decode its visible pixels and rebuild a game-format DDS using the selected SM3 target shell before writing the patched PCPACK.
+  - v5.2.38 also cleans the main action panel by hiding old duplicate routes that were replaced by the new export/final-write workflow.
+  - v5.2.39 removes remaining old/research buttons from the visible Tex Swapper UI and adds a single-file editor-safe patch button that writes one patched PCPACK from one edited DDS/image.
+  - v5.2.40 renames the final routes to Paint.NET/GIMP editor-safe wording and verifies Paint.NET-style DDS outputs: header rewrite, wrong format/no-mip BGRA32, and normal image source rebuilds.
+  - v5.2.107 adds a visible SINGLE SELECTED DDS EXPORT button to the Classic workflow.
+  - v5.2.107 adds a dedicated .Tex workflow tab for RaimiHook Stage 2B loose native .tex files.
+  - v5.2.108 fixes the .Tex workflow by reusing the selected texture's REAL extractor component0 shell from the PCPACK, patching only width/height/depth/mips/format, then appending the DDS PHYS payload.
+  - v5.2.108 also adds EXPORT SELECTED ORIGINAL .TEX so the tool can prove the exact extractor layout before making edited loose files.
+  - v5.2.111 adds a native .TEX folder browser: choose any folder of loose SM3 .tex files, click a texture, and preview the image directly in the Tex Swapper.
+  - v5.2.111 upgrades DDS -> .TEX to a universal SM3 2D target route. Any selected SM3 TEX target can be wrapped even when the old extractor-shell path is unavailable; valid target shells are preserved when possible and a safe 0x44 IMG shell is used as fallback.
+  - v5.2.111 writes the confirmed loose NativeTEX separator [IMG 0x44][PHYS][mip payload], matching the working RaimiHook files seen in game logs.
+  - v5.2.135 adds EXPORT TO DDS beside EXPORT SELECTED .TEX and OPEN OUTPUT in the Browse .TEX Folder image-preview window. TEX export stays byte-for-byte; DDS export wraps the selected native mip payload in a DDS header without re-encoding.
+  - v5.2.136 fixes universal PCPACK viewing in Tex Swapper by sharing the Pack Extractor's multi-route SM3/APKF discovery instead of requiring one rigid hsam/table layout. Special packs such as startup/logo, compact-header, nonstandard APKF, and direct APKF routes are accepted; valid packs with no TEX show 0 textures instead of a false wrong-game error.
+  - v5.2.143 reworks Tex Swapper into full Classic Workflow, .TEX, and Browse + Image pages. The native .TEX folder reviewer is embedded directly in the Toolkit instead of opening a second window.
+  - v5.2.144 finishes the Classic workflow pass: adds MULTIPLE FILE EDITOR-SAFE PATCH, restores the two loose .TEX actions to Classic for quick use, and removes the redundant Open Browse + Image action because Browse + Image is already a full page.
+  - v5.2.145 simplifies the Tex Swapper layout to two tabs only: Classic Workflow and Browse + Image. The loose .TEX actions remain part of Classic Workflow.
+  - v5.2.146 keeps the v5.2.145 Tex Swapper UI/backend unchanged and regression-verifies Classic, Browse + Image, NativeTEX preview/export, PHYS/no-PHYS, and mip preservation while Folder Viewer is upgraded.
+  - v5.2.162 adds direct SM3 Xbox/XE pack viewing in Tex Swapper: XEPACK/XEAPK -> read-only TEX extraction -> Xenos endian correction + untile -> Browse + Image preview and base-mip DDS export. PC editing/reimport is unchanged; Xbox reimport stays blocked until reverse retile/repack is proven.
   - Best replacement input is a raw component1 .bin or a DDS whose payload
     after the DDS header exactly matches the selected component1 size.
   - PNG insertion is intentionally limited to uncompressed exact-size cases.
@@ -65,6 +93,15 @@ except Exception:
     HAS_PIL=False
 
 from sm3_toolkit.services import tex_preview_core as core
+from sm3_toolkit.services import pack_extract_service as pack_route_backend
+from sm3_toolkit.services import xbox_pack_extract_service as xbox_pack_backend
+from sm3_toolkit.sm3_pack_guard import (
+    WRONG_GAME_GUARD_MESSAGE,
+    exception_suggests_wrong_game,
+    looks_like_wrong_game_or_unsupported_sm3_path,
+    wrong_game_detail,
+)
+from sm3_toolkit.theme import COLORS
 CORE_IMPORT_ERROR = None
 
 SM3_MAGIC_OFF=0x30
@@ -75,9 +112,850 @@ NCH_MAGIC=b'NCH\x00'
 FOURCC_OK={b'DXT1',b'DXT3',b'DXT5'}
 IMAGE_EXTS={'.png','.jpg','.jpeg','.bmp'}
 
+# v5.2.108 - RaimiHook Stage 2B loose native .TEX support.
+# IMPORTANT: selected-target conversion now uses the REAL SM3 extractor shell.
+# Exact loose file layout used by the SM3 Pack Extractor: [component0 IMG descriptor][component1/PHYS payload].
+# For normal SM3 TEX resources component0 is 0x44 bytes.
+NATIVE_TEX_HEADER_SIZE=0x44
+DDS_MAGIC=b'DDS '
+DDS_HEADER_SIZE=124
+DDS_PIXELFORMAT_SIZE=32
+NATIVE_TEX_LEGACY_FOURCC={
+    b'DXT1':0x31545844,
+    b'DXT2':0x32545844,
+    b'DXT3':0x33545844,
+    b'DXT4':0x34545844,
+    b'DXT5':0x35545844,
+}
+NATIVE_TEX_DXGI_TO_FOURCC={
+    71:0x31545844, 72:0x31545844,  # BC1 UNORM / SRGB -> DXT1
+    74:0x33545844, 75:0x33545844,  # BC2 UNORM / SRGB -> DXT3
+    77:0x35545844, 78:0x35545844,  # BC3 UNORM / SRGB -> DXT5
+}
+DDSCAPS2_CUBEMAP=0x00000200
+DDSCAPS2_VOLUME=0x00200000
+DDS_PF_ALPHAPIXELS=0x00000001
+DDS_PF_FOURCC=0x00000004
+DDS_PF_RGB=0x00000040
+DDS_PF_LUMINANCE=0x00020000
+NATIVE_TEX_PHYS_MAGIC=b'PHYS'
+NATIVE_TEX_FMT_BGRA32=21   # SM3 numeric 0x15 / A8R8G8B8-style
+NATIVE_TEX_FMT_L8=50       # SM3 numeric 0x32 / L8-style
+
+
+def sm3_resource_hash(name:str)->int:
+    """Spider-Man 3 case-insensitive x33 resource-name hash."""
+    h=0
+    for ch in str(name or ''):
+        c=ord(ch)
+        if 0x41 <= c <= 0x5A:
+            c += 0x20
+        h=((h*33)+c)&0xFFFFFFFF
+    return h
+
+
+def parse_sm3_hash_value(value, fallback_name='')->int:
+    """Accept int, 0x12345678, or plain 8-digit hexadecimal target hash values."""
+    if isinstance(value,int):
+        return value & 0xFFFFFFFF
+    text=str(value or '').strip()
+    if text:
+        try:
+            if text.lower().startswith('0x'):
+                return int(text,16)&0xFFFFFFFF
+            if re.fullmatch(r'[0-9A-Fa-f]{8}',text):
+                return int(text,16)&0xFFFFFFFF
+            return int(text,0)&0xFFFFFFFF
+        except Exception:
+            pass
+    if fallback_name:
+        return sm3_resource_hash(fallback_name)
+    raise ValueError(f'Could not parse SM3 resource hash from {value!r}.')
+
+
+def native_tex_fourcc_text(fmt:int)->str:
+    fmt=int(fmt)&0xFFFFFFFF
+    if fmt==NATIVE_TEX_FMT_BGRA32:
+        return 'BGRA32/A8R8G8B8 (21)'
+    if fmt==NATIVE_TEX_FMT_L8:
+        return 'L8 (50)'
+    try:
+        raw=struct.pack('<I',fmt)
+        if all(32 <= b < 127 for b in raw):
+            return raw.decode('ascii',errors='replace')
+    except Exception:
+        pass
+    return f'0x{fmt:08X}'
+
+
+def native_tex_mip_size(fmt:int,width:int,height:int)->int:
+    """Payload size for the SM3 2D formats supported by the loose NativeTEX route."""
+    fmt=int(fmt)&0xFFFFFFFF
+    w=max(1,int(width)); h=max(1,int(height))
+    bx=max(1,(w+3)//4)
+    by=max(1,(h+3)//4)
+    if fmt==0x31545844:                         # DXT1 / BC1
+        return bx*by*8
+    if fmt in (0x32545844,0x33545844,0x34545844,0x35545844): # DXT2/3/4/5
+        return bx*by*16
+    if fmt==NATIVE_TEX_FMT_BGRA32:
+        return w*h*4
+    if fmt==NATIVE_TEX_FMT_L8:
+        return w*h
+    raise ValueError(f'Unsupported native .TEX DDS format: {native_tex_fourcc_text(fmt)}')
+
+
+def native_tex_total_payload_size(fmt:int,width:int,height:int,mips:int)->int:
+    total=0
+    w=max(1,int(width)); h=max(1,int(height)); m=max(1,int(mips))
+    for _ in range(m):
+        total += native_tex_mip_size(fmt,w,h)
+        w=max(1,w>>1); h=max(1,h>>1)
+    return total
+
+
+def parse_dds_for_native_tex(path:Path)->dict:
+    """Read a 2D DDS and return sequential bytes suitable for SM3 NativeTEX.
+
+    Supported source encodings:
+      - legacy DXT1/DXT2/DXT3/DXT4/DXT5
+      - DX10 BC1/BC2/BC3
+      - native-style 32-bit BGRA/A8R8G8B8 DDS -> SM3 numeric format 21
+      - 8-bit luminance/R8 DDS -> SM3 numeric format 50
+
+    This expands the old converter without pretending BC4/BC5/BC7 or arrays/cubes
+    are confirmed SM3 NativeTEX formats.
+    """
+    path=Path(path)
+    data=path.read_bytes()
+    if len(data)<128 or data[:4]!=DDS_MAGIC:
+        raise ValueError('Not a valid DDS file (DDS magic/header missing).')
+    header_size=read_u32le(data,4)
+    if header_size!=DDS_HEADER_SIZE:
+        raise ValueError(f'Unexpected DDS header size {header_size}; expected 124.')
+    height=read_u32le(data,12)
+    width=read_u32le(data,16)
+    depth=read_u32le(data,24) or 1
+    mips=read_u32le(data,28) or 1
+    pf_size=read_u32le(data,76)
+    if pf_size!=DDS_PIXELFORMAT_SIZE:
+        raise ValueError(f'Unexpected DDS pixel-format size {pf_size}; expected 32.')
+    pf_flags=read_u32le(data,80)
+    fourcc=data[84:88]
+    rgb_bits=read_u32le(data,88)
+    rmask=read_u32le(data,92); gmask=read_u32le(data,96)
+    bmask=read_u32le(data,100); amask=read_u32le(data,104)
+    caps2=read_u32le(data,112)
+    if caps2 & DDSCAPS2_CUBEMAP:
+        raise ValueError('Cubemap DDS is not supported by the loose .TEX 2D route.')
+    if caps2 & DDSCAPS2_VOLUME or depth>1:
+        raise ValueError('Volume DDS is not supported by the loose .TEX 2D route.')
+
+    payload_offset=128
+    fmt=None
+    source_kind=''
+    if fourcc==b'DX10':
+        if len(data)<148:
+            raise ValueError('DDS uses DX10 but the DX10 extension header is missing.')
+        dxgi_format,resource_dimension,misc_flag,array_size,_misc2=struct.unpack_from('<IIIII',data,128)
+        payload_offset=148
+        if resource_dimension!=3:
+            raise ValueError(f'DX10 DDS is not a 2D texture (resource dimension {resource_dimension}).')
+        if array_size!=1:
+            raise ValueError(f'DX10 texture arrays are not supported (array size {array_size}).')
+        if misc_flag & 0x4:
+            raise ValueError('DX10 cubemap DDS is not supported by the loose .TEX route.')
+        fmt=NATIVE_TEX_DXGI_TO_FOURCC.get(dxgi_format)
+        if fmt is not None:
+            source_kind=f'DX10 BC -> {native_tex_fourcc_text(fmt)}'
+        elif dxgi_format in (87,88):  # B8G8R8A8/B8G8R8X8
+            fmt=NATIVE_TEX_FMT_BGRA32
+            source_kind='DX10 BGRA32 -> SM3 format 21'
+        elif dxgi_format==61:         # R8_UNORM
+            fmt=NATIVE_TEX_FMT_L8
+            source_kind='DX10 R8 -> SM3 format 50'
+        else:
+            raise ValueError(
+                f'Unsupported DXGI format {dxgi_format}. Confirmed loose .TEX input supports '
+                'BC1/BC2/BC3, B8G8R8A8/B8G8R8X8, and R8.'
+            )
+    elif (pf_flags & DDS_PF_FOURCC) or fourcc.strip(b'\x00 '):
+        fmt=NATIVE_TEX_LEGACY_FOURCC.get(fourcc)
+        if fmt is None:
+            shown=fourcc.decode('ascii',errors='replace')
+            raise ValueError(
+                f'Unsupported DDS FourCC {shown!r}. Save as DXT1/DXT3/DXT5, BGRA32, or L8 '
+                'for the universal SM3 loose .TEX route.'
+            )
+        source_kind=f'legacy {fourcc.decode("ascii",errors="replace")}'
+    elif (pf_flags & DDS_PF_LUMINANCE) and rgb_bits==8:
+        fmt=NATIVE_TEX_FMT_L8
+        source_kind='DDS L8 -> SM3 format 50'
+    elif (pf_flags & DDS_PF_RGB) and rgb_bits==32:
+        # SM3 numeric format 21 is the A8R8G8B8/BGRA byte layout. Only accept
+        # the common matching masks so bytes can be copied without a hidden swizzle.
+        if (rmask,gmask,bmask) != (0x00FF0000,0x0000FF00,0x000000FF):
+            raise ValueError(
+                '32-bit DDS channel masks are not BGRA/A8R8G8B8-compatible. '
+                'Save the DDS as BGRA8/A8R8G8B8 or DXT5 before converting to .TEX.'
+            )
+        if amask not in (0,0xFF000000):
+            raise ValueError('Unsupported 32-bit DDS alpha mask for SM3 format 21.')
+        fmt=NATIVE_TEX_FMT_BGRA32
+        source_kind='DDS BGRA32/A8R8G8B8 -> SM3 format 21'
+    else:
+        raise ValueError(
+            'Unsupported DDS pixel format. Use DXT1/DXT3/DXT5, BGRA32/A8R8G8B8, or L8/R8.'
+        )
+
+    if width<=0 or height<=0:
+        raise ValueError(f'Invalid DDS dimensions: {width}x{height}.')
+    expected=native_tex_total_payload_size(fmt,width,height,mips)
+    available=len(data)-payload_offset
+    if available<expected:
+        raise ValueError(
+            f'DDS payload is too short. Expected {expected} bytes for {width}x{height}, '
+            f'{mips} mip(s), {native_tex_fourcc_text(fmt)}; found {available}.'
+        )
+    payload=data[payload_offset:payload_offset+expected]
+    return {
+        'path':str(path),'width':width,'height':height,'depth':1,'mips':mips,
+        'format':fmt,'format_text':native_tex_fourcc_text(fmt),
+        'payload':payload,'payload_size':expected,'source_payload_size':available,
+        'payload_offset':payload_offset,'source_kind':source_kind,
+    }
+
+
+def build_native_tex_header(resource_hash:int,dds_info:dict)->bytes:
+    """Create a conservative 0x44 SM3 IMG shell for a 2D loose NativeTEX.
+
+    Depth is serialized as 0, matching known working SM3 loose files. RaimiHook's
+    DEPTH0-COMPAT route promotes it to runtime depth 1 for 2D textures.
+    """
+    words=[
+        0,0,0,int(resource_hash)&0xFFFFFFFF,
+        0,0,
+        int(dds_info['width']),int(dds_info['height']),0,
+        int(dds_info['mips']),int(dds_info['format']),
+        0,0,0,0,0,0,
+    ]
+    return struct.pack('<17I',*words)
+
+
+def assemble_native_tex_blob(component0:bytes,payload:bytes,include_phys:bool=True)->bytes:
+    """Build a loose SM3 .tex while preserving whether the payload uses PHYS.
+
+    Some valid SM3 loose textures are laid out as [0x44 IMG][payload] with no PHYS.
+    Others use [0x44 IMG][PHYS][payload]. When a real SM3 target/source shell exists,
+    we preserve that original contract instead of forcing PHYS on every output.
+    """
+    blob=bytes(component0)
+    if include_phys:
+        blob += NATIVE_TEX_PHYS_MAGIC
+    blob += bytes(payload)
+    return blob
+
+
+def native_tex_trim_payload_for_mips(payload:bytes, fmt:int, width:int, height:int, mips:int)->bytes:
+    """Return exactly the prefix needed for the requested mip chain."""
+    need=native_tex_total_payload_size(fmt,width,height,mips)
+    if len(payload) < need:
+        raise ValueError(
+            f'Payload is too short for {width}x{height}, {mips} mip(s), {native_tex_fourcc_text(fmt)}: '
+            f'need {need} bytes, found {len(payload)}.'
+        )
+    return bytes(payload[:need])
+
+
+def resolve_native_tex_output_contract(source_mips:int, source_has_phys:bool, dds_info:dict)->dict:
+    """Preserve the original loose-TEX contract when converting from a real SM3 target/source.
+
+    - mip count follows the real source/target shell when available
+    - PHYS vs no-PHYS follows the real source/target shell when available
+    - DDS may contain extra mip levels; they are safely trimmed to the preserved count
+    - DDS may not contain fewer mip levels than the preserved source contract
+    """
+    preserved_mips=max(1,int(source_mips or 1))
+    available_mips=max(1,int(dds_info.get('mips') or 1))
+    if available_mips < preserved_mips:
+        raise ValueError(
+            f'The edited DDS only has {available_mips} mip(s), but the selected SM3 texture '
+            f'expects {preserved_mips}. Save the DDS with at least {preserved_mips} mip(s), '
+            f'or edit a target that uses fewer mips.'
+        )
+    payload=native_tex_trim_payload_for_mips(
+        dds_info['payload'], int(dds_info['format']), int(dds_info['width']), int(dds_info['height']), preserved_mips
+    )
+    patched_info=dict(dds_info)
+    patched_info['mips']=preserved_mips
+    patched_info['payload']=payload
+    patched_info['payload_size']=len(payload)
+    return {
+        'dds_info':patched_info,
+        'include_phys':bool(source_has_phys),
+        'preserved_mips':preserved_mips,
+        'dds_available_mips':available_mips,
+        'trimmed_extra_mips':max(0, available_mips-preserved_mips),
+    }
+
+
+def write_native_tex_from_dds(dds_path:Path,output_path:Path,resource_name:str,resource_hash:int)->dict:
+    """Universal 2D DDS -> loose SM3 .tex using a conservative generated shell.
+
+    There is no original SM3 source contract in this route, so the generated fallback still
+    uses the DDS mip count and the generic PHYS loose layout.
+    """
+    info=parse_dds_for_native_tex(Path(dds_path))
+    output_path=Path(output_path)
+    if output_path.suffix.lower()!='.tex':
+        output_path=output_path.with_suffix('.tex')
+    output_path.parent.mkdir(parents=True,exist_ok=True)
+    header=build_native_tex_header(resource_hash,info)
+    blob=assemble_native_tex_blob(header,info['payload'],include_phys=True)
+    output_path.write_bytes(blob)
+    return {
+        'dds':str(dds_path),'tex':str(output_path),'asset':resource_name,
+        'hash':f'0x{int(resource_hash)&0xFFFFFFFF:08X}',
+        'width':info['width'],'height':info['height'],'depth_serialized':0,
+        'mips':info['mips'],'format':info['format_text'],
+        'phys_bytes':info['payload_size'],'tex_bytes':len(blob),
+        'phys_marker_bytes':4,'source_dds_kind':info.get('source_kind',''),
+        'layout':'GENERATED fallback: 0x44 IMG + ASCII PHYS + sequential mip payload',
+        'shell_mode':'GENERATED_SAFE_0x44',
+        'size_rule':'No original PCPACK/component1 same-size restriction; intended for RaimiHook loose NativeTEX.',
+        'contract_rule':'No original SM3 target was selected, so DDS mip count and PHYS layout were kept.',
+    }
+
+def extract_selected_tex_components_like_pack_extractor(pcpack_path:Path,target:dict)->tuple[bytes,bytes]:
+    """Extract the selected TEX exactly the same way the SM3 Pack Extractor does.
+
+    Pack Extractor output for a TEX resource is the raw concatenation of its APKF
+    components. For normal textures that is component0 (IMG descriptor) followed
+    by component1 (PHYS image/mip payload).
+    """
+    pcpack_path=Path(pcpack_path)
+    if not pcpack_path.exists():
+        raise ValueError(f'Original PCPACK not found: {pcpack_path}')
+    data=pcpack_path.read_bytes()
+    required=(
+        'component0_absolute_start_dec','component0_absolute_end_dec',
+        'component1_absolute_start_dec','component1_absolute_end_dec',
+    )
+    missing=[k for k in required if target.get(k) in (None,'')]
+    if missing:
+        raise ValueError('Selected target is missing extractor offsets: ' + ', '.join(missing) + '. Build Preview again.')
+    c0s=int(target['component0_absolute_start_dec']); c0e=int(target['component0_absolute_end_dec'])
+    c1s=int(target['component1_absolute_start_dec']); c1e=int(target['component1_absolute_end_dec'])
+    if not (0 <= c0s < c0e <= len(data) and 0 <= c1s < c1e <= len(data)):
+        raise ValueError(
+            f'Selected target component range is outside the PCPACK. '
+            f'component0={c0s:#x}-{c0e:#x}, component1={c1s:#x}-{c1e:#x}, pack={len(data):#x}'
+        )
+    return data[c0s:c0e], data[c1s:c1e]
+
+
+def patch_extractor_component0_for_dds(component0:bytes,dds_info:dict,resource_hash:int|None=None)->tuple[bytes,str]:
+    """Patch a real SM3 IMG shell when available; fall back to a safe 0x44 shell.
+
+    v5.2.111 deliberately no longer rejects a target merely because its extracted
+    component0 is not exactly 0x44 bytes. For known IMG shells, the first 0x44
+    descriptor bytes are preserved and patched. If a usable shell cannot be read,
+    the selected target identity is still enough to build a valid loose 2D shell.
+    """
+    raw=bytes(component0 or b'')
+    if len(raw)>=NATIVE_TEX_HEADER_SIZE:
+        shell=bytearray(raw[:NATIVE_TEX_HEADER_SIZE])
+        mode='PRESERVED_FIRST_0x44_FROM_TARGET'
+    else:
+        if resource_hash is None:
+            raise ValueError('Target shell is shorter than 0x44 and no resource hash was supplied for fallback.')
+        shell=bytearray(build_native_tex_header(resource_hash,dds_info))
+        mode='GENERATED_SAFE_0x44_FALLBACK'
+    if resource_hash is not None:
+        struct.pack_into('<I',shell,0x0C,int(resource_hash)&0xFFFFFFFF)
+    struct.pack_into('<I',shell,0x18,int(dds_info['width']))
+    struct.pack_into('<I',shell,0x1C,int(dds_info['height']))
+    # Preserve the real target's depth field for a real shell. Generated shells use 0.
+    if mode.startswith('GENERATED'):
+        struct.pack_into('<I',shell,0x20,0)
+    struct.pack_into('<I',shell,0x24,int(dds_info['mips']))
+    struct.pack_into('<I',shell,0x28,int(dds_info['format']))
+    return bytes(shell),mode
+
+def write_selected_original_tex_from_pcpack(pcpack_path:Path,target:dict,output_path:Path)->dict:
+    """Export one selected original .tex using the same component concatenation as Pack Extractor."""
+    c0,c1=extract_selected_tex_components_like_pack_extractor(Path(pcpack_path),target)
+    output_path=Path(output_path)
+    if output_path.suffix.lower() != '.tex':
+        output_path=output_path.with_suffix('.tex')
+    output_path.parent.mkdir(parents=True,exist_ok=True)
+    blob=c0+c1
+    output_path.write_bytes(blob)
+    if not output_path.exists() or output_path.stat().st_size != len(blob):
+        raise IOError('The selected original .TEX was not written correctly.')
+    return {
+        'tex':str(output_path),
+        'asset':str(target.get('asset') or 'texture'),
+        'hash':str(target.get('filename_hash') or ''),
+        'component0_bytes':len(c0),'component1_bytes':len(c1),'tex_bytes':len(blob),
+        'layout':'SM3 Pack Extractor exact component0 + component1 concatenation',
+        'component0_sha256':hashlib.sha256(c0).hexdigest(),
+        'component1_sha256':hashlib.sha256(c1).hexdigest(),
+        'tex_sha256':hashlib.sha256(blob).hexdigest(),
+    }
+
+
+def write_native_tex_from_dds_using_extractor_shell(pcpack_path:Path,target:dict,dds_path:Path,output_path:Path)->dict:
+    """Universal selected-SM3-target DDS -> loose .tex.
+
+    Preferred path: preserve the selected target's real first 0x44 IMG descriptor.
+    When a real target shell exists, this route now also preserves that texture's
+    mip-count contract and whether the loose layout uses PHYS or not.
+
+    Fallback path: if extractor offsets/shell are unavailable, build a conservative
+    0x44 IMG shell from the selected target hash. In that fallback case PHYS remains
+    the default because there is no provable original loose-layout contract to preserve.
+    """
+    asset=str(target.get('asset') or 'texture')
+    resource_hash=parse_sm3_hash_value(target.get('filename_hash'),asset)
+    info=parse_dds_for_native_tex(Path(dds_path))
+    original_c1=b''
+    extractor_error=''
+    include_phys=True
+    preserved_contract='GENERATED_FALLBACK_DDS_MIPS_PLUS_PHYS'
+    preserved_mips=max(1,int(info.get('mips') or 1))
+    trimmed_extra_mips=0
+    try:
+        c0,original_c1=extract_selected_tex_components_like_pack_extractor(Path(pcpack_path),target)
+    except Exception as exc:
+        c0=b''
+        extractor_error=str(exc)
+    if len(c0) >= NATIVE_TEX_HEADER_SIZE:
+        source_has_phys=(len(original_c1)>=4 and original_c1[:4]==NATIVE_TEX_PHYS_MAGIC)
+        source_mips=read_u32le(c0,0x24) or int(str(target.get('tex_mips') or target.get('mips') or '1') or '1')
+        contract=resolve_native_tex_output_contract(source_mips, source_has_phys, info)
+        info=contract['dds_info']
+        include_phys=contract['include_phys']
+        preserved_mips=contract['preserved_mips']
+        trimmed_extra_mips=contract['trimmed_extra_mips']
+        preserved_contract='PRESERVED_SELECTED_TARGET_TEX_CONTRACT'
+    patched_c0,shell_mode=patch_extractor_component0_for_dds(c0,info,resource_hash)
+    output_path=Path(output_path)
+    if output_path.suffix.lower() != '.tex':
+        output_path=output_path.with_suffix('.tex')
+    output_path.parent.mkdir(parents=True,exist_ok=True)
+    blob=assemble_native_tex_blob(patched_c0,info['payload'],include_phys=include_phys)
+    output_path.write_bytes(blob)
+    if not output_path.exists() or output_path.stat().st_size != len(blob):
+        raise IOError('The universal loose .TEX was not written correctly.')
+    return {
+        'dds':str(dds_path),'tex':str(output_path),'asset':asset,
+        'hash':f'0x{resource_hash:08X}',
+        'width':info['width'],'height':info['height'],'depth_runtime':1,
+        'mips':info['mips'],'format':info['format_text'],
+        'phys_bytes':info['payload_size'],'phys_marker_bytes':(4 if include_phys else 0),'tex_bytes':len(blob),
+        'original_component0_bytes':len(c0),'original_component1_bytes':len(original_c1),
+        'component0_source':shell_mode,
+        'extractor_shell_error':extractor_error,
+        'component0_preserved_except':'hash + width + height + mips + format; real target depth preserved',
+        'patched_component0_sha256':hashlib.sha256(patched_c0).hexdigest(),
+        'new_phys_sha256':hashlib.sha256(info['payload']).hexdigest(),
+        'layout':('SM3 loose NativeTEX: 0x44 IMG + ASCII PHYS + sequential DDS mip payload' if include_phys else 'SM3 loose NativeTEX: 0x44 IMG + sequential DDS mip payload (no PHYS)'),
+        'source_dds_kind':info.get('source_kind',''),
+        'size_rule':'No original component1 same-size restriction; intended for RaimiHook NativeTEX.',
+        'contract_rule':preserved_contract,
+        'preserved_target_mips':preserved_mips,
+        'trimmed_extra_dds_mips':trimmed_extra_mips,
+        'preserved_phys_layout':('PHYS' if include_phys else 'NO_PHYS'),
+    }
+
+
+# Xbox 360 / Xenos loose TEX support (Texture Lab v2).
+# The all-resource Xbox extractor writes [0x84 Xenos TEX descriptor][component1 GPU bytes].
+# This decoder is read-only: it endian-corrects + untile/unswizzles the BASE mip for preview/DDS export.
+XBOX_TEX_HEADER_SIZE=0x84
+XBOX_XENOS_FORMATS={
+    2: ('L8', NATIVE_TEX_FMT_L8, 1),
+    6: ('8_8_8_8', NATIVE_TEX_FMT_BGRA32, 4),
+    18: ('DXT1', 0x31545844, 8),
+    19: ('DXT3', 0x33545844, 16),
+    20: ('DXT5', 0x35545844, 16),
+}
+
+
+def _read_u32be(data:bytes, off:int)->int:
+    return struct.unpack_from('>I', data, off)[0]
+
+
+def _xbox_swap_endian(data:bytes, mode:int)->bytes:
+    """Apply the Xenos texture fetch endian mode to a byte stream."""
+    raw=bytes(data)
+    mode=int(mode)&3
+    if mode==0:
+        return raw
+    out=bytearray(raw)
+    if mode==1:  # 8-in-16
+        n=len(out)&~1
+        for i in range(0,n,2):
+            out[i],out[i+1]=out[i+1],out[i]
+    elif mode==2:  # 8-in-32
+        n=len(out)&~3
+        for i in range(0,n,4):
+            out[i:i+4]=out[i:i+4][::-1]
+    else:  # 16-in-32
+        n=len(out)&~3
+        for i in range(0,n,4):
+            a,b,c,d=out[i:i+4]
+            out[i:i+4]=bytes((c,d,a,b))
+    return bytes(out)
+
+
+def _xg_address_2d_tiled_x(offset:int, width_units:int, texel_pitch:int)->int:
+    """XGAddress2DTiledX: tiled-memory unit offset -> linear X."""
+    aligned_width=(int(width_units)+31)&~31
+    texel_pitch=int(texel_pitch)
+    log_bpp=(texel_pitch>>2)+((texel_pitch>>1)>>(texel_pitch>>2))
+    offset_b=int(offset)<<log_bpp
+    offset_t=((offset_b & ~4095)>>3)+((offset_b & 1792)>>2)+(offset_b & 63)
+    offset_m=offset_t>>(7+log_bpp)
+    macro_x=(offset_m % (aligned_width>>5))<<2
+    tile=((((offset_t>>(5+log_bpp)) & 2)+(offset_b>>6)) & 3)
+    macro=(macro_x+tile)<<3
+    micro=((((offset_t>>1)&~15)+(offset_t&15)) & ((texel_pitch<<3)-1))>>log_bpp
+    return macro+micro
+
+
+def _xg_address_2d_tiled_y(offset:int, width_units:int, texel_pitch:int)->int:
+    """XGAddress2DTiledY: tiled-memory unit offset -> linear Y."""
+    aligned_width=(int(width_units)+31)&~31
+    texel_pitch=int(texel_pitch)
+    log_bpp=(texel_pitch>>2)+((texel_pitch>>1)>>(texel_pitch>>2))
+    offset_b=int(offset)<<log_bpp
+    offset_t=((offset_b & ~4095)>>3)+((offset_b & 1792)>>2)+(offset_b & 63)
+    offset_m=offset_t>>(7+log_bpp)
+    macro_y=(offset_m // (aligned_width>>5))<<2
+    tile=((offset_t>>(6+log_bpp))&1)+((offset_b&2048)>>10)
+    macro=(macro_y+tile)<<3
+    micro=((((offset_t & (((texel_pitch<<6)-1)&~31))+((offset_t&15)<<1))>>(3+log_bpp))&~1)
+    return macro+micro+((offset_t&16)>>4)
+
+
+def _xbox_untile_surface(src:bytes, padded_width_units:int, padded_height_units:int, texel_pitch:int)->bytes:
+    """Convert a Xenos 2D tiled surface to padded linear order.
+
+    IMPORTANT: XGAddress2DTiledX/Y maps each sequential *tiled source* unit to
+    its linear destination X/Y.  Old experiments accidentally used this backwards.
+    """
+    pw=int(padded_width_units); ph=int(padded_height_units); tp=int(texel_pitch)
+    need=pw*ph*tp
+    if pw<=0 or ph<=0 or tp<=0:
+        raise ValueError('Invalid Xbox tiled surface dimensions.')
+    if len(src)<need:
+        raise ValueError(f'Xbox base surface is short ({len(src)} < {need} bytes).')
+    out=bytearray(need)
+    for off in range(pw*ph):
+        x=_xg_address_2d_tiled_x(off,pw,tp)
+        y=_xg_address_2d_tiled_y(off,pw,tp)
+        so=off*tp
+        do=(y*pw+x)*tp
+        if 0 <= do <= need-tp:
+            out[do:do+tp]=src[so:so+tp]
+    return bytes(out)
+
+
+def _xbox_crop_linear_surface(padded:bytes, padded_width_units:int, logical_width_units:int, logical_height_units:int, texel_pitch:int)->bytes:
+    pw=int(padded_width_units); lw=int(logical_width_units); lh=int(logical_height_units); tp=int(texel_pitch)
+    row_in=pw*tp; row_out=lw*tp
+    out=bytearray(row_out*lh)
+    for y in range(lh):
+        so=y*row_in; do=y*row_out
+        out[do:do+row_out]=padded[so:so+row_out]
+    return bytes(out)
+
+
+def _looks_like_xbox_tex(data:bytes)->bool:
+    if len(data)<XBOX_TEX_HEADER_SIZE:
+        return False
+    try:
+        d0,d1,d2,d3,d4,d5=(_read_u32be(data,off) for off in range(0x30,0x48,4))
+        fmt=d1&0x3F
+        width=(d2&0x1FFF)+1
+        height=((d2>>13)&0x1FFF)+1
+        dimension=(d5>>9)&3
+        pitch_field=(d0>>22)&0x1FF
+        return (
+            (d0&3)==2 and fmt in XBOX_XENOS_FORMATS and
+            0<width<=8192 and 0<height<=8192 and pitch_field>0 and
+            dimension in (0,1,2,3)
+        )
+    except Exception:
+        return False
+
+
+def _parse_xbox_tex_file(path:Path, data:bytes)->dict:
+    header=data[:XBOX_TEX_HEADER_SIZE]
+    payload=data[XBOX_TEX_HEADER_SIZE:]
+    d0,d1,d2,d3,d4,d5=(_read_u32be(header,off) for off in range(0x30,0x48,4))
+    xfmt=d1&0x3F
+    endian=(d1>>6)&3
+    tiled=(d0>>31)&1
+    pitch_pixels=((d0>>22)&0x1FF)*32
+    width=(d2&0x1FFF)+1
+    height=((d2>>13)&0x1FFF)+1
+    mip_min=(d4>>2)&0xF
+    mip_max=(d4>>6)&0xF
+    mips=max(1,mip_max-mip_min+1)
+    dimension=(d5>>9)&3
+    packed_mips=(d5>>11)&1
+    mip_offset=((d5>>12)&0xFFFFF)<<12
+    xname,pc_fmt,texel_pitch=XBOX_XENOS_FORMATS[xfmt]
+
+    if xfmt in (18,19,20):
+        logical_w=max(1,(width+3)//4)
+        logical_h=max(1,(height+3)//4)
+        padded_w=max(logical_w,max(1,pitch_pixels//4))
+    else:
+        logical_w=width; logical_h=height
+        padded_w=max(logical_w,pitch_pixels)
+
+    # Fetch mip address is the byte start of the separate/packed mip area, and
+    # therefore also the allocated byte length of base level in these extracted TEXes.
+    if mip_offset>0 and mip_offset<=len(payload):
+        base_alloc=mip_offset
+    else:
+        # No separate mip address: derive the Xenos tiled base allocation.  Tiled
+        # surfaces are macro-tile padded to 32 units vertically.
+        padded_h=(logical_h+31)&~31 if tiled else logical_h
+        base_alloc=padded_w*padded_h*texel_pitch
+        if base_alloc>len(payload):
+            base_alloc=len(payload)
+    row_bytes=padded_w*texel_pitch
+    if row_bytes<=0 or base_alloc<row_bytes:
+        raise ValueError('Xbox TEX base allocation is invalid.')
+    padded_h=max(logical_h,base_alloc//row_bytes)
+    tiled_bytes=payload[:padded_w*padded_h*texel_pitch]
+    if len(tiled_bytes)<padded_w*padded_h*texel_pitch:
+        raise ValueError('Xbox TEX component1 is shorter than the Xenos base surface allocation.')
+    corrected=_xbox_swap_endian(tiled_bytes,endian)
+    if tiled:
+        padded_linear=_xbox_untile_surface(corrected,padded_w,padded_h,texel_pitch)
+    else:
+        padded_linear=corrected
+    first_mip=_xbox_crop_linear_surface(padded_linear,padded_w,logical_w,logical_h,texel_pitch)
+
+    resource_hash=_read_u32be(header,0x0C)
+    stem=path.stem
+    m=re.match(r'^(?:\d+_)?0x[0-9A-Fa-f]{8}\.(.+)$',stem)
+    asset=m.group(1) if m else (stem.split('.',1)[-1] if '.' in stem else stem)
+    logical_expected=native_tex_mip_size(pc_fmt,width,height)
+    status='X360_BASE_MIP_READY' if len(first_mip)==logical_expected else 'X360_BASE_MIP_SIZE_MISMATCH'
+    return {
+        'platform':'X360','path':str(path),'name':path.name,'asset':asset,
+        'hash_int':resource_hash,'filename_hash':f'0x{resource_hash:08X}',
+        'width':width,'height':height,'depth':1,'mips':mips,
+        'format_raw':pc_fmt,'format_kind':f'X360 {xname}',
+        'header':header,'payload':payload,'payload_offset':XBOX_TEX_HEADER_SIZE,
+        'has_phys_marker':False,'payload_bytes':len(payload),
+        'expected_payload_bytes':logical_expected,'payload_status':status,'file_bytes':len(data),
+        'linear_first_mip':first_mip,'first_mip_bytes':len(first_mip),
+        'xbox_xenos_format':xfmt,'xbox_xenos_format_name':xname,'xbox_endian':endian,
+        'xbox_tiled':bool(tiled),'xbox_pitch_pixels':pitch_pixels,
+        'xbox_padded_width_units':padded_w,'xbox_padded_height_units':padded_h,
+        'xbox_texel_pitch':texel_pitch,'xbox_mip_min':mip_min,'xbox_mip_max':mip_max,
+        'xbox_packed_mips':bool(packed_mips),'xbox_mip_offset':mip_offset,
+        'xbox_dimension':dimension,'xbox_base_alloc_bytes':base_alloc,
+    }
+
+def parse_native_tex_file(path:Path)->dict:
+    """Parse a loose/extracted SM3 PC or Xbox 360 .tex for folder browsing.
+
+    PC: historical [0x44 IMG][payload] and [0x44 IMG][PHYS][payload].
+    X360 Texture Lab v2: [0x84 Xenos descriptor][tiled component1].
+    """
+    path=Path(path)
+    data=path.read_bytes()
+    if _looks_like_xbox_tex(data):
+        return _parse_xbox_tex_file(path,data)
+    if len(data)<NATIVE_TEX_HEADER_SIZE:
+        raise ValueError('File is smaller than the 0x44 SM3 IMG descriptor.')
+    header=data[:NATIVE_TEX_HEADER_SIZE]
+    resource_hash=read_u32le(header,0x0C)
+    width=read_u32le(header,0x18)
+    height=read_u32le(header,0x1C)
+    depth=read_u32le(header,0x20)
+    mips=read_u32le(header,0x24) or 1
+    fmt=read_u32le(header,0x28)
+    if not (0 < width <= 16384 and 0 < height <= 16384):
+        raise ValueError(f'Invalid SM3 TEX dimensions {width}x{height}.')
+    has_phys=(len(data)>=NATIVE_TEX_HEADER_SIZE+4 and data[NATIVE_TEX_HEADER_SIZE:NATIVE_TEX_HEADER_SIZE+4]==NATIVE_TEX_PHYS_MAGIC)
+    payload_offset=NATIVE_TEX_HEADER_SIZE+(4 if has_phys else 0)
+    payload=data[payload_offset:]
+    try:
+        expected=native_tex_total_payload_size(fmt,width,height,mips)
+        payload_status='EXACT' if len(payload)==expected else ('EXTRA_BYTES' if len(payload)>expected else 'SHORT_PAYLOAD')
+    except Exception:
+        expected=None
+        payload_status='UNKNOWN_FORMAT'
+    stem=path.stem
+    asset=stem
+    m=re.match(r'^0x([0-9A-Fa-f]{8})\.(.+)$',stem)
+    if m:
+        asset=m.group(2)
+    elif '.' in stem:
+        asset=stem.split('.',1)[-1]
+    fmt_text=native_tex_fourcc_text(fmt)
+    return {
+        'platform':'PC','path':str(path),'name':path.name,'asset':asset,'hash_int':resource_hash,
+        'filename_hash':f'0x{resource_hash:08X}','width':width,'height':height,
+        'depth':depth,'mips':mips,'format_raw':fmt,'format_kind':fmt_text,
+        'header':header,'payload':payload,'payload_offset':payload_offset,
+        'has_phys_marker':has_phys,'payload_bytes':len(payload),'expected_payload_bytes':expected,
+        'payload_status':payload_status,'file_bytes':len(data),
+    }
+
+def native_tex_preview_pil(record:dict):
+    """Decode the first mip of a parsed SM3 PC/X360 .tex to a Pillow RGBA image."""
+    if not HAS_PIL:
+        raise RuntimeError('Pillow is required for .TEX image preview.')
+    w=int(record['width']); h=int(record['height']); fmt=int(record['format_raw'])
+    if str(record.get('platform','PC')).upper()=='X360':
+        payload=bytes(record.get('linear_first_mip') or b'')
+    else:
+        payload=bytes(record['payload'])
+    if fmt in (0x31545844,0x32545844,0x33545844,0x34545844,0x35545844):
+        if fmt==0x31545844:
+            need=native_tex_mip_size(fmt,w,h); pix=core.decode_dxt1(payload[:need],w,h)
+        elif fmt in (0x32545844,0x33545844):
+            need=native_tex_mip_size(fmt,w,h); pix=core.decode_dxt3(payload[:need],w,h)
+        else:
+            need=native_tex_mip_size(fmt,w,h); pix=core.decode_dxt5(payload[:need],w,h)
+        img=Image.new('RGBA',(w,h)); img.putdata(pix); return img
+    if fmt==NATIVE_TEX_FMT_BGRA32:
+        need=w*h*4
+        if len(payload)<need: raise ValueError(f'BGRA32 payload too short ({len(payload)} < {need}).')
+        raw=payload[:need]
+        pix=[(raw[i+2],raw[i+1],raw[i],raw[i+3]) for i in range(0,need,4)]
+        img=Image.new('RGBA',(w,h)); img.putdata(pix); return img
+    if fmt==NATIVE_TEX_FMT_L8:
+        need=w*h
+        if len(payload)<need: raise ValueError(f'L8 payload too short ({len(payload)} < {need}).')
+        return Image.frombytes('L',(w,h),payload[:need]).convert('RGBA')
+    raise ValueError(f'Preview decoder does not yet support {native_tex_fourcc_text(fmt)}.')
+
+def export_native_tex_record_to_dds(record:dict, output_path:Path)->dict:
+    """Export a parsed loose SM3 .tex to DDS.
+
+    PC copies the native mip payload unchanged. X360 exports the confirmed
+    endian-corrected + untiled BASE mip only; packed Xenos mip tails are left untouched.
+    """
+    w=int(record['width']); h=int(record['height'])
+    is_xbox=str(record.get('platform','PC')).upper()=='X360'
+    fmt_raw=int(record['format_raw']) & 0xFFFFFFFF
+    if is_xbox:
+        mips=1
+        payload=bytes(record.get('linear_first_mip') or b'')
+        expected=native_tex_mip_size(fmt_raw,w,h)
+        if len(payload)!=expected:
+            raise ValueError(f'Xbox base mip size mismatch: {len(payload)} bytes found, {expected} expected.')
+    else:
+        mips=max(1,int(record.get('mips') or 1))
+        payload=bytes(record['payload'])
+        expected=record.get('expected_payload_bytes')
+        if expected is None:
+            expected=native_tex_total_payload_size(fmt_raw,w,h,mips)
+        expected=int(expected)
+        if len(payload) < expected:
+            raise ValueError(
+                f'Selected .TEX payload is too short for DDS export: {len(payload)} bytes found, '
+                f'{expected} required for {w}x{h}, {mips} mip(s), {native_tex_fourcc_text(fmt_raw)}.'
+            )
+        payload=payload[:expected]
+    if fmt_raw==NATIVE_TEX_FMT_BGRA32:
+        dds_fmt='BGRA32'
+    elif fmt_raw==NATIVE_TEX_FMT_L8:
+        dds_fmt='L8'
+    else:
+        raw=struct.pack('<I',fmt_raw)
+        try: fourcc=raw.decode('ascii')
+        except Exception: fourcc=''
+        if fourcc not in ('DXT1','DXT2','DXT3','DXT4','DXT5'):
+            raise ValueError(f'EXPORT TO DDS does not support native format {native_tex_fourcc_text(fmt_raw)} yet.')
+        dds_fmt=fourcc
+    output_path=Path(output_path)
+    if output_path.suffix.lower()!='.dds': output_path=output_path.with_suffix('.dds')
+    output_path.parent.mkdir(parents=True,exist_ok=True)
+    blob=build_dds_header(w,h,mips,dds_fmt,len(payload))+payload
+    output_path.write_bytes(blob)
+    if not output_path.is_file() or output_path.stat().st_size != len(blob):
+        raise IOError('DDS export was not written correctly.')
+    method=(
+        'Xbox 360 base mip: Xenos endian corrected + tiled surface untiled; DDS header added; mip tail not exported'
+        if is_xbox else 'Native SM3 mip payload copied unchanged; DDS header added only'
+    )
+    return {
+        'dds':str(output_path),'source_tex':str(record.get('path') or ''),
+        'asset':str(record.get('asset') or 'texture'),'hash':str(record.get('filename_hash') or ''),
+        'platform':'X360' if is_xbox else 'PC','width':w,'height':h,'mips':mips,'format':dds_fmt,
+        'payload_bytes':len(payload),'dds_bytes':len(blob),'method':method,
+    }
+
+def write_native_tex_from_dds_using_native_tex_shell(source_tex_path:Path,dds_path:Path,output_path:Path)->dict:
+    """Wrap DDS using the identity/header of any loose or extracted SM3 .tex file.
+
+    This route now preserves the real source .tex contract:
+    - source mip count stays the same
+    - source PHYS vs no-PHYS layout stays the same
+    - extra DDS mips are trimmed instead of silently changing the target contract
+    """
+    rec=parse_native_tex_file(Path(source_tex_path))
+    if str(rec.get('platform','PC')).upper()=='X360':
+        raise ValueError('Xbox 360 TEX reimport is read-only for now. Preview and base-mip DDS export are supported; reverse Xenos retile/repack is not enabled yet.')
+    info=parse_dds_for_native_tex(Path(dds_path))
+    contract=resolve_native_tex_output_contract(rec['mips'], rec['has_phys_marker'], info)
+    info=contract['dds_info']
+    shell,mode=patch_extractor_component0_for_dds(rec['header'],info,rec['hash_int'])
+    output_path=Path(output_path)
+    if output_path.suffix.lower()!='.tex':
+        output_path=output_path.with_suffix('.tex')
+    output_path.parent.mkdir(parents=True,exist_ok=True)
+    blob=assemble_native_tex_blob(shell,info['payload'],include_phys=contract['include_phys'])
+    output_path.write_bytes(blob)
+    return {
+        'source_tex':str(source_tex_path),'dds':str(dds_path),'tex':str(output_path),
+        'asset':rec['asset'],'hash':rec['filename_hash'],'width':info['width'],'height':info['height'],
+        'mips':info['mips'],'format':info['format_text'],'source_dds_kind':info.get('source_kind',''),
+        'phys_bytes':info['payload_size'],'phys_marker_bytes':(4 if contract['include_phys'] else 0),'tex_bytes':len(blob),
+        'shell_mode':mode,
+        'layout':('0x44 IMG + ASCII PHYS + sequential mip payload' if contract['include_phys'] else '0x44 IMG + sequential mip payload (no PHYS)'),
+        'contract_rule':'PRESERVED_SOURCE_TEX_CONTRACT',
+        'preserved_source_mips':contract['preserved_mips'],
+        'trimmed_extra_dds_mips':contract['trimmed_extra_mips'],
+        'preserved_phys_layout':('PHYS' if contract['include_phys'] else 'NO_PHYS'),
+    }
+
+def native_tex_identity_from_dds_filename(path:Path)->tuple[str,int]:
+    """Recover 0xHASH.asset from Toolkit exported DDS names when no row is selected."""
+    stem=Path(path).stem
+    explicit_hash=None
+    resource=stem
+    m=re.match(r'^0x([0-9A-Fa-f]{8})\.(.+)$',stem)
+    if m:
+        explicit_hash=int(m.group(1),16)
+        resource=m.group(2)
+    for suffix in (
+        '.ORIGINAL_EDIT_THIS','_ORIGINAL_EDIT_THIS',
+        '.EDIT_READY','_EDIT_READY','.EDITED','_EDITED',
+    ):
+        if resource.upper().endswith(suffix.upper()):
+            resource=resource[:-len(suffix)]
+            break
+    resource=resource.strip().strip('.') or 'texture'
+    h=explicit_hash if explicit_hash is not None else sm3_resource_hash(resource)
+    return resource,h
+
 APP_NAME='THE TEX SWAPPER'
 APP_AUTHOR='TSGAMING264'
-APP_BUILD='Creator Safe v1.1 - One File Auto Restored'
+APP_BUILD='v5.2.162 PC + Xbox TEX Preview'
 APP_TITLE=f'{APP_NAME} - Made by {APP_AUTHOR}'
 DEFAULT_OUTPUT_DIR='THE_TEX_SWAPPER_Output'
 PREVIEW_DIR_NAME='PREVIEW_OUTPUT'
@@ -295,35 +1173,101 @@ def asset_group(name:str)->str:
 
 
 def scan_pcpack_textures_to_chain(pcpack_path:Path, out_root:Path):
-    """Parse PCPACK, write TEX component folders, and return texture target rows."""
-    pack=SM3PCPack(pcpack_path)
+    """Universal SM3 pack -> TEX chain scanner.
+
+    v5.2.136: use the Pack Extractor's proven multi-route probe/APKF discovery
+    instead of requiring one rigid hsam header/table layout. This keeps the
+    Tex Swapper and Pack Extractor in agreement for special/small SM3 packs
+    such as logo/front-end/compact/nonstandard archive routes.
+
+    The patcher still receives exact absolute component offsets into the
+    ORIGINAL selected pack, so the working replacement/write core is unchanged.
+    """
+    pcpack_path=Path(pcpack_path)
+    data=pcpack_path.read_bytes()
+    if data[:3] == b'NCH':
+        raise ValueError('This file starts with NCH. That is Web of Shadows format, not an SM3 PC pack.')
+
+    probe=pack_route_backend.probe_pack_bytes(pcpack_path.name, data)
+    valid_sm3_route=bool(
+        data.startswith(b'APKF')
+        or data[SM3_MAGIC_OFF:SM3_MAGIC_OFF+4] == SM3_MAGIC
+        or probe.hsam_offsets
+        or probe.apkf_offsets
+        or probe.outer_rows
+        or probe.compact_header.get('is_compact_header')
+    )
+    if not valid_sm3_route:
+        raise ValueError(
+            'Not recognized as SM3 PC PCPACK/PCAPK/APKF by the universal route probe. Detection: '
+            + json.dumps(probe.to_dict(), indent=2)
+        )
+
+    apkf_slices, filtered_markers = pack_route_backend.apkf_slices_from_probe(data, probe)
+
     chain_root=ensure_dir(out_root/'_DIRECT_PCPACK_TEX_CHAIN')
     tex_root=ensure_dir(chain_root/'TEX')
     reports=ensure_dir(out_root/'REPORTS')
     targets=[]; apkf_summaries=[]
-    for outer in pack.apkf_entries():
-        label=f'F{outer.index:04d}_{hex32(outer.hash)}_T{outer.type_id:02X}'
-        payload=pack.data[outer.offset:outer.end]
+
+    for slice_index, source in enumerate(apkf_slices):
+        label=clean_name(source.label, f'APKF_{slice_index:04d}')
         try:
-            apkf=APKFArchive(payload,label)
+            apkf=pack_route_backend.APKFArchive(source.payload, source.label)
         except Exception as e:
-            apkf_summaries.append({'label':label,'error':str(e)})
+            apkf_summaries.append({
+                'label':label,
+                'source_kind':source.source_kind,
+                'absolute_base':hex(source.absolute_base),
+                'archive_folder':source.archive_folder,
+                'error':str(e),
+            })
             continue
-        apkf_summaries.append({'label':label,'outer_index':outer.index,'outer_hash':hex32(outer.hash),'outer_offset':hex(outer.offset),'outer_size':outer.size,'file_count':len(apkf.files)})
+
+        apkf_summaries.append({
+            'label':label,
+            'source_kind':source.source_kind,
+            'source_route_reason':source.route_reason,
+            'absolute_base':hex(source.absolute_base),
+            'archive_folder':source.archive_folder,
+            'outer_index':'' if source.parent_outer_index is None else source.parent_outer_index,
+            'outer_hash':'' if source.parent_outer_hash is None else hex32(source.parent_outer_hash),
+            'outer_type':'' if source.parent_outer_type is None else f'0x{source.parent_outer_type:X}',
+            'file_count':len(apkf.files),
+        })
+
         for f in apkf.files:
-            if f.file_type.upper()!='TEX' or len(f.component_offsets)<2: continue
+            if f.file_type.upper()!='TEX' or len(f.component_offsets)<2:
+                continue
             (c0s,c0e),(c1s,c1e)=f.component_offsets[0],f.component_offsets[1]
-            abs0s=outer.offset+c0s; abs0e=outer.offset+c0e; abs1s=outer.offset+c1s; abs1e=outer.offset+c1e
-            c0=pack.data[abs0s:abs0e]; c1=pack.data[abs1s:abs1e]
+            abs0s=source.absolute_base+c0s; abs0e=source.absolute_base+c0e
+            abs1s=source.absolute_base+c1s; abs1e=source.absolute_base+c1e
+            if not (0 <= abs0s <= abs0e <= len(data) and 0 <= abs1s <= abs1e <= len(data)):
+                apkf_summaries.append({
+                    'label':label,
+                    'source_kind':source.source_kind,
+                    'absolute_base':hex(source.absolute_base),
+                    'warning':f'TEX {f.filename or hex32(f.filename_hash)} component range outside selected pack',
+                })
+                continue
+            c0=data[abs0s:abs0e]; c1=data[abs1s:abs1e]
             desc=parse_tex_desc(c0) or {}
             safe=clean_name(f.filename, f'TEX_{f.global_index:05d}')
             h=hex32(f.filename_hash)
-            d=ensure_dir(tex_root/f'{f.global_index:05d}_TEX_{h}_{safe}')
+            # Prefix with archive index too: global_index resets inside every APKF.
+            d=ensure_dir(tex_root/f'A{slice_index:04d}_F{f.global_index:05d}_TEX_{h}_{safe}')
             (d/f'component0_{len(c0)}bytes.bin').write_bytes(c0)
             (d/f'component1_{len(c1)}bytes.bin').write_bytes(c1)
             row={
                 'asset':f.filename,'safe_asset':safe,'filename_hash':h,'file_type':'TEX','global_index':f.global_index,
-                'source_apkf_label':label,'source_outer_index':outer.index,'source_outer_hash':hex32(outer.hash),
+                'source_apkf_label':label,
+                'source_apkf_absolute_base':hex(source.absolute_base),
+                'source_archive_folder':source.archive_folder,
+                'source_archive_kind':source.source_kind,
+                'source_route_reason':source.route_reason,
+                'source_outer_index':'' if source.parent_outer_index is None else source.parent_outer_index,
+                'source_outer_hash':'' if source.parent_outer_hash is None else hex32(source.parent_outer_hash),
+                'source_outer_type':'' if source.parent_outer_type is None else f'0x{source.parent_outer_type:X}',
                 'component0_size':len(c0),'component1_size':len(c1),
                 'component0_absolute_start':hex(abs0s),'component0_absolute_end':hex(abs0e),
                 'component1_absolute_start':hex(abs1s),'component1_absolute_end':hex(abs1e),
@@ -335,11 +1279,20 @@ def scan_pcpack_textures_to_chain(pcpack_path:Path, out_root:Path):
                 'chain_folder':str(d)
             }
             targets.append(row)
+
     write_csv(reports/'PCPACK_DIRECT_TEX_TARGETS.csv', targets)
     write_csv(reports/'PCPACK_DIRECT_APKF_SUMMARY.csv', apkf_summaries)
-    (reports/'PACK_DETECT.json').write_text(json.dumps(pack.detect_info,indent=2),encoding='utf-8')
+    detect_info=probe.to_dict()
+    detect_info.update({
+        'tex_swapper_universal_route_probe':True,
+        'tex_swapper_valid_sm3_route':valid_sm3_route,
+        'discovered_apkf_slices':len(apkf_slices),
+        'discovered_tex_targets':len(targets),
+        'filtered_apkf_markers':filtered_markers,
+        'note':'v5.2.136 Tex Swapper uses the same multi-route APKF discovery family as Pack Extractor; no rigid 0x30/0x54-only gate.',
+    })
+    (reports/'PACK_DETECT.json').write_text(json.dumps(detect_info,indent=2),encoding='utf-8')
     return chain_root, targets
-
 
 def dds_payload_from_file(path:Path):
     b=path.read_bytes()
@@ -381,12 +1334,196 @@ def parse_dds_header_file(path:Path):
         fmt='L8'
     else:
         fmt='UNKNOWN'
+    header=b[:header_size]
     return {
         'path':str(path),'width':width,'height':height,'mips':mips,
         'pf_size':pf_size,'pf_flags':hex(pf_flags),'fourcc':fourcc.decode('ascii','replace'),
         'rgbbits':rgbbits,'rmask':hex(rmask),'gmask':hex(gmask),'bmask':hex(bmask),'amask':hex(amask),
-        'format_kind':fmt,'header_size':header_size,'payload_size':len(payload),'payload':payload
+        'format_kind':fmt,'header_size':header_size,'payload_size':len(payload),'payload':payload,
+        'header_sha256':sha256_bytes(header),'payload_sha256':sha256_bytes(payload)
     }
+
+
+def expected_target_dds_header(target:dict) -> bytes:
+    """Build the exact DDS header the tool exports for this target descriptor."""
+    w=int(target.get('width') or 0)
+    h=int(target.get('height') or 0)
+    mips=int(target.get('mips') or 1)
+    fmt=str(target.get('format_kind') or '')
+    payload_size=int(target.get('component1_size') or 0)
+    return build_dds_header(w,h,mips,fmt,payload_size)
+
+def dds_header_info_for_target(dds_path:Path, target:dict):
+    """Return actual/expected header hashes for strict header-lock checks."""
+    b=Path(dds_path).read_bytes()
+    info=parse_dds_header_file(Path(dds_path))
+    actual_header=b[:info['header_size']]
+    expected_header=expected_target_dds_header(target)
+    return {
+        'actual_header_size': info['header_size'],
+        'expected_header_size': len(expected_header),
+        'actual_header_sha256': sha256_bytes(actual_header),
+        'expected_header_sha256': sha256_bytes(expected_header),
+        'actual_header_matches_expected': actual_header == expected_header,
+    }
+
+def validate_dds_matches_target_header_locked(dds_path:Path, target:dict, strict:bool=True):
+    """Validate format + payload + exact DDS header for target-locked final reimport."""
+    info, problems = validate_dds_matches_target(dds_path, target, strict=False)
+    header = dds_header_info_for_target(dds_path, target)
+    if not header['actual_header_matches_expected']:
+        problems.append(
+            'DDS header does not match the SM3 target/export header exactly '
+            f"actual={header['actual_header_sha256']} expected={header['expected_header_sha256']}"
+        )
+    info.update(header)
+    if problems and strict:
+        raise ValueError('DDS does not match original SM3 TEX target/header lock:\n- ' + '\n- '.join(problems))
+    return info, problems
+
+def normalize_dds_to_target_game_format(edited_dds_path:Path, target:dict, output_dir:Path):
+    """v5.2.34: rebuild a DDS as SM3 target-header + edited payload.
+
+    This is for Paint.NET/GIMP/editor overwrite recovery where the visual/payload is
+    intended for the same target but the editor rewrote harmless DDS header bytes.
+    The function DOES NOT resize, recompress, regenerate mipmaps, or guess formats.
+    It only accepts edited DDS files that already match the SM3 target descriptor
+    and component1 payload size.
+    """
+    edited_dds_path=Path(edited_dds_path)
+    output_dir=ensure_dir(Path(output_dir))
+    info, problems = validate_dds_matches_target(edited_dds_path, target, strict=False)
+    fatal=[p for p in problems if not p.lower().startswith('dds header')]
+    if fatal:
+        raise ValueError('Cannot normalize DDS; edited file does not match target format/data:\n- ' + '\n- '.join(fatal))
+    expected_header=expected_target_dds_header(target)
+    edited_payload=info['payload']
+    expected_payload_size=int(target.get('component1_size') or 0)
+    if len(edited_payload) != expected_payload_size:
+        raise ValueError(f'Cannot normalize DDS; payload={len(edited_payload)} target={expected_payload_size}')
+    out_path=output_dir/Path(edited_dds_path).name
+    normalized_bytes=expected_header + edited_payload
+    out_path.write_bytes(normalized_bytes)
+    final_info=parse_dds_header_file(out_path)
+    target_header=expected_target_dds_header(target)
+    header_matches=out_path.read_bytes()[:len(target_header)] == target_header
+    return out_path, {
+        'source_dds':str(edited_dds_path),
+        'normalized_dds':str(out_path),
+        'asset':target.get('asset'),
+        'hash':target.get('filename_hash'),
+        'width':target.get('width'),
+        'height':target.get('height'),
+        'mips':target.get('mips'),
+        'format':target.get('format_kind'),
+        'payload_size':len(edited_payload),
+        'source_header_sha256':info.get('header_sha256',''),
+        'target_header_sha256':sha256_bytes(expected_header),
+        'normalized_header_sha256':final_info.get('header_sha256',''),
+        'source_payload_sha256':info.get('payload_sha256',''),
+        'normalized_payload_sha256':final_info.get('payload_sha256',''),
+        'source_header_already_game_format':info.get('header_sha256','') == sha256_bytes(expected_header),
+        'normalized_header_matches_target':header_matches,
+        'status':'NORMALIZED_GAME_FORMAT_DDS',
+        'note':'SM3 target DDS header + edited DDS payload; no resize/recompress/mip generation was performed.',
+    }
+
+
+def rebuild_source_pixels_to_target_game_dds(source_path:Path, target:dict, output_dir:Path, force_opaque:bool=True):
+    """v5.2.38: rebuild a GIMP/editor output from visible pixels into the SM3 target DDS shell.
+
+    Use this when GIMP overwrote an exported DDS and changed the descriptor so much that
+    header-only normalization is impossible: wrong mips, BGRA32 instead of DXT1/DXT5,
+    different payload size, etc. The source file supplies pixels only. The current SM3
+    target supplies width, height, mip count, DDS format, and component1 payload size.
+
+    This DOES create/recompress a new game-format payload with the built-in encoder. It is
+    safer for game loading than forcing a mismatched DDS, but it is not byte-identical to
+    the editor's DDS payload. Use it for suit-edit workflow tests where the visual change
+    matters more than preserving the external editor's exact DDS internals.
+    """
+    source_path=Path(source_path)
+    output_dir=ensure_dir(Path(output_dir))
+    if not HAS_PIL:
+        raise ValueError('Pillow is required for editor-safe rebuild from pixels.')
+    payload=encode_image_to_component1(source_path, target, force_opaque=force_opaque)
+    expected_size=int(target.get('component1_size') or 0)
+    if len(payload) != expected_size:
+        raise ValueError(f'editor-safe rebuild payload mismatch: rebuilt={len(payload)} target={expected_size}')
+    safe=clean_name(target.get('asset','texture'))
+    h=str(target.get('filename_hash') or '0x00000000')
+    w=int(target.get('width') or 0)
+    hh=int(target.get('height') or 0)
+    mips=int(target.get('mips') or 1)
+    fmt=str(target.get('format_kind') or '')
+    out_name=f'{h}.{safe}.GIMP_SAFE_REBUILT_TO_SM3_GAME_FORMAT.dds'
+    out_path=output_dir/out_name
+    out_path.write_bytes(build_dds_header(w,hh,mips,fmt,len(payload)) + payload)
+    preview_path=''
+    try:
+        src_img=prepare_source_image_for_encoding(source_path, force_opaque=force_opaque).resize((w,hh), Image.LANCZOS)
+        prev=output_dir/f'{h}.{safe}.GIMP_SAFE_REBUILT_PREVIEW.png'
+        src_img.save(prev)
+        preview_path=str(prev)
+    except Exception:
+        pass
+    info=parse_dds_header_file(out_path)
+    return out_path, {
+        'source_file':str(source_path),
+        'rebuilt_dds':str(out_path),
+        'preview_png':preview_path,
+        'asset':target.get('asset'),
+        'hash':h,
+        'target_width':w,
+        'target_height':hh,
+        'target_mips':mips,
+        'target_format':fmt,
+        'target_component1_size':expected_size,
+        'rebuilt_payload_size':len(payload),
+        'rebuilt_header_sha256':info.get('header_sha256',''),
+        'rebuilt_payload_sha256':info.get('payload_sha256',''),
+        'force_opaque_rgb':bool(force_opaque),
+        'status':'GIMP_SAFE_REBUILT_TO_SM3_GAME_FORMAT',
+        'note':'Source supplied pixels only; tool rebuilt SM3 target width/height/mips/format/payload. This fixes GIMP overwrite cases that cannot be header-normalized after the fact.',
+    }
+
+def find_header_lock_manifest(folder:Path):
+    folder=Path(folder)
+    candidates=[
+        folder/'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST.json',
+        folder/'TEX_TARGET_FORMAT_NAME_LOCK_MANIFEST.json',
+    ]
+    for p in candidates:
+        if p.exists():
+            try:
+                data=json.loads(p.read_text(encoding='utf-8'))
+                if isinstance(data, dict) and isinstance(data.get('items'), list):
+                    return p, data.get('items', [])
+                if isinstance(data, list):
+                    return p, data
+            except Exception:
+                pass
+    csv_candidates=[
+        folder/'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST.csv',
+        folder/'TEX_TARGET_FORMAT_NAME_LOCK_MANIFEST.csv',
+    ]
+    for p in csv_candidates:
+        if p.exists():
+            try:
+                with p.open(newline='',encoding='utf-8') as f:
+                    return p, list(csv.DictReader(f))
+            except Exception:
+                pass
+    return None, []
+
+def manifest_rows_by_filename(rows:list[dict])->dict:
+    out={}
+    for row in rows or []:
+        for key in ('dds_filename','dds_name','file','filename'):
+            val=str(row.get(key,'')).strip()
+            if val:
+                out[Path(val).name.lower()]=row
+    return out
 
 def validate_dds_matches_target(dds_path:Path, target:dict, strict:bool=True):
     info=parse_dds_header_file(dds_path)
@@ -745,7 +1882,7 @@ def build_dds_header(width,height,mips,fmt_kind,payload_size):
     pitch_or_linear=0
     pf_flags=0; fourcc=b'\x00\x00\x00\x00'; rgbbits=0; rmask=gmask=bmask=amask=0
     fmt=fmt_kind.upper()
-    if fmt in ('DXT1','DXT3','DXT5'):
+    if fmt in ('DXT1','DXT2','DXT3','DXT4','DXT5'):
         pf_flags=0x4; fourcc=fmt.encode('ascii')
         pitch_or_linear=max(1,(width+3)//4)*max(1,(height+3)//4)*(8 if fmt=='DXT1' else 16)
     elif fmt=='BGRA32':
@@ -977,6 +2114,61 @@ def copy_and_patch_pcpack_original_format_dds_many(original:Path, patch_items:li
     write_csv(output_path.parent/(output_path.stem+'_BATCH_DDS_PATCH_ITEMS.csv'), rows)
     return log
 
+
+def copy_and_patch_pcpack_header_locked_dds_many(original:Path, patch_items:list[tuple[dict, Path, dict]], output_path:Path):
+    """Patch multiple DDS files into one new PCPACK with exact name/format/header lock.
+
+    This is stricter than the older exact DDS route: DDS header bytes must match
+    the target/export header exactly, so the reimport follows the same header the
+    game/tool expects instead of only matching descriptor fields.
+    """
+    if not patch_items:
+        raise ValueError('No header-locked patch items were provided.')
+    data=bytearray(Path(original).read_bytes())
+    rows=[]
+    used_ranges=[]
+    for target, dds_path, manifest_row in patch_items:
+        dds_path=Path(dds_path)
+        info, problems = validate_dds_matches_target_header_locked(dds_path, target, strict=True)
+        s=int(target['component1_absolute_start_dec']); e=int(target['component1_absolute_end_dec']); need=e-s
+        payload=info['payload']
+        if len(payload) != need:
+            raise ValueError(f"{target.get('asset')}: DDS payload size mismatch after header lock. payload={len(payload)} target={need}")
+        for os_, oe_, oname in used_ranges:
+            if not (e <= os_ or s >= oe_):
+                raise ValueError(f"Patch ranges overlap: {target.get('asset')} overlaps {oname}")
+        original_component1=bytes(data[s:e])
+        data[s:e]=payload
+        used_ranges.append((s,e,str(target.get('asset'))))
+        rows.append({
+            'asset':target.get('asset'),
+            'filename_hash':target.get('filename_hash'),
+            'replacement_dds':str(dds_path),
+            'offset_start_hex':hex(s),'offset_end_hex':hex(e),'size':need,
+            'dds_width':info['width'],'dds_height':info['height'],'dds_mips':info['mips'],'dds_format_kind':info['format_kind'],
+            'header_sha256':info.get('header_sha256',''),
+            'expected_header_sha256':info.get('expected_header_sha256',''),
+            'header_matches_target':info.get('actual_header_matches_expected'),
+            'same_payload_as_original':payload == original_component1,
+            'manifest_header_sha256':manifest_row.get('original_dds_header_sha256','') if isinstance(manifest_row,dict) else '',
+            'status':'PATCHED_HEADER_NAME_LOCKED'
+        })
+    output_path=Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(data)
+    log={
+        'mode':'HEADER_NAME_LOCKED_DDS_REIMPORT_V5_2_33',
+        'original_pcpack':str(original),
+        'patched_pcpack':str(output_path),
+        'patch_count':len(rows),
+        'safety':'every DDS had to match target filename/hash, width, height, mip count, format, payload size, and exact DDS header bytes; original PCPACK was not modified',
+        'items':rows,
+    }
+    (output_path.parent/(output_path.stem+'_HEADER_NAME_LOCKED_REIMPORT_LOG.json')).write_text(json.dumps(log,indent=2),encoding='utf-8')
+    (output_path.parent/(output_path.stem+'_HEADER_NAME_LOCKED_REIMPORT_LOG.txt')).write_text('\n'.join([f"{k}: {v}" for k,v in log.items() if k!='items'])+'\n\nITEMS:\n'+'\n'.join(f"{r['asset']} <- {Path(r['replacement_dds']).name} header={r['header_matches_target']} @ {r['offset_start_hex']}-{r['offset_end_hex']}" for r in rows),encoding='utf-8')
+    write_csv(output_path.parent/(output_path.stem+'_HEADER_NAME_LOCKED_REIMPORT_ITEMS.csv'), rows)
+    return log
+
 def export_original_component_as_dds(original:Path, target:dict, outdir:Path):
     data=original.read_bytes()
     s=int(target['component1_absolute_start_dec']); e=int(target['component1_absolute_end_dec'])
@@ -988,9 +2180,10 @@ def export_original_component_as_dds(original:Path, target:dict, outdir:Path):
     dds=outdir/f'{hashv}.{safe}.ORIGINAL_EDIT_THIS.dds'
     raw=outdir/f'{hashv}.{safe}.ORIGINAL_component1_{len(payload)}bytes.bin'
     raw.write_bytes(payload)
-    dds_bytes=build_dds_header(w,h,mips,fmt,len(payload))+payload
+    dds_header=build_dds_header(w,h,mips,fmt,len(payload))
+    dds_bytes=dds_header+payload
     dds.write_bytes(dds_bytes)
-    meta={'asset':target.get('asset'),'hash':hashv,'format':fmt,'width':w,'height':h,'mips':mips,'component1_size':len(payload),'dds':str(dds),'raw':str(raw),'target_key':target_edit_key(target),'original_dds_sha256':sha256_bytes(dds_bytes),'original_component1_sha256':sha256_bytes(payload),'note':'v2.4 recommended route: edit this DDS externally, keep same width/height/mips/format, then use AUTO: Detect Edited DDS + Patch COPY or Patch COPY with ORIGINAL-FORMAT DDS.'}
+    meta={'asset':target.get('asset'),'hash':hashv,'format':fmt,'width':w,'height':h,'mips':mips,'component1_size':len(payload),'dds':str(dds),'raw':str(raw),'target_key':target_edit_key(target),'original_dds_sha256':sha256_bytes(dds_bytes),'original_dds_header_sha256':sha256_bytes(dds_header),'original_dds_header_size':len(dds_header),'original_component1_sha256':sha256_bytes(payload),'note':'v5.2.33 header-locked route: edit this DDS externally but keep the same filename, same DDS header, same width/height/mips/format, and same payload size before target-locked reimport.'}
     (outdir/f'{hashv}.{safe}.DDS_EXPORT_LOG.json').write_text(json.dumps(meta,indent=2),encoding='utf-8')
     try:
         sidecar,index=write_dds_edit_session_files(dds,raw,meta)
@@ -1160,7 +2353,15 @@ def write_dds_edit_session_files(dds:Path, raw:Path, meta:dict):
     meta['original_dds_path']=safe_rel(dds)
     meta['original_raw_path']=safe_rel(raw)
     meta['original_dds_sha256']=sha256_file(dds) if dds.exists() else ''
-    meta['note']='Edit/overwrite the DDS in Paint.NET, then use AUTO: Detect Edited DDS + Patch COPY. The tool will validate format/mips/size before patching.'
+    try:
+        _info=parse_dds_header_file(dds)
+        _raw=Path(dds).read_bytes()
+        meta['original_dds_header_sha256']=sha256_bytes(_raw[:_info['header_size']])
+        meta['original_dds_header_size']=_info['header_size']
+    except Exception:
+        meta.setdefault('original_dds_header_sha256','')
+        meta.setdefault('original_dds_header_size','')
+    meta['note']='Edit/overwrite the DDS in Paint.NET or GIMP, then use the editor-safe final reimport. The final route validates filename/target and can patch direct, normalize header-only changes, or rebuild visible pixels into the SM3 target DDS format when the editor rewrites the DDS.'
     sidecar=dds.with_suffix(dds.suffix+'.sm3edit.json')
     sidecar.write_text(json.dumps(meta,indent=2),encoding='utf-8')
     index=dds.parent/'SM3_DDS_EDIT_SESSION_INDEX.json'
@@ -1431,32 +2632,52 @@ class TexSwapperTab(ttk.Frame):
         self.app_state = app_state
         self.root = self
         self.pcpack_var=tk.StringVar()
-        self.output_var=tk.StringVar(value=DEFAULT_OUTPUT_DIR)
+        self.output_var=tk.StringVar(value="")
         self.replacement_folder_var=tk.StringVar()
         self.search_var=tk.StringVar()
         self.force_opaque_var=tk.BooleanVar(value=True)
         self.diffuse_safe_var=tk.BooleanVar(value=True)
         self.strict_diffuse_var=tk.BooleanVar(value=False)
-        self.status_var=tk.StringVar(value=f'Ready. {APP_NAME} by {APP_AUTHOR}.')
+        self.status_var=tk.StringVar(value=f'Ready. {APP_NAME} by {APP_AUTHOR}. Exact-format DDS only; black/white previews mean format review.')
         self.selected_target_var=tk.StringVar(value='Selected texture: none')
         self.targets=[]; self.filtered=[]; self.images=[]; self.selected_target=None; self.selected_image=None
         self.img_ref=None
         self.dark_mode=True
         self.dds_export_history={}  # target_key -> export metadata from this session
         self.last_export_dir=None
+        self.native_tex_folder_var=tk.StringVar(value='')
+        self.native_tex_browser_records=[]
+        self.native_tex_browser_photo=None
+        self.native_tex_browser_selected=None
+        self.native_tex_browser_search_var=tk.StringVar(value='')
+        self.native_tex_selected_target_var=tk.StringVar(value='Selected classic TEX target: none')
         self.style=ttk.Style()
+        self._theme_widgets=[]
         self.build_ui()
-        self.apply_theme(True)
+        if self.app_state is not None:
+            try:
+                self.app_state.on_theme_change(lambda _theme: self.apply_theme())
+            except Exception:
+                self.apply_theme()
+        else:
+            self.apply_theme()
 
     def apply_theme(self, dark=True):
-        """Apply a readable dark/light theme to the Tk/ttk UI."""
-        self.dark_mode = bool(dark)
-        if self.dark_mode:
-            bg='#171717'; panel='#202020'; fg='#F2F2F2'; muted='#BDBDBD'; entry='#2B2B2B'; accent='#3A78D8'; select='#404B64'
-            header_bg='#101318'; brand_fg='#DCE6F2'; byline_fg='#AFC0D6'
-        else:
-            bg='#F0F0F0'; panel='#FFFFFF'; fg='#111111'; muted='#333333'; entry='#FFFFFF'; accent='#2B5EAA'; select='#CDE1FF'
-            header_bg='#FFFFFF'; brand_fg='#1F2937'; byline_fg='#4B5563'
+        """Apply the global Toolkit theme to the Tex Swapper tab."""
+        # v5.2.103: Tex Swapper no longer keeps a separate local dark/light palette.
+        # It follows the global Theme selector so the logo/header/buttons do not split colors.
+        bg = COLORS.get('bg', '#171717')
+        panel = COLORS.get('panel', '#202020')
+        panel2 = COLORS.get('panel2', panel)
+        fg = COLORS.get('fg', '#F2F2F2')
+        muted = COLORS.get('muted', '#BDBDBD')
+        entry = COLORS.get('field', '#2B2B2B')
+        accent = COLORS.get('accent', '#3A78D8')
+        select = COLORS.get('select', '#404B64')
+        header_bg = COLORS.get('header', bg)
+        brand_fg = COLORS.get('brand', fg)
+        byline_fg = COLORS.get('byline', muted)
+        self.dark_mode = (bg.lower() not in ('#f2f2f2', '#ffffff', '#eaf3fa'))
         try:
             self.style.theme_use('clam')
         except Exception:
@@ -1465,39 +2686,43 @@ class TexSwapperTab(ttk.Frame):
             self.root.configure(bg=bg)
         except Exception:
             pass
-        for sty in ['TFrame','TLabelframe','TNotebook','TNotebook.Tab']:
-            try: self.style.configure(sty, background=bg, foreground=fg)
-            except Exception: pass
-        try: self.style.configure('TLabel', background=bg, foreground=fg)
-        except Exception: pass
+        for sty in ['TFrame','TLabelframe','TLabelFrame','TNotebook','TNotebook.Tab']:
+            try:
+                self.style.configure(sty, background=bg, foreground=fg)
+            except Exception:
+                pass
         try:
+            self.style.configure('TLabel', background=bg, foreground=fg)
             self.style.configure('Header.TFrame', background=header_bg)
             self.style.configure('Brand.TLabel', background=header_bg, foreground=brand_fg, font=('Segoe UI',18,'bold'))
             self.style.configure('Byline.TLabel', background=header_bg, foreground=byline_fg, font=('Segoe UI',10,'bold'))
             self.style.configure('HeaderNote.TLabel', background=header_bg, foreground=muted, font=('Segoe UI',9))
             self.style.configure('Status.TLabel', background=panel, foreground=fg)
-        except Exception: pass
-        try: self.style.configure('TCheckbutton', background=bg, foreground=fg)
-        except Exception: pass
-        try:
-            self.style.configure('TButton', background=panel, foreground=fg, bordercolor='#555555', focusthickness=1, focuscolor=accent)
-            self.style.map('TButton', background=[('active', '#333333' if self.dark_mode else '#E5E5E5')])
-        except Exception: pass
-        try:
-            self.style.configure('TEntry', fieldbackground=entry, foreground=fg, insertcolor=fg)
-        except Exception: pass
-        try:
+            self.style.configure('TCheckbutton', background=bg, foreground=fg)
+            self.style.map('TCheckbutton', background=[('active', bg)], foreground=[('active', fg)])
+            self.style.configure('TButton', background=COLORS.get('button', panel), foreground=fg, bordercolor=COLORS.get('border', '#555555'), focusthickness=1, focuscolor=accent)
+            self.style.map('TButton', background=[('pressed', COLORS.get('button_pressed', panel2)), ('active', COLORS.get('button_hover', panel2))], foreground=[('active', fg)])
+            self.style.configure('TEntry', fieldbackground=entry, foreground=fg, insertcolor=fg, bordercolor=COLORS.get('border', '#555555'))
+            self.style.map('TEntry', fieldbackground=[('focus', entry), ('readonly', entry)], foreground=[('focus', fg), ('readonly', fg)])
             self.style.configure('Treeview', background=entry, fieldbackground=entry, foreground=fg, rowheight=24)
             self.style.configure('Treeview.Heading', background=panel, foreground=fg)
             self.style.map('Treeview', background=[('selected', select)], foreground=[('selected', fg)])
-        except Exception: pass
+        except Exception:
+            pass
         for widget in getattr(self, '_theme_widgets', []):
             try:
                 cls=widget.winfo_class()
                 if cls in ('Text','Listbox'):
                     widget.configure(bg=entry, fg=fg, insertbackground=fg, selectbackground=select, selectforeground=fg, highlightbackground=panel, highlightcolor=accent)
+                elif cls == 'Canvas':
+                    widget.configure(bg=panel, highlightbackground=panel, highlightcolor=accent)
+                elif cls == 'Button':
+                    widget.configure(bg=COLORS.get('button', panel), fg=fg, activebackground=COLORS.get('button_hover', panel2), activeforeground=fg, highlightbackground=COLORS.get('border', panel), highlightcolor=accent)
                 else:
-                    widget.configure(bg=bg, fg=fg)
+                    try:
+                        widget.configure(bg=bg, fg=fg)
+                    except Exception:
+                        widget.configure(bg=bg)
             except Exception:
                 pass
         try:
@@ -1505,8 +2730,7 @@ class TexSwapperTab(ttk.Frame):
             self.img_list.configure(bg=entry, fg=fg, selectbackground=select, selectforeground=fg)
         except Exception:
             pass
-        mode='Dark mode ON.' if self.dark_mode else 'Light mode ON.'
-        self.set_status(f'{mode} {APP_NAME} by {APP_AUTHOR} is ready.')
+        self.set_status(f'Theme applied. {APP_NAME} is ready; original PCPACKs are never modified.')
 
     def toggle_dark_mode(self):
         self.apply_theme(not getattr(self, 'dark_mode', True))
@@ -1515,10 +2739,10 @@ class TexSwapperTab(ttk.Frame):
         # Menu fallback keeps every major action reachable even on small screens.
         menubar=tk.Menu(self.root)
         file_menu=tk.Menu(menubar, tearoff=0)
-        file_menu.add_command(label='Open PCPACK...', command=self.choose_pcpack)
+        file_menu.add_command(label='Open SM3 Pack...', command=self.choose_pcpack)
         file_menu.add_command(label='Choose Output Folder...', command=self.choose_output)
         file_menu.add_command(label='Select Replacement Folder...', command=self.choose_replacement_folder)
-        file_menu.add_command(label='Open Output Folder', command=lambda: open_path(Path(self.output_var.get())))
+        file_menu.add_command(label='Open Output', command=self.open_output_folder)
         file_menu.add_command(label='Open Replacement Folder', command=self.open_replacement_folder)
         file_menu.add_separator()
         file_menu.add_command(label='Exit', command=self.root.destroy)
@@ -1527,19 +2751,20 @@ class TexSwapperTab(ttk.Frame):
         actions_menu=tk.Menu(menubar, tearoff=0)
         actions_menu.add_command(label='Build TEX Preview', command=self.build_preview)
         actions_menu.add_separator()
-        actions_menu.add_command(label='EXPORT ALL DDS', command=self.export_all_dds)
-        actions_menu.add_command(label='ONE FILE AUTO: File First -> Patch', command=self.old_one_file_auto_select_and_patch)
-        actions_menu.add_command(label='SELECTED CONVERT: Image/DDS -> Target Format', command=self.selected_target_format_convert_direct)
-        actions_menu.add_command(label='AUTO Detect Edited DDS + Patch', command=self.auto_detect_edited_dds_and_patch)
-        actions_menu.add_command(label='REIMPORT ALL DDS FOLDER -> ONE PACK', command=self.reimport_all_dds_folder)
-        actions_menu.add_command(label='SMART REIMPORT: Exact + Convert Mips -> ONE PACK', command=self.smart_reimport_all_folder)
+        actions_menu.add_command(label='SINGLE SELECTED DDS EXPORT', command=self.export_original_dds)
+        actions_menu.add_command(label='EXPORT EDIT-READY DDS + MANIFEST', command=self.export_all_header_locked_dds_manifest)
+        actions_menu.add_command(label='.TEX: EXPORT SELECTED ORIGINAL .TEX', command=self.export_selected_original_tex)
+        actions_menu.add_command(label='.TEX: DDS -> .TEX USING SELECTED EXTRACTOR SHELL', command=self.convert_dds_to_native_tex_selected)
+        actions_menu.add_command(label='SINGLE FILE EDITOR-SAFE PATCH -> WRITE PCPACK', command=self.single_file_gimp_safe_patch_write_pcpack)
+        actions_menu.add_command(label='MULTIPLE FILE EDITOR-SAFE PATCH -> WRITE PCPACK', command=self.multiple_file_editor_safe_patch_write_pcpack)
+        actions_menu.add_command(label='FINAL EDITOR-SAFE REIMPORT -> WRITE PATCHED PCPACK', command=self.final_safe_reimport_auto_normalize_folder)
         actions_menu.add_separator()
         actions_menu.add_command(label='RESTORE: All TEX from Clean Original Pack', command=self.restore_all_tex_from_clean_original)
         actions_menu.add_command(label='BUGCHECK: Scan Current Targets', command=self.bugcheck_current_targets)
         menubar.add_cascade(label='Actions', menu=actions_menu)
 
         view_menu=tk.Menu(menubar, tearoff=0)
-        view_menu.add_command(label='Toggle Dark / Light', command=self.toggle_dark_mode)
+        # v5.2.91: global Theme selector handles Classic / Light / Full Dark.
         view_menu.add_command(label='Open Index', command=self.open_index)
         view_menu.add_command(label='Reload Output', command=self.reload_existing)
         menubar.add_cascade(label='View', menu=view_menu)
@@ -1549,26 +2774,37 @@ class TexSwapperTab(ttk.Frame):
         ttk.Label(header,text=APP_NAME,style='Brand.TLabel').grid(row=0,column=0,sticky='w')
         ttk.Label(header,text=f'Made by {APP_AUTHOR}',style='Byline.TLabel').grid(row=0,column=1,sticky='w',padx=(12,0))
         ttk.Label(header,text=APP_BUILD,style='HeaderNote.TLabel').grid(row=0,column=2,sticky='e')
-        ttk.Label(header,text='SM3 PC texture export/reimport workflow - clean creator-safe layout.',style='HeaderNote.TLabel').grid(row=1,column=0,columnspan=3,sticky='w',pady=(2,0))
+        ttk.Label(header,text='SM3 PC + Xbox texture viewer. PC editing/reimport stays exact-format; Xbox is preview + DDS export only.',style='HeaderNote.TLabel').grid(row=1,column=0,columnspan=3,sticky='w',pady=(2,0))
         header.columnconfigure(1,weight=1)
 
+        # v5.2.145: keep Tex Swapper focused on two tabs only.
+        # Classic Workflow contains the proven PCPACK flow plus the quick loose .TEX actions.
+        # Browse + Image embeds the old folder-preview window directly in the Toolkit.
+        self.workflow_tabs=ttk.Notebook(self.root)
+        self.workflow_tabs.pack(fill='both',expand=True,padx=8,pady=(2,8))
+        self.classic_workflow_page=ttk.Frame(self.workflow_tabs)
+        self.native_tex_browser_page=ttk.Frame(self.workflow_tabs)
+        self.workflow_tabs.add(self.classic_workflow_page,text='Classic Workflow')
+        self.workflow_tabs.add(self.native_tex_browser_page,text='Browse + Image')
+        classic_parent=self.classic_workflow_page
+
         # Top file selectors stay compact so they do not push action buttons off-screen.
-        top=ttk.Frame(self.root,padding=(8,6,8,4)); top.pack(fill='x')
-        ttk.Label(top,text='Clean SM3 PCPACK:').grid(row=0,column=0,sticky='w')
+        top=ttk.Frame(classic_parent,padding=(8,6,8,4)); top.pack(fill='x')
+        ttk.Label(top,text='SM3 PC/Xbox Pack:').grid(row=0,column=0,sticky='w')
         ttk.Entry(top,textvariable=self.pcpack_var,width=72).grid(row=0,column=1,sticky='ew',padx=4)
-        ttk.Button(top,text='Browse PCPACK',command=self.choose_pcpack).grid(row=0,column=2,padx=2)
+        ttk.Button(top,text='Browse Pack',command=self.choose_pcpack).grid(row=0,column=2,padx=2)
         ttk.Button(top,text='Build Preview',command=self.build_preview).grid(row=0,column=3,padx=2)
         ttk.Label(top,text='Output folder:').grid(row=1,column=0,sticky='w',pady=(4,0))
         ttk.Entry(top,textvariable=self.output_var,width=72).grid(row=1,column=1,sticky='ew',padx=4,pady=(4,0))
         ttk.Button(top,text='Choose Output',command=self.choose_output).grid(row=1,column=2,padx=2,pady=(4,0))
-        ttk.Button(top,text='Open Output',command=lambda: open_path(Path(self.output_var.get()))).grid(row=1,column=3,padx=2,pady=(4,0))
+        ttk.Button(top,text='Open Output',command=self.open_output_folder).grid(row=1,column=3,padx=2,pady=(4,0))
         ttk.Label(top,text='Replacement DDS folder:').grid(row=2,column=0,sticky='w',pady=(4,0))
         ttk.Entry(top,textvariable=self.replacement_folder_var,width=72).grid(row=2,column=1,sticky='ew',padx=4,pady=(4,0))
         ttk.Button(top,text='Select Repl Folder',command=self.choose_replacement_folder).grid(row=2,column=2,padx=2,pady=(4,0))
         ttk.Button(top,text='Open Repl',command=self.open_replacement_folder).grid(row=2,column=3,padx=2,pady=(4,0))
         top.columnconfigure(1,weight=1)
 
-        mid=ttk.Frame(self.root,padding=(8,0,8,4)); mid.pack(fill='x')
+        mid=ttk.Frame(classic_parent,padding=(8,0,8,4)); mid.pack(fill='x')
         ttk.Label(mid,text='Search textures:').grid(row=0,column=0,sticky='w')
         ent=ttk.Entry(mid,textvariable=self.search_var,width=34); ent.grid(row=0,column=1,sticky='ew',padx=4)
         ent.bind('<KeyRelease>',lambda e:self.apply_filter())
@@ -1578,12 +2814,12 @@ class TexSwapperTab(ttk.Frame):
         ttk.Checkbutton(mid,text='Strict diffuse only',variable=self.strict_diffuse_var).grid(row=0,column=5,sticky='w',padx=4)
         ttk.Button(mid,text='Open Index',command=self.open_index).grid(row=0,column=6,padx=2)
         ttk.Button(mid,text='Reload',command=self.reload_existing).grid(row=0,column=7,padx=2)
-        ttk.Button(mid,text='Dark/Light',command=self.toggle_dark_mode).grid(row=0,column=8,padx=2)
+        # v5.2.91: theme switching moved to the global top-bar Theme selector.
         ttk.Label(mid,textvariable=self.selected_target_var,style='Status.TLabel').grid(row=1,column=0,columnspan=9,sticky='ew',pady=(4,0))
         mid.columnconfigure(1,weight=1)
 
         # Main body: left = target list, middle = preview/info, right = always-visible action panel.
-        body=ttk.PanedWindow(self.root,orient='horizontal'); body.pack(fill='both',expand=True,padx=8,pady=(0,8))
+        body=ttk.PanedWindow(classic_parent,orient='horizontal'); body.pack(fill='both',expand=True,padx=8,pady=(0,8))
 
         left=ttk.Frame(body,padding=4); body.add(left,weight=3)
         ttk.Label(left,text='TEX Targets - Ctrl-click / Shift-click for batch selection',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
@@ -1615,15 +2851,15 @@ class TexSwapperTab(ttk.Frame):
         info_frame.columnconfigure(0,weight=1); info_frame.rowconfigure(0,weight=1)
         self.bind_mousewheel_to_widget(self.info)
 
-        right=ttk.Frame(body,padding=4); body.add(right,weight=2)
-        ttk.Label(right,text='Actions - clean creator workflow',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
+        right=ttk.Frame(body,padding=4); body.add(right,weight=3)
+        ttk.Label(right,text='Actions — PCPACK + .TEX',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
         actions=ttk.Notebook(right)
         actions.pack(fill='x',expand=False,pady=(2,6))
 
         def _scroll_tab(name):
             outer=ttk.Frame(actions)
             actions.add(outer,text=name)
-            canvas=tk.Canvas(outer,highlightthickness=0,borderwidth=0,height=205)
+            canvas=tk.Canvas(outer,highlightthickness=0,borderwidth=0,height=170,bg='#202020')
             ybar=ttk.Scrollbar(outer,orient='vertical',command=canvas.yview)
             inner=ttk.Frame(canvas,padding=6)
             inner_id=canvas.create_window((0,0),window=inner,anchor='nw')
@@ -1649,29 +2885,33 @@ class TexSwapperTab(ttk.Frame):
             btn.grid(row=row,column=col,columnspan=colspan,sticky='ew',padx=3,pady=3)
             return btn
 
-        tab_main=_scroll_tab('Main')
-        _grid_btn(tab_main,'EXPORT ALL DDS',self.export_all_dds,0,0,2)
-        _grid_btn(tab_main,'ONE FILE AUTO: File First -> Patch',self.old_one_file_auto_select_and_patch,1,0,2)
-        _grid_btn(tab_main,'SELECTED CONVERT: Image/DDS -> Target Format',self.selected_target_format_convert_direct,2,0,2)
-        _grid_btn(tab_main,'AUTO Detect Edited DDS + Patch',self.auto_detect_edited_dds_and_patch,3,0,2)
-        _grid_btn(tab_main,'Set Replacement Folder',self.choose_replacement_folder,4,0,2)
-        _grid_btn(tab_main,'REIMPORT ALL DDS FOLDER -> ONE PACK',self.reimport_all_dds_folder,5,0,2)
-        _grid_btn(tab_main,'SMART REIMPORT: Exact + Convert Mips -> ONE PACK',self.smart_reimport_all_folder,6,0,2)
-        _grid_btn(tab_main,'Open Output Folder',lambda: open_path(Path(self.output_var.get())),7,0)
-        _grid_btn(tab_main,'Open Replacement Folder',self.open_replacement_folder,7,1)
+        tab_main=_scroll_tab('Classic')
+        ttk.Label(tab_main,text='PCPACK / DDS',font=('TkDefaultFont',10,'bold')).grid(row=0,column=0,columnspan=2,sticky='w',padx=3,pady=(0,3))
+        _grid_btn(tab_main,'1) SINGLE DDS EXPORT',self.export_original_dds,1,0,2)
+        _grid_btn(tab_main,'2) EXPORT ALL DDS',self.export_all_header_locked_dds_manifest,2,0,2)
+        _grid_btn(tab_main,'3) SAFE PATCH -> PCPACK',self.single_file_gimp_safe_patch_write_pcpack,3,0,2)
+        _grid_btn(tab_main,'4) MULTI SAFE PATCH -> PCPACK',self.multiple_file_editor_safe_patch_write_pcpack,4,0,2)
+        _grid_btn(tab_main,'5) FOLDER REIMPORT -> PCPACK',self.final_safe_reimport_auto_normalize_folder,5,0,2)
+        _grid_btn(tab_main,'Set Edited DDS Folder',self.choose_replacement_folder,6,0,2)
+        _grid_btn(tab_main,'Open Output Folder',self.open_output_folder,7,0)
+        _grid_btn(tab_main,'Open Edited DDS',self.open_replacement_folder,7,1)
+        ttk.Separator(tab_main,orient='horizontal').grid(row=8,column=0,columnspan=2,sticky='ew',padx=3,pady=(8,6))
+        ttk.Label(tab_main,text='LOOSE .TEX',font=('TkDefaultFont',10,'bold')).grid(row=9,column=0,columnspan=2,sticky='w',padx=3,pady=(0,3))
+        _grid_btn(tab_main,'6) EXPORT ORIGINAL .TEX',self.export_selected_original_tex,10,0,2)
+        _grid_btn(tab_main,'7) DDS -> SELECTED .TEX',self.convert_dds_to_native_tex_selected,11,0,2)
+        ttk.Label(tab_main,text='Classic keeps the fast PCPACK + loose .TEX actions together. Browse + Image has its own full page, so no extra browser window/button is needed here.',wraplength=300,justify='left').grid(row=12,column=0,columnspan=2,sticky='ew',padx=3,pady=(8,3))
 
         tab_recovery=_scroll_tab('Recovery')
-        _grid_btn(tab_recovery,'TEST Safe Edited DDS + Patch',self.make_edited_dds_test_and_patch,0,0,2)
-        _grid_btn(tab_recovery,'RESTORE: All TEX from Clean Original Pack',self.restore_all_tex_from_clean_original,1,0,2)
-        _grid_btn(tab_recovery,'BUGCHECK: Scan Current Targets',self.bugcheck_current_targets,2,0,2)
-        _grid_btn(tab_recovery,'CONTROL: Original Selected Texture',self.self_replace_selected,3,0,2)
+        _grid_btn(tab_recovery,'RESTORE: All TEX from Clean Original Pack',self.restore_all_tex_from_clean_original,0,0,2)
+        _grid_btn(tab_recovery,'BUGCHECK: Scan Current Targets',self.bugcheck_current_targets,1,0,2)
+        _grid_btn(tab_recovery,'CONTROL: Original Selected Texture',self.self_replace_selected,2,0,2)
+        ttk.Label(tab_recovery,text='Recovery tools only. Use Classic Workflow for PCPACK export/reimport and quick loose .TEX export/conversion. Use Browse + Image to review folders of native .TEX files.',wraplength=300,justify='left').grid(row=3,column=0,columnspan=2,sticky='ew',padx=3,pady=(8,3))
 
         tab_advanced=_scroll_tab('Advanced')
         _grid_btn(tab_advanced,'Dump Component0/1',self.dump_selected,0,0,2)
         _grid_btn(tab_advanced,'BATCH Export DDS for Selected',self.batch_export_original_dds,1,0,2)
-        _grid_btn(tab_advanced,'Patch COPY with Replacement',self.patch_selected,2,0,2)
-        _grid_btn(tab_advanced,'CONTROL: Full Original-Texture Self Test',self.full_selftest_copy,3,0,2)
-        _grid_btn(tab_advanced,'MANUAL OPTIONS CHECK',self.manual_options_check,4,0,2)
+        _grid_btn(tab_advanced,'CONTROL: Full Original-Texture Self Test',self.full_selftest_copy,2,0,2)
+        ttk.Label(tab_advanced,text='Advanced diagnostics. Normal users should stay on Classic Workflow or Browse + Image.',wraplength=300,justify='left').grid(row=3,column=0,columnspan=2,sticky='ew',padx=3,pady=(8,3))
 
         ttk.Separator(right,orient='horizontal').pack(fill='x',pady=(4,6))
         ttk.Label(right,text='Preview Files',font=('TkDefaultFont',10,'bold')).pack(anchor='w')
@@ -1680,7 +2920,9 @@ class TexSwapperTab(ttk.Frame):
         img_y=ttk.Scrollbar(img_frame,orient='vertical',command=self.img_list.yview)
         img_x=ttk.Scrollbar(img_frame,orient='horizontal',command=self.img_list.xview)
         self.img_list.configure(yscrollcommand=img_y.set,xscrollcommand=img_x.set)
-        self._theme_widgets=[self.info,self.img_list]
+        if not hasattr(self,'_theme_widgets'):
+            self._theme_widgets=[]
+        self._theme_widgets.extend([self.info,self.img_list])
         self.img_list.grid(row=0,column=0,sticky='nsew')
         img_y.grid(row=0,column=1,sticky='ns')
         img_x.grid(row=1,column=0,sticky='ew')
@@ -1691,10 +2933,101 @@ class TexSwapperTab(ttk.Frame):
         ttk.Button(img_btns,text='Open Image',command=self.open_selected_image).pack(side='left',padx=2)
         ttk.Button(img_btns,text='Open Folder',command=self.open_selected_image_folder).pack(side='left',padx=2)
 
+        self._build_native_tex_browser_page()
+
         ttk.Label(self.root,textvariable=self.status_var,relief='sunken',anchor='w',style='Status.TLabel').pack(side='bottom',fill='x')
 
+    def _build_native_tex_workflow_page(self):
+        """Legacy no-op page retained only for source compatibility; loose .TEX actions now live in Classic Workflow."""
+        return
+
+        page=self.native_tex_workflow_page
+        top=ttk.Frame(page,padding=12); top.pack(fill='x')
+        ttk.Label(top,text='Loose Native .TEX Workflow',font=('TkDefaultFont',14,'bold')).pack(anchor='w')
+        ttk.Label(
+            top,
+            text='Use this page when you want to export a selected SM3 TEX target as a loose .TEX or convert an edited DDS back to that target identity. The proven v5.2.137 PHYS/no-PHYS and mip-count preservation rules are unchanged.',
+            wraplength=1050,justify='left'
+        ).pack(anchor='w',pady=(4,10))
+
+        target_box=ttk.LabelFrame(page,text='Selected target from Classic Workflow',padding=10)
+        target_box.pack(fill='x',padx=12,pady=(0,8))
+        ttk.Label(target_box,textvariable=self.native_tex_selected_target_var,wraplength=1050,justify='left').pack(side='left',fill='x',expand=True)
+        ttk.Button(target_box,text='Go to Classic Workflow',command=lambda:self.workflow_tabs.select(self.classic_workflow_page)).pack(side='right',padx=(8,0))
+
+        actions=ttk.LabelFrame(page,text='Native .TEX Actions',padding=12)
+        actions.pack(fill='x',padx=12,pady=8)
+        ttk.Button(actions,text='1) EXPORT SELECTED ORIGINAL .TEX',command=self.export_selected_original_tex).grid(row=0,column=0,sticky='ew',padx=4,pady=4)
+        ttk.Button(actions,text='2) UNIVERSAL DDS -> .TEX (SELECTED SM3 TARGET)',command=self.convert_dds_to_native_tex_selected).grid(row=1,column=0,sticky='ew',padx=4,pady=4)
+        ttk.Button(actions,text='Open Output Folder',command=self.open_output_folder).grid(row=2,column=0,sticky='ew',padx=4,pady=4)
+        actions.columnconfigure(0,weight=1)
+
+        note=ttk.LabelFrame(page,text='What each page is for',padding=12)
+        note.pack(fill='x',padx=12,pady=8)
+        ttk.Label(note,text=(
+            'Classic Workflow = original PCPACK export/edit/reimport workflow.\n'
+            '.TEX = loose native .TEX conversion using the selected game target identity.\n'
+            'Browse + Image = choose a folder of extracted/loose .tex files and review them directly inside the Toolkit.'
+        ),justify='left',wraplength=1050).pack(anchor='w')
+
+    def _build_native_tex_browser_page(self):
+        page=self.native_tex_browser_page
+        top=ttk.Frame(page,padding=(10,8)); top.pack(fill='x')
+        ttk.Label(top,text='Browse + Image — SM3 PC / Xbox .TEX Review',font=('TkDefaultFont',14,'bold')).grid(row=0,column=0,columnspan=5,sticky='w')
+        ttk.Label(top,text='Folder:').grid(row=1,column=0,sticky='w',pady=(8,0))
+        ttk.Entry(top,textvariable=self.native_tex_folder_var).grid(row=1,column=1,sticky='ew',padx=4,pady=(8,0))
+        ttk.Button(top,text='Choose .TEX Folder',command=self.choose_native_tex_browser_folder).grid(row=1,column=2,padx=3,pady=(8,0))
+        ttk.Button(top,text='Rescan',command=self.rescan_native_tex_browser_folder).grid(row=1,column=3,padx=3,pady=(8,0))
+        ttk.Button(top,text='Open Folder',command=self.open_native_tex_browser_folder).grid(row=1,column=4,padx=3,pady=(8,0))
+        ttk.Label(top,text='Search:').grid(row=2,column=0,sticky='w',pady=(6,0))
+        ent=ttk.Entry(top,textvariable=self.native_tex_browser_search_var)
+        ent.grid(row=2,column=1,sticky='ew',padx=4,pady=(6,0))
+        ent.bind('<KeyRelease>',lambda _e:self.apply_native_tex_browser_filter())
+        ttk.Button(top,text='Clear Search',command=self.clear_native_tex_browser_search).grid(row=2,column=2,padx=3,pady=(6,0))
+        ttk.Label(top,text='Select a texture below to preview it. No extra window opens.',style='Status.TLabel').grid(row=2,column=3,columnspan=2,sticky='e',padx=3,pady=(6,0))
+        top.columnconfigure(1,weight=1)
+
+        pan=ttk.PanedWindow(page,orient='horizontal'); pan.pack(fill='both',expand=True,padx=10,pady=(0,10))
+        left=ttk.Frame(pan,padding=4); right=ttk.Frame(pan,padding=4)
+        pan.add(left,weight=5); pan.add(right,weight=5)
+
+        ttk.Label(left,text='SM3 .TEX Files',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
+        tf=ttk.Frame(left); tf.pack(fill='both',expand=True,pady=(4,0))
+        self.native_tex_browser_tree=ttk.Treeview(tf,columns=('asset','size','fmt','mips','hash','status'),show='headings',selectmode='browse')
+        ys=ttk.Scrollbar(tf,orient='vertical',command=self.native_tex_browser_tree.yview)
+        xs=ttk.Scrollbar(tf,orient='horizontal',command=self.native_tex_browser_tree.xview)
+        self.native_tex_browser_tree.configure(yscrollcommand=ys.set,xscrollcommand=xs.set)
+        for c,w in [('asset',280),('size',90),('fmt',150),('mips',55),('hash',105),('status',110)]:
+            self.native_tex_browser_tree.heading(c,text=c)
+            self.native_tex_browser_tree.column(c,width=w,anchor='w',stretch=(c=='asset'))
+        self.native_tex_browser_tree.grid(row=0,column=0,sticky='nsew')
+        ys.grid(row=0,column=1,sticky='ns'); xs.grid(row=1,column=0,sticky='ew')
+        tf.columnconfigure(0,weight=1); tf.rowconfigure(0,weight=1)
+        self.native_tex_browser_tree.bind('<<TreeviewSelect>>',self.on_native_tex_browser_select)
+        self.bind_mousewheel_to_widget(self.native_tex_browser_tree)
+
+        ttk.Label(right,text='Texture Preview',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
+        self.native_tex_browser_preview=ttk.Label(right,text='Choose a .TEX folder, then select a texture.',anchor='center')
+        self.native_tex_browser_preview.pack(fill='both',expand=True,pady=6)
+        self.native_tex_browser_info_var=tk.StringVar(value='')
+        ttk.Label(right,textvariable=self.native_tex_browser_info_var,wraplength=560,justify='left').pack(fill='x',pady=(0,6))
+        btns=ttk.Frame(right); btns.pack(fill='x')
+        ttk.Button(btns,text='DDS -> Selected .TEX Identity',command=self.native_tex_browser_convert_selected).pack(side='left',padx=2,pady=2)
+        ttk.Button(btns,text='EXPORT SELECTED .TEX',command=self.native_tex_browser_export_selected_tex).pack(side='left',padx=2,pady=2)
+        ttk.Button(btns,text='EXPORT TO DDS',command=self.native_tex_browser_export_selected_dds).pack(side='left',padx=2,pady=2)
+        ttk.Button(btns,text='OPEN OUTPUT',command=self.native_tex_browser_open_output).pack(side='left',padx=2,pady=2)
+        ttk.Button(btns,text='Reveal .TEX',command=self.native_tex_browser_reveal_selected).pack(side='left',padx=2,pady=2)
+
     def choose_pcpack(self):
-        p=filedialog.askopenfilename(title='Select clean Spider-Man 3 PC .PCPACK',filetypes=[('PCPACK','*.PCPACK'),('All files','*.*')])
+        p=filedialog.askopenfilename(
+            title='Select Spider-Man 3 PC or Xbox pack',
+            filetypes=[
+                ('SM3 PC/Xbox packs','*.PCPACK *.pcpack *.PCAPK *.pcapk *.APKF *.apkf *.XEPACK *.xepack *.XEAPK *.xeapk *.XPACK *.xpack'),
+                ('Xbox 360 packs','*.XEPACK *.xepack *.XEAPK *.xeapk *.XPACK *.xpack'),
+                ('SM3 PC packs','*.PCPACK *.pcpack *.PCAPK *.pcapk *.APKF *.apkf'),
+                ('All files','*.*'),
+            ],
+        )
         if p: self.pcpack_var.set(p)
     def choose_output(self):
         p=filedialog.askdirectory(title='Select output folder')
@@ -1703,6 +3036,17 @@ class TexSwapperTab(ttk.Frame):
             # If no replacement folder has been chosen yet, use the output folder as a useful default.
             if not self.replacement_folder_var.get().strip():
                 self.replacement_folder_var.set(p)
+
+    def open_output_folder(self):
+        raw=self.output_var.get().strip()
+        if not raw:
+            messagebox.showinfo('Output folder not set','Choose an output folder first.')
+            return
+        p=Path(raw)
+        if p.exists() and p.is_dir():
+            open_path(p)
+        else:
+            messagebox.showinfo('Output folder not set','Choose an output folder first.')
 
     def choose_replacement_folder(self):
         p=filedialog.askdirectory(title='Select folder containing edited DDS replacement files')
@@ -1727,6 +3071,10 @@ class TexSwapperTab(ttk.Frame):
         target = target or self.selected_target
         if not target:
             self.selected_target_var.set('Selected texture: none')
+            try:
+                self.native_tex_selected_target_var.set('Selected classic TEX target: none')
+            except Exception:
+                pass
             return
         self.selected_target_var.set(
             'Selected texture: '
@@ -1737,10 +3085,25 @@ class TexSwapperTab(ttk.Frame):
             + 'mips ' + str(target.get('mips','')) + ' | '
             + 'payload ' + str(target.get('component1_size','')) + ' bytes'
         )
+        try:
+            self.native_tex_selected_target_var.set(
+                'Selected classic TEX target: '
+                + str(target.get('asset','')) + ' | '
+                + str(target.get('filename_hash','')) + ' | '
+                + f"{target.get('width')}x{target.get('height')} "
+                + str(target.get('format_kind','')) + ' | mips '
+                + str(target.get('mips',''))
+            )
+        except Exception:
+            pass
 
     def manual_options_check(self):
         """v4.7: Audit manual workflow wiring and current patch readiness."""
-        outroot = Path(self.output_var.get() or DEFAULT_OUTPUT_DIR)
+        raw_out = self.output_var.get().strip()
+        if not raw_out:
+            messagebox.showinfo('Output folder not set','Choose an output folder first.')
+            return
+        outroot = Path(raw_out)
         report_dir = outroot / 'MANUAL_OPTIONS_CHECK_v4_8'
         report_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1805,7 +3168,7 @@ class TexSwapperTab(ttk.Frame):
             add(
                 'Recommended manual route for current selection',
                 'INFO',
-                f"One target selected: use SELECTED EXACT if DDS matches, or SELECTED CONVERT / SMART route if mips-format differ. Target={t.get('asset')} {t.get('width')}x{t.get('height')} {t.get('format_kind')} mips {t.get('mips')}"
+                f"One target selected: use SELECTED EXACT if DDS matches, or legacy selected convert / SMART route if mips-format differ. Target={t.get('asset')} {t.get('width')}x{t.get('height')} {t.get('format_kind')} mips {t.get('mips')}"
             )
         elif len(selected_targets) > 1:
             add(
@@ -1853,12 +3216,12 @@ class TexSwapperTab(ttk.Frame):
         error_count = len(summary['errors'])
         warn_count = len(summary['warnings'])
         if error_count:
-            msg = f'Manual options check found {error_count} ERROR(s) and {warn_count} warning(s).\\n\\nReport folder:\\n{report_dir}'
+            msg = f'Internal options audit found {error_count} ERROR(s) and {warn_count} warning(s).\\n\\nReport folder:\\n{report_dir}'
             messagebox.showerror('Manual Options Check', msg)
         else:
-            msg = f'Manual options check passed. Warnings: {warn_count}.\\n\\nReport folder:\\n{report_dir}'
+            msg = f'Internal options audit passed. Warnings: {warn_count}.\\n\\nReport folder:\\n{report_dir}'
             messagebox.showinfo('Manual Options Check', msg)
-        self.set_status(f'Manual options check complete. Errors={error_count}, warnings={warn_count}. Report: {report_dir}')
+        self.set_status(f'Internal options audit complete. Errors={error_count}, warnings={warn_count}. Report: {report_dir}')
 
 
     def bugcheck_current_targets(self):
@@ -1866,7 +3229,11 @@ class TexSwapperTab(ttk.Frame):
         if not self.targets:
             messagebox.showinfo('Build preview first','Build Preview or Reload first.')
             return
-        outroot = Path(self.output_var.get())
+        raw_out = self.output_var.get().strip()
+        if not raw_out:
+            messagebox.showinfo('Output folder not set','Choose an output folder first.')
+            return
+        outroot = Path(raw_out)
         report_dir = outroot / 'BUGCHECK_REPORTS'
         report_dir.mkdir(parents=True, exist_ok=True)
         rows = []
@@ -1920,10 +3287,58 @@ class TexSwapperTab(ttk.Frame):
             messagebox.showerror('Missing decoder',f'Could not import bundled v1.4 decoder. Make sure you extracted the whole zip, not just the exe/script. Original error: {CORE_IMPORT_ERROR}')
             return
         pc=Path(self.pcpack_var.get())
-        raw_out=Path(self.output_var.get().strip() or DEFAULT_OUTPUT_DIR)
+        raw_out_text=self.output_var.get().strip()
+        if not raw_out_text:
+            messagebox.showinfo('Output folder not set','Choose an output folder first.')
+            return
+        raw_out=Path(raw_out_text)
         base_out=resolve_user_output_base(raw_out)
         if not pc.exists():
-            messagebox.showerror('Missing PCPACK','Select an original SM3 .PCPACK first.')
+            messagebox.showerror('Missing pack','Select an original SM3 PC or Xbox pack first.')
+            return
+
+        # v5.2.162: direct Xbox/XE pack route. Keep the PC PCPACK editor path unchanged.
+        # Xbox packs are extracted read-only into the Tex Swapper workspace, then
+        # their combined .tex resources are opened in Browse + Image using the
+        # proven Xenos endian + untile decoder.
+        xbox_exts={'.xepack','.xeapk','.xpack','.x360'}
+        is_xbox_pack=(pc.suffix.lower() in xbox_exts or 'XEPACK' in pc.name.upper() or 'XEAPK' in pc.name.upper())
+        if is_xbox_pack:
+            try:
+                out=reset_generated_build_workspace(base_out)
+                self.set_status('Xbox 360 pack detected. Extracting TEX resources read-only...')
+                summary=xbox_pack_backend.extract_xbox_resources(pc,out,log=self.set_status)
+                run_root=Path(summary.get('output_root') or out)
+                tex_folder=run_root/'01_RESOURCES'/'TEX'
+                tex_count=int(summary.get('tex_resources_extracted') or 0)
+                self.targets=[]
+                self.selected_target=None
+                self.update_selected_target_label(None)
+                self.populate_targets()
+                self.native_tex_folder_var.set(str(tex_folder))
+                self.load_native_tex_browser_folder(tex_folder)
+                self.workflow_tabs.select(self.native_tex_browser_page)
+                self.output_var.set(str(run_root))
+                self.set_status(f'Xbox pack loaded: {tex_count} TEX resources. Preview is read-only; DDS export enabled. Workspace: {run_root}')
+                if tex_count==0:
+                    messagebox.showinfo('Xbox pack loaded - no TEX resources','The Xbox pack parsed successfully but contains no payload-backed TEX resources.')
+                return
+            except Exception as e:
+                traceback.print_exc()
+                messagebox.showerror('Xbox TEX preview failed',str(e))
+                self.set_status(f'Xbox TEX preview failed: {e}')
+                return
+
+        # v5.2.136: do NOT use the old rigid SM3 header guard here.
+        # The universal scanner below shares the Pack Extractor's multi-route
+        # probe and can accept compact/nonstandard/direct APKF SM3 packs.
+        try:
+            _head = pc.read_bytes()[:4]
+        except OSError:
+            _head = b''
+        if _head[:3] == b'NCH':
+            self.set_status(wrong_game_detail(pc))
+            messagebox.showerror('SM3 pack route not recognized', WRONG_GAME_GUARD_MESSAGE)
             return
         try:
             # v4.8 safety: never delete the user's selected output folder.
@@ -1934,7 +3349,13 @@ class TexSwapperTab(ttk.Frame):
             self.set_status(f'Found {len(targets)} TEX files. Building previews...')
             # core.process may clear its destination, so keep it inside the generated workspace.
             preview_out=out/PREVIEW_DIR_NAME
-            core.process(chain, preview_out)
+            if targets:
+                core.process(chain, preview_out)
+            else:
+                # A valid SM3 pack is allowed to contain no TEX resources. Do not
+                # mislabel it as a wrong-game pack and do not make preview_core fail
+                # on an intentionally empty TEX chain.
+                ensure_dir(preview_out)
             # Put a copy of direct target CSV inside preview reports too.
             ensure_dir(preview_out/'REPORTS')
             shutil.copy2(out/'REPORTS'/'PCPACK_DIRECT_TEX_TARGETS.csv', preview_out/'REPORTS'/'PCPACK_DIRECT_TEX_TARGETS.csv')
@@ -1945,11 +3366,19 @@ class TexSwapperTab(ttk.Frame):
             self.update_selected_target_label(None)
             self.populate_targets()
             self.load_images()
-            self.set_status(f'Done. Loaded {len(targets)} texture targets and {len(self.images)} preview images. Workspace: {out}')
+            if targets:
+                self.set_status(f'Done. Loaded {len(targets)} texture targets and {len(self.images)} preview images. Workspace: {out}')
+            else:
+                self.set_status(f'Valid SM3 pack loaded. This pack contains 0 viewable TEX resources. Workspace: {out}')
+                messagebox.showinfo('Valid SM3 pack - no TEX resources', 'The pack was recognized successfully, but it contains no TEX resources for the Tex Swapper to preview.')
         except Exception as e:
             traceback.print_exc()
-            messagebox.showerror('Build failed',str(e))
-            self.set_status('Build failed.')
+            if exception_suggests_wrong_game(e):
+                self.set_status(wrong_game_detail(pc))
+                messagebox.showerror('SM3 pack route not recognized', WRONG_GAME_GUARD_MESSAGE)
+            else:
+                messagebox.showerror('Build failed',str(e))
+                self.set_status('Build failed.')
     def reload_existing(self):
         out=Path(self.output_var.get())
         csvp=out/'REPORTS'/'PCPACK_DIRECT_TEX_TARGETS.csv'
@@ -2009,25 +3438,33 @@ class TexSwapperTab(ttk.Frame):
         text.append('')
         for k in ['asset','filename_hash','group','width','height','mips','format_kind','format_raw','component0_size','component1_size','component1_absolute_start','component1_absolute_end','source_apkf_label']:
             text.append(f'{k}: {t.get(k,"")}')
-        text.append('\nINSERT RULES:')
+        text.append('\nCLASSIC PCPACK RULES:')
         text.append('- Patches a NEW PCPACK copy only.')
-        text.append('- Replacement component1 must be exact same size.')
+        text.append('- Replacement component1 must be exact same size in Classic PCPACK patch mode.')
         text.append('- DDS input is okay if DDS payload after header equals target component1 size.')
-        text.append('- FINAL route: Export Original DDS -> edit in Paint.NET -> save same DXT/BC format + mipmaps -> patch ORIGINAL-FORMAT DDS.')
+        text.append('- FINAL route: EXPORT EDIT-READY DDS + MANIFEST -> edit/overwrite DDS -> FINAL EDITOR-SAFE REIMPORT. Exact DDS files patch directly; header-only edits are normalized; Paint.NET/GIMP-overwritten wrong-format/mip/payload DDS files are rebuilt from visible pixels into the SM3 target game format before writing one new PCPACK copy.')
         text.append('- PNG/JPG/BMP conversion is legacy/experimental; use DDS for real edits.')
-        text.append('- Paint.NET worked for SM3 DDS edits; GIMP may save BGRA32/no mipmaps unless configured correctly.')
+        text.append('- GIMP can rewrite DDS internals. v5.2.38 handles this by rebuilding the edited pixels into the target SM3 format/mip shell during final reimport.')
         text.append('- v2.7: set a Replacement DDS folder so AUTO/BATCH AUTO knows exactly where edited DDS files are coming from.')
         text.append('- v2.9: Previous Folder Auto Replace scans a folder of DDS files, matches all same textures automatically, and exports one patched PCPACK copy.')
         text.append('- v3.0: Manual Old Folder Texture Picker lets you load all DDS files from an old folder and choose exactly which replacements to patch.')
         text.append('- v3.1: MANUAL Replace Selected with One File is for replacing the currently selected texture using one selected DDS/image/raw file.')
         text.append('- v3.2: MULTI FILE lets you select more than one DDS at once; the tool auto-maps valid DDS files to selected/current TEX targets and exports one patched PCPACK.')
-        text.append('- v3.3: ONE FILE AUTO was restored/prioritized. Use it when you only want to select one DDS and patch one texture without the multi-file flow getting in the way.')
-        text.append('- v3.4: OLD ONE FILE AUTO is an explicit v3.1-style single-DDS button.')
+        text.append('- v3.3: legacy one-file auto was restored/prioritized. Use it when you only want to select one DDS and patch one texture without the multi-file flow getting in the way.')
+        text.append('- v3.4: OLD legacy one-file auto is an explicit v3.1-style single-DDS button.')
         text.append('- v3.5: OLD SELECTED ONE FILE restores the older selected-texture workflow: select texture first, pick one DDS, then immediately export one patched PCPACK copy without the auto-select/mapping window.')
         text.append('- v3.6: SAME FILE(S) lets you select one or more DDS files and auto-patch matching current targets without selecting/extracting one texture first. OLD SELECTED also now reads the current tree selection before saying no texture selected.')
         text.append('- v3.2: MANUAL Replace Selected with Files supports selecting multiple DDS files for selected textures. DDS is recommended; PNG/JPG raw conversion stays legacy/experimental.')
         text.append('- v1.9 Diffuse-safe mode warns before patching _nor/_spe/_spx/_ppi/_ppp/_ao/_env/control maps.')
         text.append('- CONTROL buttons patch using the original extracted bytes. Those copies should stay byte-identical.')
+        text.append('')
+        text.append('.TEX / RAIMIHOOK WORKFLOW:')
+        text.append('- DDS -> loose .tex is a separate workflow and does NOT patch the PCPACK slot.')
+        text.append('- Larger DDS dimensions and larger payloads are allowed in .Tex mode.')
+        text.append('- v5.2.111: Browse .TEX Folder previews loose/extracted SM3 .tex files directly from disk.')
+        text.append('- Universal selected-target conversion no longer rejects a valid SM3 texture just because the old extractor-shell route is unavailable.')
+        text.append('- Selected-target/source conversion now preserves the original loose layout: either 0x44 IMG + payload or 0x44 IMG + ASCII PHYS + payload. Generated fallback output still uses PHYS.')
+        text.append('- Supported converter inputs: DXT1/2/3/4/5, DX10 BC1/2/3, BGRA32/A8R8G8B8, and L8/R8 2D DDS.')
         self.info.insert('1.0','\n'.join(text))
     def load_images(self):
         out=Path(self.output_var.get())
@@ -2122,9 +3559,408 @@ class TexSwapperTab(ttk.Frame):
             )
         return True
 
+    def _native_tex_default_dir(self)->Path:
+        raw=self.output_var.get().strip()
+        if raw:
+            try:
+                return resolve_user_output_base(Path(raw))
+            except Exception:
+                return Path(raw)
+        return Path.cwd()
+
+    def _choose_native_tex_save_path(self,default_name:str)->Path|None:
+        initial=self._native_tex_default_dir()
+        p=filedialog.asksaveasfilename(
+            title='Save RaimiHook loose native .TEX',
+            initialdir=str(initial),
+            initialfile=default_name,
+            defaultextension='.tex',
+            filetypes=[('SM3 loose native TEX','*.tex'),('All files','*.*')],
+        )
+        return Path(p) if p else None
+
+    def export_selected_original_tex(self):
+        """v5.2.108: export the exact selected extractor-style .tex from the clean PCPACK."""
+        target=self.resolve_current_selected_target()
+        if not target:
+            messagebox.showinfo('Select target first','Build Preview and select ONE TEX target first.')
+            return
+        pc=Path(self.pcpack_var.get())
+        if not pc.exists():
+            messagebox.showerror('Missing PCPACK','Original PCPACK path is missing.')
+            return
+        try:
+            asset=str(target.get('asset') or 'texture')
+            h=parse_sm3_hash_value(target.get('filename_hash'),asset)
+            safe=clean_name(asset,'texture')
+            out=self._choose_native_tex_save_path(f'0x{h:08X}.{safe}.tex')
+            if not out:
+                return
+            report=write_selected_original_tex_from_pcpack(pc,target,out)
+            Path(report['tex']+'.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+            self.last_export_dir=str(Path(report['tex']).parent)
+            self.output_var.set(str(Path(report['tex']).parent))
+            self.set_status(f"Original extractor .TEX exported: {asset} | {Path(report['tex']).name}")
+            messagebox.showinfo(
+                'Selected original .TEX exported',
+                'The tool created the exact SM3 Pack Extractor-style file:\n\n'
+                f"{report['tex']}\n\n"
+                f"component0: {report['component0_bytes']} bytes\n"
+                f"component1: {report['component1_bytes']} bytes\n\n"
+                'This is component0 + component1 directly from the clean PCPACK.'
+            )
+        except Exception as e:
+            traceback.print_exc()
+            messagebox.showerror('Original .TEX export failed',str(e))
+            self.set_status(f'Original .TEX export failed: {e}')
+
+    def browse_native_tex_folder(self):
+        """Compatibility action: open the embedded Browse + Image page and choose a folder."""
+        try:
+            self.workflow_tabs.select(self.native_tex_browser_page)
+        except Exception:
+            pass
+        self.choose_native_tex_browser_folder()
+
+    def choose_native_tex_browser_folder(self):
+        start=self.native_tex_folder_var.get().strip() or self.replacement_folder_var.get().strip() or self.last_export_dir or str(Path.cwd())
+        folder=filedialog.askdirectory(
+            title='Select folder containing SM3 PC/Xbox .TEX files',
+            initialdir=start if start and Path(start).exists() else None,
+        )
+        if not folder:
+            return
+        self.native_tex_folder_var.set(str(folder))
+        self.load_native_tex_browser_folder(Path(folder))
+
+    def rescan_native_tex_browser_folder(self):
+        raw=self.native_tex_folder_var.get().strip()
+        if not raw:
+            self.choose_native_tex_browser_folder()
+            return
+        folder=Path(raw)
+        if not folder.is_dir():
+            messagebox.showerror('Browse + Image',f'The selected .TEX folder does not exist:\n\n{folder}')
+            return
+        self.load_native_tex_browser_folder(folder)
+
+    def open_native_tex_browser_folder(self):
+        raw=self.native_tex_folder_var.get().strip()
+        if not raw or not Path(raw).is_dir():
+            messagebox.showinfo('Browse + Image','Choose a .TEX folder first.')
+            return
+        open_path(Path(raw))
+
+    def load_native_tex_browser_folder(self,folder:Path):
+        folder=Path(folder)
+        files=sorted([p for p in folder.rglob('*') if p.is_file() and p.suffix.lower()=='.tex'],key=lambda p:(p.name.lower(),str(p).lower()))
+        records=[]; failures=[]
+        for pth in files:
+            try:
+                records.append(parse_native_tex_file(pth))
+            except Exception as exc:
+                failures.append((pth,str(exc)))
+        self.native_tex_browser_records=records
+        self.native_tex_browser_selected=None
+        self.native_tex_browser_photo=None
+        self.apply_native_tex_browser_filter()
+        if not records:
+            self.native_tex_browser_preview.configure(image='',text='No readable SM3 .TEX files found in this folder.')
+            self.native_tex_browser_info_var.set('')
+            msg=f'No readable SM3 .tex files were found in:\n{folder}'
+            if failures:
+                msg+=f'\n\nUnreadable .tex files: {len(failures)}\nFirst error: {failures[0][0].name}: {failures[0][1]}'
+            self.set_status(msg.replace('\n',' | '))
+            return
+        children=self.native_tex_browser_tree.get_children()
+        if children:
+            first=children[0]
+            self.native_tex_browser_tree.selection_set(first)
+            self.native_tex_browser_tree.focus(first)
+            self.on_native_tex_browser_select()
+        self.set_status(f'Browse + Image loaded {len(records)} readable .TEX files from {folder}. Unreadable: {len(failures)}.')
+
+    def apply_native_tex_browser_filter(self):
+        tree=getattr(self,'native_tex_browser_tree',None)
+        if tree is None:
+            return
+        for iid in tree.get_children():
+            tree.delete(iid)
+        q=self.native_tex_browser_search_var.get().strip().lower()
+        for idx,rec in enumerate(self.native_tex_browser_records):
+            hay=' '.join(str(rec.get(k,'')) for k in ('name','asset','filename_hash','format_kind','payload_status')).lower()
+            if q and q not in hay:
+                continue
+            tree.insert('', 'end', iid=str(idx), values=(
+                rec.get('asset',''),
+                f"{rec.get('width','?')}x{rec.get('height','?')}",
+                rec.get('format_kind',''),
+                rec.get('mips',''),
+                rec.get('filename_hash',''),
+                rec.get('payload_status',''),
+            ))
+
+    def clear_native_tex_browser_search(self):
+        self.native_tex_browser_search_var.set('')
+        self.apply_native_tex_browser_filter()
+
+    def on_native_tex_browser_select(self,_event=None):
+        sels=self.native_tex_browser_tree.selection()
+        if not sels:
+            self.native_tex_browser_selected=None
+            return
+        try:
+            rec=self.native_tex_browser_records[int(sels[0])]
+        except Exception:
+            return
+        self.native_tex_browser_selected=rec
+        exp=rec.get('expected_payload_bytes')
+        if str(rec.get('platform','PC')).upper()=='X360':
+            self.native_tex_browser_info_var.set(
+                f"{rec.get('name','')}\nPlatform: XBOX 360 | Hash: {rec.get('filename_hash','')} | {rec.get('width')}x{rec.get('height')} | "
+                f"{rec.get('format_kind','')} | mips {rec.get('mips')}\n"
+                f"Xenos format {rec.get('xbox_xenos_format')} | endian {rec.get('xbox_endian')} | "
+                f"tiled: {'YES' if rec.get('xbox_tiled') else 'NO'} | pitch {rec.get('xbox_pitch_pixels')} px\n"
+                f"GPU payload: {rec.get('payload_bytes')} bytes | base allocation: {rec.get('xbox_base_alloc_bytes')} | "
+                f"linear base mip: {rec.get('first_mip_bytes')} bytes | {rec.get('payload_status','')}\n"
+                "Xbox mode is READ-ONLY: preview + base-mip DDS export are safe; reimport is disabled."
+            )
+        else:
+            marker='YES' if rec.get('has_phys_marker') else 'NO (legacy/read-compatible)'
+            self.native_tex_browser_info_var.set(
+                f"{rec.get('name','')}\nPlatform: PC | Hash: {rec.get('filename_hash','')} | {rec.get('width')}x{rec.get('height')} | "
+                f"{rec.get('format_kind','')} | mips {rec.get('mips')} | depth {rec.get('depth')}\n"
+                f"PHYS marker: {marker} | payload: {rec.get('payload_bytes')} bytes"
+                + (f" / expected {exp}" if exp is not None else '')
+                + f" | {rec.get('payload_status','')}"
+            )
+        try:
+            img=native_tex_preview_pil(rec)
+            img.thumbnail((620,600),Image.LANCZOS)
+            photo=ImageTk.PhotoImage(img)
+            self.native_tex_browser_photo=photo
+            self.native_tex_browser_preview.configure(image=photo,text='')
+        except Exception as exc:
+            self.native_tex_browser_photo=None
+            self.native_tex_browser_preview.configure(image='',text=f'Preview unavailable\n\n{exc}')
+        self.set_status(f"Browse + Image: {rec.get('asset','')} | {rec.get('filename_hash','')} | {rec.get('width')}x{rec.get('height')} {rec.get('format_kind','')}")
+
+    def native_tex_browser_convert_selected(self):
+        rec=self.native_tex_browser_selected
+        if not rec:
+            messagebox.showinfo('Browse + Image','Select one .TEX file first.')
+            return
+        self.convert_dds_using_native_tex_record(rec,parent=self.winfo_toplevel())
+
+    def native_tex_browser_export_selected_tex(self):
+        rec=self.native_tex_browser_selected
+        if not rec:
+            messagebox.showinfo('Browse + Image','Select one .TEX file first.')
+            return
+        src=Path(rec['path'])
+        if not src.is_file():
+            messagebox.showerror('Export Selected .TEX failed',f'Selected .TEX no longer exists:\n\n{src}')
+            return
+        initial=Path(self.last_export_dir) if self.last_export_dir and Path(self.last_export_dir).exists() else src.parent
+        out=filedialog.asksaveasfilename(
+            title='Export Selected .TEX',initialdir=str(initial),initialfile=src.name,
+            defaultextension='.tex',filetypes=[('SM3 loose native TEX','*.tex'),('All files','*.*')],
+        )
+        if not out:
+            return
+        dst=Path(out)
+        try:
+            if src.resolve()==dst.resolve():
+                raise ValueError('Choose a different output location. The selected source .TEX is already at that path.')
+            dst.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy2(src,dst)
+            self.last_export_dir=str(dst.parent)
+            self.output_var.set(str(dst.parent))
+            self.set_status(f'Exported selected .TEX unchanged: {src.name} -> {dst}')
+            messagebox.showinfo('Selected .TEX exported',f'Exact loose SM3 .TEX copied byte-for-byte unchanged:\n\n{dst}')
+        except Exception as exc:
+            traceback.print_exc()
+            messagebox.showerror('Export Selected .TEX failed',str(exc))
+            self.set_status(f'Export Selected .TEX failed: {exc}')
+
+    def native_tex_browser_export_selected_dds(self):
+        rec=self.native_tex_browser_selected
+        if not rec:
+            messagebox.showinfo('Browse + Image','Select one .TEX file first.')
+            return
+        src=Path(rec['path'])
+        initial=Path(self.last_export_dir) if self.last_export_dir and Path(self.last_export_dir).exists() else src.parent
+        out=filedialog.asksaveasfilename(
+            title='Export Selected .TEX to DDS',initialdir=str(initial),initialfile=src.with_suffix('.dds').name,
+            defaultextension='.dds',filetypes=[('DirectDraw Surface','*.dds'),('All files','*.*')],
+        )
+        if not out:
+            return
+        try:
+            report=export_native_tex_record_to_dds(rec,Path(out))
+            dst=Path(report['dds'])
+            self.last_export_dir=str(dst.parent)
+            self.output_var.set(str(dst.parent))
+            self.set_status(f"Exported selected .TEX to DDS: {src.name} -> {dst.name}")
+            messagebox.showinfo('DDS exported',
+                'Selected SM3 .TEX exported to DDS without pixel re-encoding:\n\n'
+                f"{dst}\n\n{report['width']}x{report['height']} | {report['format']} | {report['mips']} mip(s)")
+        except Exception as exc:
+            traceback.print_exc()
+            messagebox.showerror('Export to DDS failed',str(exc))
+            self.set_status(f'Export to DDS failed: {exc}')
+
+    def native_tex_browser_open_output(self):
+        raw=self.output_var.get().strip() or self.last_export_dir or ''
+        if not raw or not Path(raw).is_dir():
+            messagebox.showinfo('Browse + Image','Export a .TEX or DDS first, or choose an output folder.')
+            return
+        open_path(Path(raw))
+
+    def native_tex_browser_reveal_selected(self):
+        rec=self.native_tex_browser_selected
+        if not rec:
+            messagebox.showinfo('Browse + Image','Select one .TEX file first.')
+            return
+        open_path(Path(rec['path']).parent)
+
+    def convert_dds_using_native_tex_record(self,rec:dict,parent=None):
+        """Convert a DDS using any selected loose/extracted .tex as the target identity shell."""
+        if str(rec.get('platform','PC')).upper()=='X360':
+            messagebox.showinfo(
+                'Xbox TEX is read-only for now',
+                'Xbox 360 texture preview and base-mip DDS export are enabled.\n\n'
+                'DDS -> Xbox .TEX reimport is intentionally disabled until the reverse Xenos tiling/repack path is proven safe.',
+                parent=parent,
+            )
+            return
+        start=self.replacement_folder_var.get().strip() or self.last_export_dir or str(Path(rec['path']).parent)
+        dds=filedialog.askopenfilename(
+            title=f"Select DDS for {rec.get('asset','texture')}",
+            initialdir=start if start and Path(start).exists() else None,
+            filetypes=[('DDS texture','*.dds'),('All files','*.*')],
+            parent=parent,
+        )
+        if not dds: return
+        default_name=f"{rec['filename_hash']}.{clean_name(rec.get('asset') or 'texture','texture')}.tex"
+        initial=Path(self.last_export_dir) if self.last_export_dir and Path(self.last_export_dir).exists() else Path(rec['path']).parent
+        out=filedialog.asksaveasfilename(
+            title='Save universal SM3 loose .TEX',initialdir=str(initial),initialfile=default_name,
+            defaultextension='.tex',filetypes=[('SM3 loose native TEX','*.tex'),('All files','*.*')],parent=parent,
+        )
+        if not out: return
+        try:
+            report=write_native_tex_from_dds_using_native_tex_shell(Path(rec['path']),Path(dds),Path(out))
+            rp=Path(report['tex']+'.json'); rp.write_text(json.dumps(report,indent=2),encoding='utf-8')
+            self.last_export_dir=str(Path(report['tex']).parent)
+            self.replacement_folder_var.set(self.last_export_dir)
+            self.set_status(f"Universal .TEX created: {Path(report['tex']).name} | {report['width']}x{report['height']} {report['format']}")
+            messagebox.showinfo('Universal .TEX created',
+                f"Target: {report['asset']}\nHash: {report['hash']}\n"
+                f"DDS: {report['width']}x{report['height']} {report['format']} | mips {report['mips']}\n"
+                f"PHYS payload: {report['phys_bytes']} bytes\n\nOutput:\n{report['tex']}\n\n"
+                'The selected .TEX identity/header was preserved and the output now also preserves the original PHYS/no-PHYS layout and mip-count contract when available.',parent=parent)
+        except Exception as exc:
+            traceback.print_exc(); messagebox.showerror('.TEX conversion failed',str(exc),parent=parent)
+            self.set_status(f'.TEX conversion failed: {exc}')
+
+    def convert_dds_to_native_tex_selected(self):
+        """v5.2.111: universal selected-SM3-target DDS -> loose .tex."""
+        target=self.resolve_current_selected_target()
+        if not target:
+            messagebox.showinfo(
+                'Select target first',
+                'Build Preview, select the TEX target row you want to replace, then use the .Tex tab again.\n\n'
+                'This route uses the selected SM3 target name/hash, preserves its real IMG shell when available, and falls back safely when the old extractor-shell path is unavailable.'
+            )
+            return
+        start=self.replacement_folder_var.get().strip() or self.last_export_dir or str(self._native_tex_default_dir())
+        dds=filedialog.askopenfilename(
+            title='Select edited DDS to wrap as loose .TEX',
+            initialdir=start if start and Path(start).exists() else None,
+            filetypes=[('DDS texture','*.dds'),('All files','*.*')],
+        )
+        if not dds:
+            return
+        try:
+            asset=str(target.get('asset') or 'texture')
+            h=parse_sm3_hash_value(target.get('filename_hash'),asset)
+            safe=clean_name(asset,'texture')
+            default_name=f'0x{h:08X}.{safe}.tex'
+            out=self._choose_native_tex_save_path(default_name)
+            if not out:
+                return
+            pc=Path(self.pcpack_var.get())
+            report=write_native_tex_from_dds_using_extractor_shell(pc,target,Path(dds),out)
+            actual_out=Path(report['tex'])
+            report_path=Path(str(actual_out)+'.json')
+            report_path.write_text(json.dumps(report,indent=2),encoding='utf-8')
+            self.last_export_dir=str(actual_out.parent)
+            self.replacement_folder_var.set(str(actual_out.parent))
+            self.set_status(
+                f'.TEX WRAP complete: {asset} | 0x{h:08X} | '
+                f"{report['width']}x{report['height']} {report['format']} mips {report['mips']} | {actual_out.name}"
+            )
+            messagebox.showinfo(
+                '.TEX conversion complete',
+                'Universal SM3 native .TEX created successfully.\n\n'
+                f"Target: {asset}\nHash: 0x{h:08X}\n"
+                f"DDS: {report['width']}x{report['height']} {report['format']} | mips {report['mips']}\n"
+                f"PHYS: {report['phys_bytes']} bytes\n\n"
+                f"Output:\n{actual_out}\n\n"
+                f"Shell mode: {report.get('component0_source','')}\n"
+                'The selected target identity is preserved; width/height/mips/format are updated for the new DDS.\n\n'
+                'This .Tex workflow has NO original PCPACK component1 same-size restriction. '
+                'Use the output with RaimiHook Stage 2B NativeTEX.'
+            )
+        except Exception as e:
+            traceback.print_exc()
+            messagebox.showerror('.TEX conversion failed',str(e))
+            self.set_status(f'.TEX conversion failed: {e}')
+
+    def convert_dds_to_native_tex_auto(self):
+        """Legacy v5.2.107 synthetic-shell route; hidden from v5.2.108 normal UI."""
+        start=self.replacement_folder_var.get().strip() or self.last_export_dir or str(self._native_tex_default_dir())
+        dds=filedialog.askopenfilename(
+            title='Select DDS to wrap as loose .TEX (auto name/hash)',
+            initialdir=start if start and Path(start).exists() else None,
+            filetypes=[('DDS texture','*.dds'),('All files','*.*')],
+        )
+        if not dds:
+            return
+        try:
+            asset,h=native_tex_identity_from_dds_filename(Path(dds))
+            safe=clean_name(asset,'texture')
+            default_name=f'0x{h:08X}.{safe}.tex'
+            out=self._choose_native_tex_save_path(default_name)
+            if not out:
+                return
+            report=write_native_tex_from_dds(Path(dds),out,asset,h)
+            report['identity_mode']='AUTO_FROM_DDS_FILENAME'
+            report_path=out.with_suffix(out.suffix+'.json')
+            report_path.write_text(json.dumps(report,indent=2),encoding='utf-8')
+            self.last_export_dir=str(out.parent)
+            self.replacement_folder_var.set(str(out.parent))
+            self.set_status(
+                f'.TEX AUTO WRAP complete: {asset} | 0x{h:08X} | '
+                f"{report['width']}x{report['height']} {report['format']} mips {report['mips']}"
+            )
+            messagebox.showinfo(
+                '.TEX auto conversion complete',
+                f"Detected resource: {asset}\nHash: 0x{h:08X}\n\n"
+                f"Created:\n{out}\n\n"
+                'For Toolkit-exported DDS names such as 0xHASH.asset.ORIGINAL_EDIT_THIS.dds, '
+                'the hash/name are recovered automatically.'
+            )
+        except Exception as e:
+            traceback.print_exc()
+            messagebox.showerror('.TEX auto conversion failed',str(e))
+            self.set_status(f'.TEX auto conversion failed: {e}')
+
     def export_original_dds(self):
-        if not self.selected_target:
-            messagebox.showinfo('Select target','Select a texture target first.')
+        target=self.resolve_current_selected_target()
+        if not target:
+            messagebox.showinfo('Select target','Select ONE texture target first, then click SINGLE SELECTED DDS EXPORT.')
             return
         pc=Path(self.pcpack_var.get())
         if not pc.exists():
@@ -2133,18 +3969,18 @@ class TexSwapperTab(ttk.Frame):
         outdir=Path(filedialog.askdirectory(title='Choose output folder for DDS export') or '')
         if not str(outdir): return
         try:
-            dds,raw,meta=export_original_component_as_dds(pc,self.selected_target,outdir)
-            key=target_edit_key(self.selected_target)
+            dds,raw,meta=export_original_component_as_dds(pc,target,outdir)
+            key=target_edit_key(target)
             self.dds_export_history[key]=meta
             self.last_export_dir=str(Path(dds).parent)
             if not self.replacement_folder_var.get().strip():
                 self.replacement_folder_var.set(str(Path(dds).parent))
             messagebox.showinfo(
-                'Original DDS exported',
+                'SINGLE SELECTED DDS EXPORT complete',
                 'Exported DDS and raw component1.\n\n'
                 + 'DDS:\n' + str(dds) + '\n\n'
                 + 'Raw:\n' + str(raw) + '\n\n'
-                + 'v2.5 workflow: edit/overwrite this DDS in Paint.NET, save same format+mips, then click AUTO or BATCH AUTO to find it automatically when possible.'
+                + 'Current workflow: edit/overwrite this DDS in Paint.NET/GIMP, then use editor-safe single-file or folder final patch. The new route can recover many editor DDS header/format/mip changes by rebuilding into SM3 target format.'
             )
         except Exception as e:
             traceback.print_exc(); messagebox.showerror('DDS export failed',str(e))
@@ -2158,7 +3994,7 @@ class TexSwapperTab(ttk.Frame):
         if not pc.exists():
             messagebox.showerror('Missing PCPACK','Original PCPACK path is missing.')
             return
-        outdir=Path(filedialog.askdirectory(title='Choose output folder for EXPORT ALL DDS') or '')
+        outdir=Path(filedialog.askdirectory(title='Choose output folder for legacy full DDS export') or '')
         if not str(outdir):
             return
         ok=[]; errors=[]
@@ -2196,15 +4032,1020 @@ class TexSwapperTab(ttk.Frame):
                 'exported_count':len(ok),
                 'error_count':len(errors),
                 'target_count':len(self.targets),
-                'note':'Edit DDS files externally while preserving format/mips, then use REIMPORT ALL DDS FOLDER.'
+                'note':'Edit DDS files externally while preserving format/mips, then use legacy folder reimport.'
             }
             (outdir/'EXPORT_ALL_DDS_SUMMARY_v4_2.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
             self.last_export_dir=str(outdir)
             self.replacement_folder_var.set(str(outdir))
-            messagebox.showinfo('EXPORT ALL DDS complete', f'Exported {len(ok)} DDS files. Errors: {len(errors)}\n\nFolder:\n{outdir}\n\nAfter editing, use REIMPORT ALL DDS FOLDER -> ONE PACK.')
-            self.set_status(f'EXPORT ALL DDS complete: {len(ok)} exported, {len(errors)} errors. Folder: {outdir}')
+            messagebox.showinfo('legacy full DDS export complete', f'Exported {len(ok)} DDS files. Errors: {len(errors)}\n\nFolder:\n{outdir}\n\nAfter editing, use legacy folder reimport.')
+            self.set_status(f'legacy full DDS export complete: {len(ok)} exported, {len(errors)} errors. Folder: {outdir}')
         except Exception as e:
-            traceback.print_exc(); messagebox.showerror('EXPORT ALL DDS failed',str(e))
+            traceback.print_exc(); messagebox.showerror('legacy full DDS export failed',str(e))
+
+    def export_all_header_locked_dds_manifest(self):
+        """v5.2.33: Export target-name + exact-header locked DDS files and manifest."""
+        if not self.targets:
+            messagebox.showinfo('Build preview first','Click Build Preview first so the tool knows this PCPACK texture list.')
+            return
+        pc=Path(self.pcpack_var.get())
+        if not pc.exists():
+            messagebox.showerror('Missing PCPACK','Original PCPACK path is missing.')
+            return
+        outdir=Path(filedialog.askdirectory(title='Choose output folder for EDIT-READY DDS export') or '')
+        if not str(outdir):
+            return
+        ok=[]; errors=[]
+        try:
+            ensure_dir(outdir)
+            for t in self.targets:
+                try:
+                    dds,raw,meta=export_original_component_as_dds(pc,t,outdir)
+                    info=parse_dds_header_file(Path(dds))
+                    dds_bytes=Path(dds).read_bytes()
+                    row={
+                        'target_key':target_edit_key(t),
+                        'asset':t.get('asset'),
+                        'hash':t.get('filename_hash'),
+                        'width':t.get('width'),
+                        'height':t.get('height'),
+                        'mips':t.get('mips'),
+                        'format':t.get('format_kind'),
+                        'component1_size':t.get('component1_size'),
+                        'dds_filename':Path(dds).name,
+                        'raw_filename':Path(raw).name,
+                        'dds_header_size':info.get('header_size'),
+                        'original_dds_header_sha256':sha256_bytes(dds_bytes[:info.get('header_size',128)]),
+                        'original_dds_sha256':sha256_bytes(dds_bytes),
+                        'original_component1_sha256':meta.get('original_component1_sha256',''),
+                        'status':'EXPORTED_HEADER_LOCKED',
+                    }
+                    ok.append(row)
+                except Exception as exc:
+                    errors.append({'asset':t.get('asset'),'hash':t.get('filename_hash'),'error':str(exc),'status':'ERROR'})
+            write_csv(outdir/'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST.csv', ok+errors)
+            (outdir/'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST.json').write_text(json.dumps({'version':'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST_v5_2_33','pcpack':pc.name,'items':ok,'errors':errors},indent=2),encoding='utf-8')
+            (outdir/'TEX_TARGET_REIMPORT_HEADER_RULES.txt').write_text(
+                'TEX Target Header + Name Lock Rules\n'
+                '===================================\n\n'
+                'Use this folder for final-safe texture edits.\n'
+                '- Keep the exported filename: 0xHASH.asset.ORIGINAL_EDIT_THIS.dds\n'
+                '- Keep the DDS header exactly the same.\n'
+                '- Keep width/height/mips/format/payload size exactly the same.\n'
+                '- Reimport with FINAL EDITOR-SAFE REIMPORT -> WRITE PATCHED PCPACK.\n'
+                '- Random DDS files, wrong names, wrong headers, wrong mips, or wrong payload sizes are blocked.\n',
+                encoding='utf-8'
+            )
+            self.last_export_dir=str(outdir)
+            self.replacement_folder_var.set(str(outdir))
+            messagebox.showinfo('EDIT-READY DDS export complete', f'Exported {len(ok)} edit-ready DDS files. Errors: {len(errors)}\n\nFolder:\n{outdir}')
+            self.set_status(f'EDIT-READY DDS export complete: {len(ok)} exported, {len(errors)} errors. Folder: {outdir}')
+        except Exception as e:
+            traceback.print_exc(); messagebox.showerror('HEADER-LOCKED export failed',str(e))
+
+    def normalize_gimp_dds_to_game_format_folder(self):
+        """v5.2.34: normalize edited DDS files back to the exact SM3 target DDS header.
+
+        Use after editing/overwriting exported DDS files in GIMP/Paint.NET/other editors
+        when the image data is intended for the same target, but the DDS header was
+        rewritten. This does not resize/recompress; it only preserves edited payload
+        while restoring the game/tool target header.
+        """
+        if not self.targets:
+            messagebox.showinfo('Build preview first','Click Build Preview first so the tool knows this PCPACK texture list.')
+            return
+        start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
+        folder=Path(filedialog.askdirectory(title='Choose edited DDS folder to normalize to SM3 game format', initialdir=start_dir if start_dir else None) or '')
+        if not str(folder):
+            return
+        src_files=sorted([p for p in folder.rglob('*.dds') if p.is_file()])
+        src_files=[p for p in src_files if not any(part.upper().endswith('REPORTS') or 'NORMALIZED' in part.upper() for part in p.parts)]
+        if not src_files:
+            messagebox.showinfo('No DDS files',f'No DDS files found in:\n{folder}')
+            return
+        outdir=ensure_dir(folder/'GAME_FORMAT_NORMALIZED_DDS')
+        ready=[]; blocked=[]; manifest_items=[]
+        used=set()
+        for src in src_files:
+            target, reason = _filename_direct_target_match(src, self.targets)
+            if not target:
+                blocked.append({'file':str(src),'reason':'NO_TARGET_NAME_OR_HASH_LOCK','status':'BLOCKED'})
+                continue
+            key=target_edit_key(target)
+            if key in used:
+                blocked.append({'file':str(src),'asset':target.get('asset'),'reason':'DUPLICATE_TARGET_ALREADY_USED','status':'BLOCKED'})
+                continue
+            try:
+                normalized, row = normalize_dds_to_target_game_format(src, target, outdir)
+                used.add(key)
+                row['match_reason']=reason
+                ready.append(row)
+                manifest_items.append({
+                    'target_key':target_edit_key(target),
+                    'asset':target.get('asset'),
+                    'hash':target.get('filename_hash'),
+                    'width':target.get('width'),
+                    'height':target.get('height'),
+                    'mips':target.get('mips'),
+                    'format':target.get('format_kind'),
+                    'component1_size':target.get('component1_size'),
+                    'dds_filename':Path(normalized).name,
+                    'original_dds_header_sha256':row.get('target_header_sha256',''),
+                    'original_dds_sha256':sha256_file(Path(normalized)),
+                    'original_component1_sha256':row.get('normalized_payload_sha256',''),
+                    'status':'NORMALIZED_GAME_FORMAT_DDS_READY_FOR_HEADER_NAME_LOCKED_REIMPORT',
+                })
+            except Exception as exc:
+                blocked.append({'file':str(src),'asset':target.get('asset') if 'target' in locals() and target else '', 'reason':str(exc),'status':'BLOCKED'})
+        write_csv(outdir/'GIMP_GAME_FORMAT_NORMALIZE_READY.csv', ready)
+        write_csv(outdir/'GIMP_GAME_FORMAT_NORMALIZE_BLOCKED.csv', blocked)
+        write_csv(outdir/'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST.csv', manifest_items)
+        (outdir/'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST.json').write_text(json.dumps({'version':'TEX_TARGET_HEADER_NAME_LOCK_MANIFEST_v5_2_34_NORMALIZED_GAME_FORMAT','items':manifest_items,'errors':blocked},indent=2),encoding='utf-8')
+        summary={
+            'version':'v5.2.34',
+            'mode':'GIMP_OVERWRITE_GAME_FORMAT_NORMALIZER',
+            'source_folder':str(folder),
+            'normalized_folder':str(outdir),
+            'ready_count':len(ready),
+            'blocked_count':len(blocked),
+            'rule':'target name/hash + same dimensions/mips/format/payload required; output DDS uses SM3 target header plus edited payload',
+        }
+        (outdir/'GIMP_GAME_FORMAT_NORMALIZE_SUMMARY.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
+        (outdir/'GIMP_GAME_FORMAT_NORMALIZE_RULES.txt').write_text(
+            'GIMP / editor overwrite recovery route\n'
+            '====================================\n\n'
+            'This folder contains DDS files rebuilt as: SM3 target DDS header + edited DDS payload.\n'
+            'Use it when Paint.NET/GIMP/editor overwrote the exported DDS and rewrote header bytes.\n\n'
+            'Required before normalization:\n'
+            '- filename must still identify the target hash/name\n'
+            '- width/height/mips/format must match the SM3 target\n'
+            '- payload size must match the target component1 size\n'
+            '- no resize/recompression/mipmap generation is performed here\n\n'
+            'Next step:\n'
+            '- Run FINAL EDITOR-SAFE REIMPORT -> WRITE PATCHED PCPACK using this folder.\n',
+            encoding='utf-8'
+        )
+        self.last_export_dir=str(outdir)
+        self.replacement_folder_var.set(str(outdir))
+        messagebox.showinfo('Editor DDS normalize complete', f'Normalized {len(ready)} DDS files. Blocked: {len(blocked)}\n\nFolder:\n{outdir}\n\nNext: run FINAL EDITOR-SAFE REIMPORT -> WRITE PATCHED PCPACK using this folder.')
+        self.set_status(f'Editor DDS normalize complete: {len(ready)} ready, {len(blocked)} blocked. Folder: {outdir}')
+
+
+    def multiple_file_editor_safe_patch_write_pcpack(self):
+        """v5.2.144: patch several explicitly selected edited files into one NEW PCPACK.
+
+        This is the middle ground between the single-file test route and the folder-wide
+        final reimport route. The user Ctrl/Shift-selects only the files they want.
+
+        Rules:
+        - every selected file must identify its SM3 target by exported hash/name
+        - DDS files that already match the target patch directly
+        - harmless DDS header rewrites are normalized back to the target header
+        - editor-overwritten DDS files and PNG/BMP/JPG/JPEG inputs are rebuilt from
+          visible pixels into the target SM3 width/height/mips/format/payload
+        - duplicate mappings to the same target are blocked
+        - one NEW PCPACK is written; the original PCPACK is never modified
+        """
+        if not self.targets:
+            messagebox.showinfo('Build preview first','Click Build Preview first so the tool knows this PCPACK texture list.')
+            return
+        pc=Path(self.pcpack_var.get())
+        if not pc.exists():
+            messagebox.showerror('Missing PCPACK','Original PCPACK path is missing. Load a clean original PCPACK first.')
+            return
+
+        start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
+        chosen=filedialog.askopenfilenames(
+            title='Choose MULTIPLE edited DDS/images to patch into one NEW PCPACK',
+            initialdir=start_dir if start_dir else None,
+            filetypes=[
+                ('DDS / image files','*.dds *.png *.bmp *.jpg *.jpeg'),
+                ('DDS files','*.dds'),
+                ('Image files','*.png *.bmp *.jpg *.jpeg'),
+                ('All files','*.*'),
+            ]
+        )
+        if not chosen:
+            return
+        src_files=[Path(x) for x in chosen if str(x).strip()]
+        src_files=[x for x in src_files if x.exists() and x.is_file()]
+        if not src_files:
+            messagebox.showinfo('No valid files','No existing DDS/image files were selected.')
+            return
+
+        raw_output=self.output_var.get().strip()
+        try:
+            base_dir=resolve_user_output_base(Path(raw_output)) if raw_output else src_files[0].parent
+        except Exception:
+            base_dir=Path(raw_output) if raw_output else src_files[0].parent
+        base_dir=ensure_dir(base_dir)
+        work_dir=ensure_dir(base_dir/'MULTIPLE_FILE_PATCH_WORK')
+        norm_dir=ensure_dir(work_dir/'AUTO_NORMALIZED_DDS')
+        rebuild_dir=ensure_dir(work_dir/'EDITOR_SAFE_REBUILT_DDS')
+        report_dir=ensure_dir(work_dir/'REPORTS')
+
+        patch_items=[]
+        ready=[]
+        blocked=[]
+        normalized_rows=[]
+        rebuilt_rows=[]
+        used=set()
+        manifest_cache={}
+
+        for source in src_files:
+            target, reason = _filename_direct_target_match(source, self.targets)
+            if not target:
+                blocked.append({
+                    'source_file':str(source),
+                    'asset':'',
+                    'hash':'',
+                    'reason':'NO_TARGET_NAME_OR_HASH_LOCK',
+                    'status':'BLOCKED_MULTIPLE_FILE_PATCH',
+                })
+                continue
+
+            key=target_edit_key(target)
+            if key in used:
+                blocked.append({
+                    'source_file':str(source),
+                    'asset':target.get('asset'),
+                    'hash':target.get('filename_hash'),
+                    'reason':'DUPLICATE_TARGET_ALREADY_USED',
+                    'status':'BLOCKED_MULTIPLE_FILE_PATCH',
+                })
+                continue
+
+            # Respect strict diffuse-only mode without forcing a warning dialog for every file.
+            if self.strict_diffuse_var.get() and not is_diffuse_like_target(target):
+                blocked.append({
+                    'source_file':str(source),
+                    'asset':target.get('asset'),
+                    'hash':target.get('filename_hash'),
+                    'reason':'STRICT_DIFFUSE_BLOCKED: '+unsafe_target_reason(target),
+                    'status':'BLOCKED_MULTIPLE_FILE_PATCH',
+                })
+                continue
+
+            manifest_row={}
+            parent_key=str(source.parent.resolve())
+            if parent_key not in manifest_cache:
+                mp, rows=find_header_lock_manifest(source.parent)
+                manifest_cache[parent_key]=(mp, manifest_rows_by_filename(rows))
+            _manifest_path, manifest_by_file=manifest_cache[parent_key]
+            manifest_row=manifest_by_file.get(source.name.lower(), {})
+
+            final_dds=None
+            action=''
+            normalize_reason=''
+            info={}
+            try:
+                if source.suffix.lower()=='.dds':
+                    try:
+                        info, descriptor_problems=validate_dds_matches_target(source,target,strict=False)
+                    except Exception as parse_exc:
+                        descriptor_problems=['DDS_PARSE_FAILED_FOR_DESCRIPTOR_CHECK: '+str(parse_exc)]
+
+                    if descriptor_problems:
+                        rebuilt, row = rebuild_source_pixels_to_target_game_dds(
+                            source, target, rebuild_dir, force_opaque=bool(self.force_opaque_var.get())
+                        )
+                        row['match_reason']=reason
+                        row['source_descriptor_problems']='; '.join(descriptor_problems)
+                        row['source_action']='MULTIPLE_FILE_EDITOR_SAFE_REBUILT_FROM_SOURCE_PIXELS'
+                        rebuilt_rows.append(row)
+                        final_dds=Path(rebuilt)
+                        action='MULTIPLE_FILE_EDITOR_SAFE_REBUILT_FROM_SOURCE_PIXELS'
+                        normalize_reason='Source DDS descriptor changed in an editor; rebuilt visible pixels into the selected SM3 target game DDS format.'
+                        info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                        if final_problems:
+                            raise ValueError('Rebuilt DDS still failed header lock: ' + '; '.join(final_problems))
+                    else:
+                        header=dds_header_info_for_target(source,target)
+                        if not header.get('actual_header_matches_expected'):
+                            normalized, row = normalize_dds_to_target_game_format(source, target, norm_dir)
+                            row['match_reason']=reason
+                            row['source_action']='MULTIPLE_FILE_AUTO_NORMALIZED_HEADER_RECOVERY'
+                            normalized_rows.append(row)
+                            final_dds=Path(normalized)
+                            action='MULTIPLE_FILE_AUTO_NORMALIZED_HEADER_RECOVERY'
+                            normalize_reason='DDS descriptor/payload matched but header differed; restored the SM3 target header before patching.'
+                            info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                            if final_problems:
+                                raise ValueError('Normalized DDS still failed header lock: ' + '; '.join(final_problems))
+                        else:
+                            final_dds=source
+                            action='MULTIPLE_FILE_PATCH_DIRECT_HEADER_OK'
+                            info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                            if final_problems:
+                                raise ValueError('DDS failed final header lock: ' + '; '.join(final_problems))
+                elif source.suffix.lower() in IMAGE_EXTS:
+                    rebuilt, row = rebuild_source_pixels_to_target_game_dds(
+                        source, target, rebuild_dir, force_opaque=bool(self.force_opaque_var.get())
+                    )
+                    row['match_reason']=reason
+                    row['source_action']='MULTIPLE_FILE_IMAGE_REBUILT_FROM_SOURCE_PIXELS'
+                    rebuilt_rows.append(row)
+                    final_dds=Path(rebuilt)
+                    action='MULTIPLE_FILE_IMAGE_REBUILT_FROM_SOURCE_PIXELS'
+                    normalize_reason='Image source supplied visible pixels; rebuilt into the SM3 target game DDS format before patching.'
+                    info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                    if final_problems:
+                        raise ValueError('Image-rebuilt DDS still failed header lock: ' + '; '.join(final_problems))
+                else:
+                    raise ValueError('Unsupported source type. Use DDS, PNG, BMP, JPG, or JPEG.')
+
+                if manifest_row and manifest_row.get('original_dds_header_sha256') and manifest_row.get('original_dds_header_sha256') != info.get('header_sha256'):
+                    raise ValueError('Final DDS header does not match the export manifest header.')
+
+                patch_items.append((target, final_dds, manifest_row))
+                used.add(key)
+                ready.append({
+                    'source_file':str(source),
+                    'final_dds_for_patch':str(final_dds),
+                    'asset':target.get('asset'),
+                    'hash':target.get('filename_hash'),
+                    'match_reason':reason,
+                    'action':action,
+                    'normalize_reason':normalize_reason,
+                    'width':info.get('width'),
+                    'height':info.get('height'),
+                    'mips':info.get('mips'),
+                    'format_kind':info.get('format_kind'),
+                    'payload_size':info.get('payload_size'),
+                    'header_sha256':info.get('header_sha256'),
+                    'expected_header_sha256':info.get('expected_header_sha256'),
+                    'status':'READY_MULTIPLE_FILE_PATCH',
+                })
+            except Exception as exc:
+                blocked.append({
+                    'source_file':str(source),
+                    'asset':target.get('asset') if target else '',
+                    'hash':target.get('filename_hash') if target else '',
+                    'reason':str(exc).replace('\n',' | '),
+                    'status':'BLOCKED_MULTIPLE_FILE_PATCH',
+                })
+
+        write_csv(report_dir/'MULTIPLE_FILE_PATCH_READY.csv', ready)
+        write_csv(report_dir/'MULTIPLE_FILE_PATCH_BLOCKED.csv', blocked)
+        write_csv(report_dir/'MULTIPLE_FILE_AUTO_NORMALIZED.csv', normalized_rows)
+        write_csv(report_dir/'MULTIPLE_FILE_EDITOR_SAFE_REBUILT.csv', rebuilt_rows)
+        summary={
+            'version':'v5.2.146',
+            'mode':'MULTIPLE_FILE_EDITOR_SAFE_PATCH',
+            'selected_file_count':len(src_files),
+            'ready_count':len(patch_items),
+            'blocked_count':len(blocked),
+            'direct_header_ok_count':sum(1 for r in ready if r.get('action')=='MULTIPLE_FILE_PATCH_DIRECT_HEADER_OK'),
+            'auto_normalized_count':len(normalized_rows),
+            'editor_safe_rebuilt_count':len(rebuilt_rows),
+            'rule':'user selects explicit files; target hash/name lock required; editor-safe normalization/rebuild uses the same target format rules as the single/folder routes; output is one NEW PCPACK',
+        }
+        (report_dir/'MULTIPLE_FILE_PATCH_SUMMARY.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
+        (report_dir/'MULTIPLE_FILE_PATCH_RULES.txt').write_text(
+            'MULTIPLE FILE EDITOR-SAFE PATCH - v5.2.146\n'
+            '=========================================\n\n'
+            'Use Ctrl/Shift in the file picker to select only the edited textures you want to patch.\n'
+            '- Filename hash/name identifies each SM3 target.\n'
+            '- Exact target-format DDS patches directly.\n'
+            '- Header-only editor changes are normalized.\n'
+            '- Wrong-format/mip editor DDS and PNG/BMP/JPG/JPEG inputs are rebuilt from visible pixels into the SM3 target format.\n'
+            '- Duplicate mappings and unidentified files are blocked.\n'
+            '- Original PCPACK is never modified. One NEW PCPACK contains all ready selected files.\n',
+            encoding='utf-8'
+        )
+
+        if not patch_items:
+            messagebox.showwarning(
+                'No multiple-file patches ready',
+                f'None of the {len(src_files)} selected files passed the editor-safe rules.\n\nReport:\n{report_dir}'
+            )
+            self.set_status(f'MULTIPLE FILE PATCH found no ready files. Report: {report_dir}')
+            return
+
+        final_out_dir=ensure_dir(base_dir/'MULTIPLE_FILE_PATCH_OUTPUT')
+        default_name=pc.stem+'_PATCHED_MULTIPLE_SELECTED_FILES'+pc.suffix
+        out_path=final_out_dir/default_name
+        if out_path.exists():
+            base=out_path.stem
+            ext=out_path.suffix
+            idx=1
+            while (final_out_dir/f'{base}_{idx:03d}{ext}').exists():
+                idx+=1
+            out_path=final_out_dir/f'{base}_{idx:03d}{ext}'
+
+        msg=(
+            f'{len(patch_items)} of {len(src_files)} selected files are ready.\n'
+            f'Direct header OK: {summary["direct_header_ok_count"]}\n'
+            f'Auto-normalized: {summary["auto_normalized_count"]}\n'
+            f'Editor-safe rebuilt: {summary["editor_safe_rebuilt_count"]}\n'
+            f'Blocked: {summary["blocked_count"]}\n\n'
+            'The tool will write ONE NEW patched PCPACK here:\n'
+            f'{out_path}\n\n'
+            'Original PCPACK will NOT be modified.'
+        )
+        if not messagebox.askyesno('Confirm MULTIPLE FILE patch', msg):
+            return
+
+        try:
+            log=copy_and_patch_pcpack_header_locked_dds_many(pc, patch_items, out_path)
+            log['mode']='MULTIPLE_FILE_EDITOR_SAFE_PATCH_V5_2_144'
+            log['multiple_file_scan_summary']=summary
+            log['final_output_folder']=str(final_out_dir)
+            (final_out_dir/(out_path.stem+'_MULTIPLE_FILE_PATCH_LOG.json')).write_text(json.dumps(log,indent=2),encoding='utf-8')
+            (final_out_dir/'00_MULTIPLE_FILE_PATCHED_PCPACK_IS_HERE.txt').write_text(
+                'MULTIPLE FILE PATCH COMPLETE\n'
+                '============================\n\n'
+                f'Your patched PCPACK is here:\n{out_path}\n\n'
+                f'Patched file count: {log.get("patch_count",len(patch_items))}\n'
+                f'Blocked selected file count: {summary["blocked_count"]}\n\n'
+                'Use this NEW PCPACK copy for testing. The original PCPACK was not modified.\n',
+                encoding='utf-8'
+            )
+            (final_out_dir/'FINAL_MULTIPLE_FILE_PATCHED_PCPACK_PATH.txt').write_text(str(out_path)+'\n',encoding='utf-8')
+            self.last_export_dir=str(final_out_dir)
+            try:
+                open_path(final_out_dir)
+            except Exception:
+                pass
+            messagebox.showinfo(
+                'MULTIPLE FILE PCPACK WRITTEN',
+                f'Patched {log.get("patch_count",len(patch_items))} selected files into ONE NEW PCPACK.\n\n'
+                f'Blocked: {summary["blocked_count"]}\n\n'
+                f'YOUR FINAL PCPACK IS HERE:\n{out_path}\n\n'
+                f'Reports:\n{report_dir}'
+            )
+            self.set_status(f'MULTIPLE FILE PCPACK WRITTEN: {len(patch_items)} items -> {out_path}')
+        except Exception as e:
+            traceback.print_exc(); messagebox.showerror('Multiple file patch failed', str(e))
+
+    def final_safe_reimport_auto_normalize_folder(self):
+        """v5.2.38: one-button final DDS reimport with editor-safe suit rebuild.
+
+        This is the creator-safe route for edited DDS folders:
+        - target must be locked by SM3 hash/name in the filename
+        - exact/header-locked DDS files patch directly
+        - header-only changed DDS files are normalized as target header + edited payload
+        - Paint.NET/GIMP/editor overwritten DDS files with wrong format/mips/payload are decoded
+          from visible pixels, then rebuilt into the SM3 target game format/mip shell
+        - original PCPACK is never modified; output is one new patched PCPACK copy
+        """
+        if not self.targets:
+            messagebox.showinfo('Build preview first','Click Build Preview first so the tool knows this PCPACK texture list.')
+            return
+        pc=Path(self.pcpack_var.get())
+        if not pc.exists():
+            messagebox.showerror('Missing PCPACK','Original PCPACK path is missing.')
+            return
+        start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
+        folder=Path(filedialog.askdirectory(title='Choose edited DDS folder for FINAL EDITOR-SAFE REIMPORT', initialdir=start_dir if start_dir else None) or '')
+        if not str(folder):
+            return
+        all_dds=sorted([p for p in folder.rglob('*.dds') if p.is_file()])
+        blocked_parts=('REPORTS','REIMPORT_REPORTS','HEADER_NAME_LOCKED_REIMPORT_REPORTS','FINAL_GAME_FORMAT_REIMPORT_WORK','GIMP_SAFE_REBUILT_DDS','AUTO_NORMALIZED_DDS')
+        # v5.2.36: filter by path relative to the selected folder, not by the full
+        # absolute path. This allows the user to select an already-created
+        # GAME_FORMAT_NORMALIZED_DDS or AUTO_NORMALIZED_DDS folder directly.
+        # When the parent folder is selected, nested old work/report folders are
+        # still skipped so the tool does not double-patch generated copies.
+        src_files=[]
+        for pth in all_dds:
+            try:
+                rel_parts=[part.upper() for part in pth.relative_to(folder).parts[:-1]]
+            except Exception:
+                rel_parts=[part.upper() for part in pth.parts[:-1]]
+            if any(part in blocked_parts for part in rel_parts):
+                continue
+            src_files.append(pth)
+        if not src_files:
+            messagebox.showinfo('No DDS files',f'No DDS files found in:\n{folder}\n\nTip: v5.2.38 expects the folder containing your edited/overwritten suit DDS files and writes the final .PCPACK into FINAL_PATCHED_PCPACK_OUTPUT.')
+            return
+
+        selected_folder_kind='NORMALIZED_GAME_FORMAT_DDS_INPUT' if folder.name.upper() in ('GAME_FORMAT_NORMALIZED_DDS','AUTO_NORMALIZED_DDS') else 'EDITED_DDS_INPUT'
+        work_dir=ensure_dir(folder/'FINAL_GAME_FORMAT_REIMPORT_WORK')
+        norm_dir=ensure_dir(work_dir/'AUTO_NORMALIZED_DDS')
+        rebuild_dir=ensure_dir(work_dir/'GIMP_SAFE_REBUILT_DDS')
+        report_dir=ensure_dir(work_dir/'REPORTS')
+        manifest_path, manifest_rows = find_header_lock_manifest(folder)
+        manifest_by_file=manifest_rows_by_filename(manifest_rows)
+
+        patch_items=[]
+        ready=[]
+        skipped=[]
+        normalized_rows=[]
+        gimp_rebuilt_rows=[]
+        used=set()
+
+        for src in src_files:
+            target, reason = _filename_direct_target_match(src, self.targets)
+            if not target:
+                skipped.append({'file':str(src),'reason':'NO_TARGET_NAME_OR_HASH_LOCK','status':'BLOCKED'})
+                continue
+            key=target_edit_key(target)
+            if key in used:
+                skipped.append({'file':str(src),'asset':target.get('asset'),'reason':'DUPLICATE_TARGET_ALREADY_USED','status':'BLOCKED'})
+                continue
+            manifest_row=manifest_by_file.get(src.name.lower(), {})
+            try:
+                info, descriptor_problems=validate_dds_matches_target(src,target,strict=False)
+                final_dds=src
+                action='PATCH_DIRECT_HEADER_OK'
+                normalize_reason=''
+
+                if descriptor_problems:
+                    # v5.2.38: GIMP can overwrite a DDS into BGRA/no-mip/wrong payload.
+                    # Header-only normalization cannot fix that after the fact, so decode
+                    # the edited visible pixels and rebuild a new DDS using the SM3 target shell.
+                    try:
+                        rebuilt, rebuild_row = rebuild_source_pixels_to_target_game_dds(
+                            src, target, rebuild_dir, force_opaque=bool(self.force_opaque_var.get())
+                        )
+                        rebuild_row['match_reason']=reason
+                        rebuild_row['source_descriptor_problems']='; '.join(descriptor_problems)
+                        rebuild_row['source_action']='GIMP_SAFE_REBUILT_FROM_SOURCE_PIXELS'
+                        gimp_rebuilt_rows.append(rebuild_row)
+                        final_dds=Path(rebuilt)
+                        action='GIMP_SAFE_REBUILT_FROM_SOURCE_PIXELS'
+                        normalize_reason='Source DDS did not match SM3 descriptor after Paint.NET/GIMP/editor overwrite; rebuilt visible pixels into SM3 target width/height/mips/format/payload.'
+                        info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                        if final_problems:
+                            skipped.append({'file':str(src),'rebuilt_dds':str(final_dds),'asset':target.get('asset'),'reason':'; '.join(final_problems),'status':'BLOCKED_GIMP_SAFE_REBUILD_STILL_NOT_HEADER_LOCKED'})
+                            continue
+                    except Exception as rebuild_exc:
+                        skipped.append({
+                            'file':str(src),
+                            'asset':target.get('asset'),
+                            'reason':'; '.join(descriptor_problems) + ' | GIMP_SAFE_REBUILD_FAILED: ' + str(rebuild_exc).replace('\n',' | '),
+                            'status':'BLOCKED_DESCRIPTOR_MISMATCH_AND_REBUILD_FAILED'
+                        })
+                        continue
+                else:
+                    header=dds_header_info_for_target(src,target)
+                    if not header.get('actual_header_matches_expected'):
+                        normalized, norm_row = normalize_dds_to_target_game_format(src, target, norm_dir)
+                        norm_row['match_reason']=reason
+                        norm_row['source_action']='AUTO_NORMALIZED_HEADER_RECOVERY'
+                        normalized_rows.append(norm_row)
+                        final_dds=Path(normalized)
+                        action='AUTO_NORMALIZED_HEADER_RECOVERY'
+                        normalize_reason='DDS descriptor/payload matched but header differed; restored SM3 target/export header before patching.'
+                        info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                        if final_problems:
+                            skipped.append({'file':str(src),'normalized_dds':str(final_dds),'asset':target.get('asset'),'reason':'; '.join(final_problems),'status':'BLOCKED_NORMALIZED_STILL_NOT_HEADER_LOCKED'})
+                            continue
+                    else:
+                        info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                        if final_problems:
+                            skipped.append({'file':str(src),'asset':target.get('asset'),'reason':'; '.join(final_problems),'status':'BLOCKED_HEADER_LOCKED_VALIDATION'})
+                            continue
+
+                if manifest_row and manifest_row.get('original_dds_header_sha256') and manifest_row.get('original_dds_header_sha256') != info.get('header_sha256'):
+                    skipped.append({'file':str(src),'final_dds':str(final_dds),'asset':target.get('asset'),'reason':'Final DDS header does not match manifest/export header','status':'BLOCKED_MANIFEST_HEADER_MISMATCH'})
+                    continue
+
+                patch_items.append((target, final_dds, manifest_row))
+                used.add(key)
+                ready.append({
+                    'file':str(src),
+                    'final_dds_for_patch':str(final_dds),
+                    'asset':target.get('asset'),
+                    'hash':target.get('filename_hash'),
+                    'match_reason':reason,
+                    'action':action,
+                    'normalize_reason':normalize_reason,
+                    'width':info.get('width'),
+                    'height':info.get('height'),
+                    'mips':info.get('mips'),
+                    'format_kind':info.get('format_kind'),
+                    'payload_size':info.get('payload_size'),
+                    'header_sha256':info.get('header_sha256'),
+                    'expected_header_sha256':info.get('expected_header_sha256'),
+                    'status':'READY_FINAL_SAFE_REIMPORT',
+                })
+            except Exception as exc:
+                skipped.append({'file':str(src),'asset':target.get('asset') if target else '', 'reason':str(exc),'status':'BLOCKED_EXCEPTION'})
+
+        write_csv(report_dir/'FINAL_SAFE_REIMPORT_READY.csv', ready)
+        write_csv(report_dir/'FINAL_SAFE_REIMPORT_BLOCKED.csv', skipped)
+        write_csv(report_dir/'FINAL_SAFE_AUTO_NORMALIZED.csv', normalized_rows)
+        write_csv(report_dir/'FINAL_SAFE_GIMP_SAFE_REBUILT.csv', gimp_rebuilt_rows)
+        summary={
+            'version':'v5.2.40',
+            'mode':'FINAL_EDITOR_SAFE_DDS_REIMPORT_AUTO_REBUILD',
+            'input_kind':selected_folder_kind,
+            'source_folder':str(folder),
+            'manifest':str(manifest_path) if manifest_path else '',
+            'ready_count':len(patch_items),
+            'blocked_count':len(skipped),
+            'auto_normalized_count':len(normalized_rows),
+            'gimp_safe_rebuilt_count':len(gimp_rebuilt_rows),
+            'direct_header_ok_count':sum(1 for r in ready if r.get('action')=='PATCH_DIRECT_HEADER_OK'),
+            'rule':'target hash/name required; exact-header DDS patches direct; safe header-changed DDS is normalized; Paint.NET/GIMP/editor overwritten DDS with wrong descriptor is decoded from visible pixels and rebuilt into target SM3 width/height/mips/format/payload before patching',
+        }
+        (report_dir/'FINAL_SAFE_REIMPORT_SUMMARY.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
+        (report_dir/'FINAL_SAFE_REIMPORT_RULES.txt').write_text(
+            'FINAL EDITOR-SAFE DDS REIMPORT - v5.2.40\n'
+            '=================================\n\n'
+            'Use this after EXPORT EDIT-READY DDS + MANIFEST and external DDS editing. It also accepts overwritten GIMP DDS files directly.\n\n'
+            'Allowed:\n'
+            '- same target hash/name in filename\n'
+            '- same width/height/mip count/format\n'
+            '- same component1 payload size\n'
+            '- exact SM3 DDS header, or safe header-only recovery using SM3 target header + edited payload\n\n'
+            'Blocked:\n'
+            '- wrong target name/hash\n'
+            '- wrong dimensions, mip count, DDS format, or payload size\n'
+            '- duplicate mappings to the same target\n'
+            '- any file that would require resize/recompress/mipmap generation/guessing\n\n'
+            'Patch output is always one NEW PCPACK copy. Original PCPACK is not modified. Editor-safe rebuild may recompress the visible pixels into SM3 target format.\n',
+            encoding='utf-8'
+        )
+
+        if not patch_items:
+            messagebox.showwarning('No final-safe patches',f'No DDS files passed final-safe checks. Blocked: {len(skipped)}\n\nReport:\n{report_dir}')
+            self.set_status(f'FINAL SAFE REIMPORT found no safe patches. Report: {report_dir}')
+            return
+        # v5.2.37: do not rely on a Save As dialog for the final pack.
+        # The user was seeing only DDS output after the final route, so the tool now
+        # auto-creates a loud output folder beside the selected DDS folder and writes
+        # the patched .PCPACK there every time.
+        final_out_dir=ensure_dir(folder/'FINAL_PATCHED_PCPACK_OUTPUT')
+        default_name=pc.stem+'_PATCHED_FINAL_SAFE_DDS'+pc.suffix
+        out_path=final_out_dir/default_name
+        if out_path.exists():
+            base=out_path.stem
+            ext=out_path.suffix
+            idx=1
+            while (final_out_dir/f'{base}_{idx:03d}{ext}').exists():
+                idx+=1
+            out_path=final_out_dir/f'{base}_{idx:03d}{ext}'
+
+        msg=(
+            f'{len(patch_items)} DDS files passed FINAL SAFE checks.\n'
+            f'Direct header OK: {summary["direct_header_ok_count"]}\n'
+            f'Auto-normalized header recovery: {summary["auto_normalized_count"]}\n'
+            f'Editor-safe rebuilt from pixels: {summary["gimp_safe_rebuilt_count"]}\n'
+            f'Blocked: {len(skipped)}\n\n'
+            'The tool will now WRITE ONE NEW patched PCPACK automatically here:\n'
+            f'{out_path}\n\n'
+            'Original PCPACK will NOT be modified.'
+        )
+        if not messagebox.askyesno('Confirm FINAL SAFE DDS reimport', msg):
+            return
+        try:
+            log=copy_and_patch_pcpack_header_locked_dds_many(pc, patch_items, out_path)
+            log['mode']='FINAL_EDITOR_SAFE_DDS_REIMPORT_V5_2_40_AUTO_WRITE_PCPACK'
+            log['final_safe_scan_summary']=summary
+            log['final_output_folder']=str(final_out_dir)
+            log['visible_output_note']='The patched PCPACK is written inside FINAL_PATCHED_PCPACK_OUTPUT. DDS files are only intermediate/edit inputs.'
+            (final_out_dir/(out_path.stem+'_FINAL_SAFE_DDS_REIMPORT_LOG.json')).write_text(json.dumps(log,indent=2),encoding='utf-8')
+            (final_out_dir/'00_PATCHED_PCPACK_IS_HERE.txt').write_text(
+                'FINAL SAFE DDS REIMPORT COMPLETE\n'
+                '================================\n\n'
+                'Your patched PCPACK is here:\n'
+                f'{out_path}\n\n'
+                f'Patched DDS count: {log["patch_count"]}\n'
+                f'Auto-normalized header recovery count: {summary["auto_normalized_count"]}\n'
+                f'Editor-safe rebuilt from pixels count: {summary["gimp_safe_rebuilt_count"]}\n'
+                f'Blocked DDS count: {len(skipped)}\n\n'
+                'Use this NEW PCPACK copy for testing. The original PCPACK was not modified.\n'
+                'DDS folders are intermediate/edit folders only; the .PCPACK in this folder is the final output.\n',
+                encoding='utf-8'
+            )
+            (final_out_dir/'FINAL_PATCHED_PCPACK_PATH.txt').write_text(str(out_path)+'\n',encoding='utf-8')
+            self.last_export_dir=str(final_out_dir)
+            self.replacement_folder_var.set(str(final_out_dir))
+            try:
+                open_path(final_out_dir)
+            except Exception:
+                pass
+            messagebox.showinfo(
+                'FINAL PCPACK WRITTEN',
+                f'Patched {log["patch_count"]} DDS files into ONE NEW PCPACK.\n\n'
+                f'Auto-normalized: {summary["auto_normalized_count"]}\n'
+                f'Blocked: {len(skipped)}\n\n'
+                'YOUR FINAL PCPACK IS HERE:\n'
+                f'{out_path}\n\n'
+                f'Reports:\n{report_dir}'
+            )
+            self.set_status(f'FINAL SAFE PCPACK WRITTEN: {log["patch_count"]} items -> {out_path}')
+        except Exception as e:
+            traceback.print_exc(); messagebox.showerror('FINAL SAFE DDS reimport failed',str(e))
+
+    def single_file_gimp_safe_patch_write_pcpack(self):
+        """v5.2.39: patch ONE edited DDS/image into ONE new PCPACK using the editor-safe final route.
+
+        Daily-use route for quick suit tests:
+        - user selects one edited DDS/image
+        - tool target-locks by SM3 hash/name in the filename, or uses the selected row after confirmation
+        - exact/header-safe DDS patches directly
+        - header-only DDS changes are auto-normalized
+        - Paint.NET/GIMP/editor overwritten DDS/images are rebuilt from visible pixels into the selected SM3 target format
+        - output is a loud FINAL_SINGLE_FILE_PATCH_OUTPUT folder with one new .PCPACK copy
+        """
+        if not self.targets:
+            messagebox.showinfo('Build preview first','Click Build Preview first so the tool knows this PCPACK texture list.')
+            return
+        pc=Path(self.pcpack_var.get())
+        if not pc.exists():
+            messagebox.showerror('Missing PCPACK','Original PCPACK path is missing. Load a clean original PCPACK first.')
+            return
+        start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
+        source=Path(filedialog.askopenfilename(
+            title='Choose ONE edited DDS/image to patch into a new PCPACK',
+            initialdir=start_dir if start_dir else None,
+            filetypes=[
+                ('DDS / image files','*.dds *.png *.bmp *.jpg *.jpeg'),
+                ('DDS files','*.dds'),
+                ('Image files','*.png *.bmp *.jpg *.jpeg'),
+                ('All files','*.*'),
+            ]
+        ) or '')
+        if not str(source):
+            return
+        if not source.exists():
+            messagebox.showerror('Missing file',f'File does not exist:\n{source}')
+            return
+
+        target, reason = _filename_direct_target_match(source, self.targets)
+        selected_target = self.resolve_current_selected_target()
+        if not target and selected_target:
+            target=selected_target
+            reason='SELECTED_ROW_TARGET_CONFIRM'
+            if not messagebox.askyesno(
+                'Use selected target for single-file patch?',
+                'This file name does not contain a direct SM3 target hash/name lock.\n\n'
+                f'File:\n{source.name}\n\n'
+                'Use the currently selected texture row as the target?\n\n'
+                f'Target: {target.get("asset")}\nHash: {target.get("filename_hash")}\n\n'
+                'Only continue if this file is meant for that exact texture slot.'
+            ):
+                return
+        if not target:
+            messagebox.showwarning(
+                'No target match',
+                'The file name did not match a SM3 target hash/name, and no texture row is selected.\n\n'
+                'Fix one of these:\n'
+                '- select the target texture row first, then click Single File Patch again\n'
+                '- or keep the exported filename like 0xHASH.asset.ORIGINAL_EDIT_THIS.dds'
+            )
+            return
+
+        self.selected_target=target
+        if not self.target_safety_ok_or_confirm('single_file_gimp_safe_patch'):
+            return
+
+        work_dir=ensure_dir(source.parent/'SINGLE_FILE_PATCH_WORK')
+        norm_dir=ensure_dir(work_dir/'AUTO_NORMALIZED_DDS')
+        rebuild_dir=ensure_dir(work_dir/'GIMP_SAFE_REBUILT_DDS')
+        report_dir=ensure_dir(work_dir/'REPORTS')
+        ready=[]; blocked=[]; normalized_rows=[]; rebuilt_rows=[]
+        final_dds=None
+        action=''
+        normalize_reason=''
+        info={}
+        try:
+            is_dds=source.suffix.lower()=='.dds'
+            if is_dds:
+                try:
+                    info, descriptor_problems=validate_dds_matches_target(source,target,strict=False)
+                except Exception as parse_exc:
+                    descriptor_problems=['DDS_PARSE_FAILED_FOR_DESCRIPTOR_CHECK: '+str(parse_exc)]
+                if descriptor_problems:
+                    rebuilt, row = rebuild_source_pixels_to_target_game_dds(
+                        source, target, rebuild_dir, force_opaque=bool(self.force_opaque_var.get())
+                    )
+                    row['match_reason']=reason
+                    row['source_descriptor_problems']='; '.join(descriptor_problems)
+                    row['source_action']='SINGLE_FILE_GIMP_SAFE_REBUILT_FROM_SOURCE_PIXELS'
+                    rebuilt_rows.append(row)
+                    final_dds=Path(rebuilt)
+                    action='SINGLE_FILE_GIMP_SAFE_REBUILT_FROM_SOURCE_PIXELS'
+                    normalize_reason='Source DDS descriptor did not match SM3 target after editor overwrite; rebuilt visible pixels into target game DDS format.'
+                    info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                    if final_problems:
+                        raise ValueError('Rebuilt DDS still failed header lock:\n- ' + '\n- '.join(final_problems))
+                else:
+                    header=dds_header_info_for_target(source,target)
+                    if not header.get('actual_header_matches_expected'):
+                        normalized, row = normalize_dds_to_target_game_format(source, target, norm_dir)
+                        row['match_reason']=reason
+                        row['source_action']='SINGLE_FILE_AUTO_NORMALIZED_HEADER_RECOVERY'
+                        normalized_rows.append(row)
+                        final_dds=Path(normalized)
+                        action='SINGLE_FILE_AUTO_NORMALIZED_HEADER_RECOVERY'
+                        normalize_reason='DDS descriptor/payload matched but header differed; restored SM3 target/export header before patching.'
+                        info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                        if final_problems:
+                            raise ValueError('Normalized DDS still failed header lock:\n- ' + '\n- '.join(final_problems))
+                    else:
+                        final_dds=source
+                        action='SINGLE_FILE_PATCH_DIRECT_HEADER_OK'
+                        info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                        if final_problems:
+                            raise ValueError('DDS failed final header lock:\n- ' + '\n- '.join(final_problems))
+            elif source.suffix.lower() in IMAGE_EXTS:
+                rebuilt, row = rebuild_source_pixels_to_target_game_dds(
+                    source, target, rebuild_dir, force_opaque=bool(self.force_opaque_var.get())
+                )
+                row['match_reason']=reason
+                row['source_action']='SINGLE_FILE_IMAGE_REBUILT_FROM_SOURCE_PIXELS'
+                rebuilt_rows.append(row)
+                final_dds=Path(rebuilt)
+                action='SINGLE_FILE_IMAGE_REBUILT_FROM_SOURCE_PIXELS'
+                normalize_reason='Image source supplied pixels; rebuilt into SM3 target game DDS format before patching.'
+                info, final_problems=validate_dds_matches_target_header_locked(final_dds,target,strict=False)
+                if final_problems:
+                    raise ValueError('Image-rebuilt DDS still failed header lock:\n- ' + '\n- '.join(final_problems))
+            else:
+                raise ValueError('Unsupported single-file source type. Use DDS, PNG, BMP, JPG, or JPEG.')
+
+            ready.append({
+                'source_file':str(source),
+                'final_dds_for_patch':str(final_dds),
+                'asset':target.get('asset'),
+                'hash':target.get('filename_hash'),
+                'match_reason':reason,
+                'action':action,
+                'normalize_reason':normalize_reason,
+                'width':info.get('width'),
+                'height':info.get('height'),
+                'mips':info.get('mips'),
+                'format_kind':info.get('format_kind'),
+                'payload_size':info.get('payload_size'),
+                'header_sha256':info.get('header_sha256'),
+                'expected_header_sha256':info.get('expected_header_sha256'),
+                'status':'READY_SINGLE_FILE_PATCH',
+            })
+        except Exception as exc:
+            blocked.append({
+                'source_file':str(source),
+                'asset':target.get('asset') if target else '',
+                'hash':target.get('filename_hash') if target else '',
+                'reason':str(exc).replace('\n',' | '),
+                'status':'BLOCKED_SINGLE_FILE_PATCH',
+            })
+
+        write_csv(report_dir/'SINGLE_FILE_PATCH_READY.csv', ready)
+        write_csv(report_dir/'SINGLE_FILE_PATCH_BLOCKED.csv', blocked)
+        write_csv(report_dir/'SINGLE_FILE_AUTO_NORMALIZED.csv', normalized_rows)
+        write_csv(report_dir/'SINGLE_FILE_GIMP_SAFE_REBUILT.csv', rebuilt_rows)
+        summary={
+            'version':'v5.2.40',
+            'mode':'SINGLE_FILE_GIMP_SAFE_PATCH_SCAN',
+            'source_file':str(source),
+            'target_asset':target.get('asset') if target else '',
+            'target_hash':target.get('filename_hash') if target else '',
+            'match_reason':reason,
+            'ready_count':len(ready),
+            'blocked_count':len(blocked),
+            'auto_normalized_count':len(normalized_rows),
+            'gimp_safe_rebuilt_count':len(rebuilt_rows),
+            'direct_header_ok_count':1 if action=='SINGLE_FILE_PATCH_DIRECT_HEADER_OK' else 0,
+            'rule':'one source file only; target hash/name or selected-row confirmation required; exact/header-safe DDS patches direct; header-only DDS is normalized; GIMP/editor DDS or image is rebuilt from visible pixels into target SM3 game format',
+        }
+        (report_dir/'SINGLE_FILE_PATCH_SUMMARY.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
+        (report_dir/'SINGLE_FILE_PATCH_RULES.txt').write_text(
+            'SINGLE FILE EDITOR-SAFE PATCH - v5.2.40\n'
+            '====================================\n\n'
+            'Use this for one edited texture test.\n'
+            '- Best route: export edit-ready DDS, edit/overwrite one DDS, click Single File Patch.\n'
+            '- Target is chosen by filename hash/name, or by the selected texture row after confirmation.\n'
+            '- DDS files with exact target header patch directly.\n'
+            '- DDS files with only a header mismatch are auto-normalized.\n'
+            '- Paint.NET/GIMP-overwritten DDS/images are rebuilt from visible pixels into the SM3 target format/mips/payload.\n'
+            '- Original PCPACK is never modified. Output is one new PCPACK copy.\n',
+            encoding='utf-8'
+        )
+
+        if not ready or not final_dds:
+            messagebox.showwarning('Single file blocked',f'The selected file did not pass single-file patch rules.\n\nReport:\n{report_dir}')
+            self.set_status(f'SINGLE FILE PATCH blocked. Report: {report_dir}')
+            return
+
+        final_out_dir=ensure_dir(source.parent/'FINAL_SINGLE_FILE_PATCH_OUTPUT')
+        safe_asset=clean_name(target.get('asset','texture'))
+        default_name=f'{pc.stem}_PATCHED_SINGLE_{safe_asset}{pc.suffix}'
+        out_path=final_out_dir/default_name
+        if out_path.exists():
+            base=out_path.stem
+            ext=out_path.suffix
+            idx=1
+            while (final_out_dir/f'{base}_{idx:03d}{ext}').exists():
+                idx+=1
+            out_path=final_out_dir/f'{base}_{idx:03d}{ext}'
+
+        msg=(
+            'Single-file patch is ready.\n\n'
+            f'Target: {target.get("asset")}\n'
+            f'Hash: {target.get("filename_hash")}\n'
+            f'Action: {action}\n\n'
+            'The tool will write ONE NEW patched PCPACK here:\n'
+            f'{out_path}\n\n'
+            'Original PCPACK will NOT be modified.'
+        )
+        if not messagebox.askyesno('Confirm SINGLE FILE patch', msg):
+            return
+        try:
+            log=copy_and_patch_pcpack_header_locked_dds_many(pc, [(target, final_dds, {})], out_path)
+            log['mode']='SINGLE_FILE_EDITOR_SAFE_PATCH_V5_2_40_AUTO_WRITE_PCPACK'
+            log['single_file_scan_summary']=summary
+            log['final_output_folder']=str(final_out_dir)
+            log['visible_output_note']='The patched PCPACK is written inside FINAL_SINGLE_FILE_PATCH_OUTPUT.'
+            (final_out_dir/(out_path.stem+'_SINGLE_FILE_PATCH_LOG.json')).write_text(json.dumps(log,indent=2),encoding='utf-8')
+            (final_out_dir/'00_SINGLE_FILE_PATCHED_PCPACK_IS_HERE.txt').write_text(
+                'SINGLE FILE PATCH COMPLETE\n'
+                '==========================\n\n'
+                'Your patched PCPACK is here:\n'
+                f'{out_path}\n\n'
+                f'Target: {target.get("asset")}\n'
+                f'Hash: {target.get("filename_hash")}\n'
+                f'Action: {action}\n'
+                f'Patched DDS count: {log.get("patch_count",1)}\n\n'
+                'Use this NEW PCPACK copy for testing. The original PCPACK was not modified.\n',
+                encoding='utf-8'
+            )
+            (final_out_dir/'FINAL_SINGLE_FILE_PATCHED_PCPACK_PATH.txt').write_text(str(out_path)+'\n',encoding='utf-8')
+            self.last_export_dir=str(final_out_dir)
+            try:
+                open_path(final_out_dir)
+            except Exception:
+                pass
+            messagebox.showinfo(
+                'SINGLE FILE PCPACK WRITTEN',
+                'Patched one edited file into ONE NEW PCPACK.\n\n'
+                f'Target: {target.get("asset")}\n'
+                f'Action: {action}\n\n'
+                'YOUR FINAL PCPACK IS HERE:\n'
+                f'{out_path}\n\n'
+                f'Reports:\n{report_dir}'
+            )
+            self.set_status(f'SINGLE FILE PCPACK WRITTEN: {source.name} -> {out_path}')
+        except Exception as e:
+            traceback.print_exc(); messagebox.showerror('Single file patch failed', str(e))
+
+    def header_name_locked_reimport_folder(self):
+        """v5.2.33: Final-safe folder reimport: target name/hash + exact DDS header lock."""
+        if not self.targets:
+            messagebox.showinfo('Build preview first','Click Build Preview first so the tool knows this PCPACK texture list.')
+            return
+        pc=Path(self.pcpack_var.get())
+        if not pc.exists():
+            messagebox.showerror('Missing PCPACK','Original PCPACK path is missing.')
+            return
+        start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
+        folder=Path(filedialog.askdirectory(title='Choose EDIT-READY DDS folder to reimport', initialdir=start_dir if start_dir else None) or '')
+        if not str(folder):
+            return
+        manifest_path, manifest_rows = find_header_lock_manifest(folder)
+        manifest_by_file=manifest_rows_by_filename(manifest_rows)
+        src_files=sorted([p for p in folder.rglob('*.dds') if p.is_file()])
+        src_files=[p for p in src_files if not any(part.upper().endswith('REPORTS') or part.upper().startswith('REIMPORT') for part in p.parts)]
+        if not src_files:
+            messagebox.showinfo('No DDS files',f'No DDS files found in:\n{folder}')
+            return
+        patch_items=[]; skipped=[]; report=[]; used=set()
+        for src in src_files:
+            target, reason = _filename_direct_target_match(src, self.targets)
+            if not target:
+                skipped.append({'file':str(src),'reason':'NO_TARGET_NAME_OR_HASH_LOCK','status':'BLOCKED'})
+                continue
+            key=target_edit_key(target)
+            if key in used:
+                skipped.append({'file':str(src),'asset':target.get('asset'),'reason':'DUPLICATE_TARGET_ALREADY_USED','status':'BLOCKED'})
+                continue
+            manifest_row=manifest_by_file.get(src.name.lower(), {})
+            try:
+                info, problems=validate_dds_matches_target_header_locked(src,target,strict=False)
+                if problems:
+                    skipped.append({'file':str(src),'asset':target.get('asset'),'reason':'; '.join(problems),'status':'BLOCKED'})
+                    continue
+                if manifest_row and manifest_row.get('original_dds_header_sha256') and manifest_row.get('original_dds_header_sha256') != info.get('header_sha256'):
+                    skipped.append({'file':str(src),'asset':target.get('asset'),'reason':'DDS header changed from manifest export header','status':'BLOCKED'})
+                    continue
+                patch_items.append((target, src, manifest_row))
+                used.add(key)
+                report.append({'file':str(src),'asset':target.get('asset'),'hash':target.get('filename_hash'),'match_reason':reason,'header_sha256':info.get('header_sha256'),'status':'READY_HEADER_NAME_LOCKED'})
+            except Exception as exc:
+                skipped.append({'file':str(src),'asset':target.get('asset'),'reason':str(exc),'status':'BLOCKED'})
+        report_dir=ensure_dir(folder/'HEADER_NAME_LOCKED_REIMPORT_REPORTS')
+        write_csv(report_dir/'HEADER_NAME_LOCKED_READY.csv', report)
+        write_csv(report_dir/'HEADER_NAME_LOCKED_BLOCKED.csv', skipped)
+        summary={'version':'v5.2.33','mode':'HEADER_NAME_LOCKED_REIMPORT_SCAN','manifest':str(manifest_path) if manifest_path else '', 'ready_count':len(patch_items),'blocked_count':len(skipped),'folder':str(folder)}
+        (report_dir/'HEADER_NAME_LOCKED_SCAN_SUMMARY.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
+        if not patch_items:
+            messagebox.showwarning('No safe header-locked patches',f'No DDS files passed header+name lock. Blocked: {len(skipped)}\n\nReport:\n{report_dir}')
+            return
+        if not messagebox.askyesno('Confirm HEADER+NAME locked reimport', f'{len(patch_items)} DDS files passed header+name lock. Blocked: {len(skipped)}.\n\nWrite ONE NEW patched PCPACK copy?'):
+            return
+        default_name=pc.stem+'_PATCHED_HEADER_NAME_LOCKED'+pc.suffix
+        out=filedialog.asksaveasfilename(title='Save header+name locked patched PCPACK as',initialfile=default_name,filetypes=[('PCPACK','*.PCPACK'),('All files','*.*')])
+        if not out:
+            return
+        try:
+            log=copy_and_patch_pcpack_header_locked_dds_many(pc, patch_items, Path(out))
+            messagebox.showinfo('HEADER+NAME locked patch complete', f'Patched {log["patch_count"]} DDS files into a new PCPACK copy.\n\nOutput:\n{out}')
+            self.set_status(f'HEADER+NAME locked patch complete: {log["patch_count"]} items -> {out}')
+        except Exception as e:
+            traceback.print_exc(); messagebox.showerror('Header locked patch failed',str(e))
 
     def reimport_all_dds_folder(self):
         """v5.0: Folder reimport now uses the same exact-or-convert rule as single patch.
@@ -2432,7 +5273,7 @@ class TexSwapperTab(ttk.Frame):
             return
 
         start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
-        folder=Path(filedialog.askdirectory(title='Choose folder for SMART REIMPORT', initialdir=start_dir if start_dir else None) or '')
+        folder=Path(filedialog.askdirectory(title='Choose folder for legacy smart reimport', initialdir=start_dir if start_dir else None) or '')
         if not str(folder):
             return
 
@@ -2514,7 +5355,7 @@ class TexSwapperTab(ttk.Frame):
 
         if not smart_items:
             messagebox.showwarning('No smart matches', f'No patchable matches found.\n\nReport:\n{report_dir}')
-            self.set_status(f'SMART REIMPORT found no patchable matches. Report: {report_dir}')
+            self.set_status(f'legacy smart reimport found no patchable matches. Report: {report_dir}')
             return
 
         preview='\n'.join(f"- {i['mode']}: {i['target'].get('asset')} <- {Path(i['path']).name}" for i in smart_items[:20])
@@ -2522,7 +5363,7 @@ class TexSwapperTab(ttk.Frame):
             preview += f'\n...and {len(smart_items)-20} more.'
 
         msg=(
-            f'SMART REIMPORT found {len(smart_items)} patchable file(s).\n'
+            f'legacy smart reimport found {len(smart_items)} patchable file(s).\n'
             f'Exact: {summary["exact_count"]}\n'
             f'Convert due to mip/format/size/source image: {summary["convert_count"]}\n'
             f'Skipped: {summary["skipped"]}\n\n'
@@ -2530,12 +5371,12 @@ class TexSwapperTab(ttk.Frame):
             f'Report folder:\n{report_dir}\n\n'
             'Continue and write ONE NEW patched PCPACK copy?'
         )
-        if not messagebox.askyesno('Confirm SMART REIMPORT', msg):
-            self.set_status(f'SMART REIMPORT cancelled. Report: {report_dir}')
+        if not messagebox.askyesno('Confirm legacy smart reimport', msg):
+            self.set_status(f'legacy smart reimport cancelled. Report: {report_dir}')
             return
 
         out=filedialog.asksaveasfilename(
-            title='Save SMART REIMPORT patched PCPACK copy',
+            title='Save legacy smart reimport patched PCPACK copy',
             initialfile=pc.stem+'_PATCHED_SMART_REIMPORT_'+pc.suffix,
             filetypes=[('PCPACK','*.PCPACK'),('All files','*.*')]
         )
@@ -2546,10 +5387,10 @@ class TexSwapperTab(ttk.Frame):
             log=copy_and_patch_pcpack_smart_mixed_many(pc, smart_items, Path(out), force_opaque=bool(self.force_opaque_var.get()))
             log['match_report']=str(report_dir/'SMART_REIMPORT_MATCH_REPORT_v4_4.csv')
             (Path(out).parent/(Path(out).stem+'_SMART_REIMPORT_SUMMARY_v4_4.json')).write_text(json.dumps(log,indent=2),encoding='utf-8')
-            messagebox.showinfo('SMART REIMPORT complete', f'Patched {log["patch_count"]} texture(s).\nExact: {log["exact_count"]}\nConverted: {log["convert_count"]}\n\nOutput:\n{out}')
-            self.set_status(f'SMART REIMPORT complete: {log["patch_count"]} patched ({log["exact_count"]} exact, {log["convert_count"]} converted).')
+            messagebox.showinfo('legacy smart reimport complete', f'Patched {log["patch_count"]} texture(s).\nExact: {log["exact_count"]}\nConverted: {log["convert_count"]}\n\nOutput:\n{out}')
+            self.set_status(f'legacy smart reimport complete: {log["patch_count"]} patched ({log["exact_count"]} exact, {log["convert_count"]} converted).')
         except Exception as exc:
-            traceback.print_exc(); messagebox.showerror('SMART REIMPORT failed', str(exc))
+            traceback.print_exc(); messagebox.showerror('legacy smart reimport failed', str(exc))
 
 
     def batch_export_original_dds(self):
@@ -2577,7 +5418,7 @@ class TexSwapperTab(ttk.Frame):
             ensure_dir(outdir)
             write_csv(outdir/'BATCH_DDS_EXPORT_REPORT.csv', ok+errors)
             self.replacement_folder_var.set(str(outdir))
-            messagebox.showinfo('Batch DDS export finished', f'Exported {len(ok)} DDS files. Errors: {len(errors)}\n\nFolder:\n{outdir}\n\nEdit the DDS files in Paint.NET, save same format+mips, then use BATCH AUTO to patch them into one PCPACK copy.')
+            messagebox.showinfo('Batch DDS export finished', f'Exported {len(ok)} DDS files. Errors: {len(errors)}\n\nFolder:\n{outdir}\n\nEdit the DDS files in Paint.NET/GIMP, then use the editor-safe folder final patch to write one PCPACK copy.')
         except Exception as e:
             traceback.print_exc(); messagebox.showerror('Batch export failed',str(e))
 
@@ -2619,7 +5460,7 @@ class TexSwapperTab(ttk.Frame):
             except Exception as exc:
                 errors.append({'asset':t.get('asset'),'hash':t.get('filename_hash'),'error':str(exc),'status':'ERROR'})
         if not patch_items:
-            msg='No edited DDS files were found for the selected textures.\n\nUse BATCH: Export DDS for Selected, edit the DDS files in Paint.NET, save same format+mips, then try BATCH AUTO again.\n\nOr click Select Replacement Folder for Batch and choose the folder where your edited DDS files are saved.'
+            msg='No edited DDS files were found for the selected textures.\n\nUse BATCH: Export DDS for Selected, edit the DDS files in Paint.NET/GIMP, then try the editor-safe folder final patch again.\n\nOr click Select Replacement Folder for Batch and choose the folder where your edited DDS files are saved.'
             if same: msg += f'\n\n{len(same)} matching DDS files looked identical to the original.'
             if missing: msg += f'\n{len(missing)} selected textures had no matching DDS.'
             if errors: msg += f'\n{len(errors)} errors occurred.'
@@ -2879,7 +5720,7 @@ class TexSwapperTab(ttk.Frame):
 
         Select one texture target first, pick one DDS that already matches it, then
         export one patched PCPACK copy. This button does not auto-select another
-        target and does not convert. Use SELECTED CONVERT for wrong-size/wrong-mip
+        target and does not convert. Use legacy selected convert for wrong-size/wrong-mip
         source files.
         """
         target=self.resolve_current_selected_target()
@@ -2975,7 +5816,7 @@ class TexSwapperTab(ttk.Frame):
             return
         start_dir=self.replacement_folder_var.get().strip() or self.get_last_export_dir_for_selected() or self.last_export_dir or self.output_var.get()
         src=filedialog.askopenfilename(
-            title='SELECTED CONVERT: choose DDS/image to convert into the selected target format',
+            title='legacy selected convert: choose DDS/image to convert into the selected target format',
             initialdir=start_dir if start_dir else None,
             filetypes=[('DDS/images','*.dds *.png *.bmp *.jpg *.jpeg'),('DDS files','*.dds'),('Images','*.png *.bmp *.jpg *.jpeg'),('All files','*.*')]
         )
@@ -3205,7 +6046,7 @@ class TexSwapperTab(ttk.Frame):
             return
         start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
         src=filedialog.askopenfilename(
-            title='ONE FILE AUTO: select ONE DDS/image replacement file',
+            title='legacy one-file auto: select ONE DDS/image replacement file',
             initialdir=start_dir if start_dir else None,
             filetypes=[('DDS/images','*.dds *.png *.bmp *.jpg *.jpeg'),('DDS files','*.dds'),('Images','*.png *.bmp *.jpg *.jpeg'),('All files','*.*')]
         )
@@ -3294,7 +6135,7 @@ class TexSwapperTab(ttk.Frame):
             messagebox.showerror('Missing PCPACK','Select a clean PCPACK first.')
             return
         start_dir=self.replacement_folder_var.get().strip() or self.last_export_dir or self.output_var.get()
-        dds=filedialog.askopenfilename(title='ONE FILE AUTO: Select exactly ONE DDS replacement file', initialdir=start_dir if start_dir else None, filetypes=[('DDS','*.dds'),('All files','*.*')])
+        dds=filedialog.askopenfilename(title='legacy one-file auto: Select exactly ONE DDS replacement file', initialdir=start_dir if start_dir else None, filetypes=[('DDS','*.dds'),('All files','*.*')])
         if not dds:
             return
         row=self.scan_one_dds_for_manual_picker(Path(dds))
@@ -3585,7 +6426,7 @@ class TexSwapperTab(ttk.Frame):
             msg+='\n'.join(f'- {Path(p).name}: {reason}' for p,reason in skipped[:20])
             if len(skipped)>20:
                 msg+=f'\n...and {len(skipped)-20} more.'
-            msg+='\n\nTip: if these files work with single SELECTED CONVERT, select the target rows first and use this same button again. v4.9 will convert them in selected order.'
+            msg+='\n\nTip: if these files work with single legacy selected convert, select the target rows first and use this same button again. v4.9 will convert them in selected order.'
             if not patch_items or not messagebox.askyesno('Multi-file auto-match review', msg):
                 return
         self._patch_many_dds_with_review(pc, patch_items, 'MULTI_FILE_AUTO_SELECT_PATCH_STRICT_EXACT_V4_9', '_PATCHED_MULTI_FILE_AUTO_', 'MULTI_FILE_AUTO_PATCH_LOG')
@@ -3769,7 +6610,7 @@ class TexSwapperTab(ttk.Frame):
                 log=copy_and_patch_pcpack_original_format_dds(pc,target,replp,Path(out))
                 log['mode']='MANUAL_SELECTED_ONE_DDS_REPLACE_V3_1'
             else:
-                if not messagebox.askyesno('Legacy replacement input', 'This is not a DDS file. PNG/JPG/BIN replacement uses the older/experimental path.\n\nDDS exported from this tool and saved in Paint.NET is strongly recommended.\n\nContinue anyway?'):
+                if not messagebox.askyesno('Legacy replacement input', 'This is not a DDS file. PNG/JPG/BIN replacement uses the older/experimental path.\n\nDDS exported from this tool and edited in Paint.NET/GIMP is recommended; the editor-safe route can rebuild many overwritten DDS files back into SM3 format.\n\nContinue anyway?'):
                     return
                 log=copy_and_patch_pcpack(pc,target,replp,Path(out))
                 log['mode']='MANUAL_SELECTED_ONE_FILE_LEGACY_REPLACE_V3_1'
@@ -4524,7 +7365,7 @@ class TexSwapperTab(ttk.Frame):
             msg='No edited DDS was auto-detected for the selected texture.\n\n'
             msg+='v2.4 expects this workflow:\n'
             msg+='1. Export Original DDS for Editing.\n'
-            msg+='2. Edit/overwrite that DDS in Paint.NET.\n'
+            msg+='2. Edit/overwrite that DDS in Paint.NET or GIMP.\n'
             msg+='3. Save with the SAME format and mipmaps.\n'
             msg+='4. Or set Replacement DDS folder to the folder where your edited DDS files are saved.\n'
             msg+='5. Click AUTO: Detect Edited DDS + Patch COPY.\n\n'
@@ -4607,6 +7448,3 @@ class TexSwapperTab(ttk.Frame):
         except Exception as e:
             traceback.print_exc()
             messagebox.showerror('Patch failed',str(e))
-
-
-

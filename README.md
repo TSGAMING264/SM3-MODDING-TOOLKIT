@@ -1,105 +1,117 @@
-![image](https://raw.githubusercontent.com/TSGAMING264/SM3-MODDING-TOOLKIT/main/docs/images/sm3_collectors_edition_cover.jpg)
+![SM3 Toolkit cover](https://raw.githubusercontent.com/TSGAMING264/SM3-MODDING-TOOLKIT/main/docs/images/sm3_collectors_edition_cover.jpg)
 
-# SM3 MODDING TOOLKIT
+# SM3 Modding Toolkit
 
 **Created by TSGAMING264**
 
-SM3 MODDING TOOLKIT is an unofficial fan-made Python/Tkinter toolkit for Spider-Man 3 PC modding research, pack inspection, texture workflow testing, hex viewing, and animation swap testing.
+SM3 Modding Toolkit is an unofficial fan-made Python/Tkinter toolkit for Spider-Man 3 PC modding research and testing. The public package contains two separate Windows applications:
 
-This project is still in a **beta / release-candidate phase**. A lot of work still needs to be done. I am hoping more people can help bring Spider-Man 3 PC more mod support, and this source release is provided so the community and Nexus Mods staff can review how the tool works.
+- **SM3 Toolkit**: the main pack, texture, model, animation, audio, rebuild, and inspection application.
+- **SM3 Audio Separator**: a companion Demucs application for separating dialogue and music.
 
-![image](https://raw.githubusercontent.com/TSGAMING264/SM3-MODDING-TOOLKIT/main/docs/images/sm3_black_suit_wallpaper.jpg)
+The two applications are intentionally kept separate. They can run independently from the same release folder and use separate private runtime folders.
 
-## Public Release Safety
+## Current Source Versions
 
-- No Spider-Man 3 game files or extracted game assets are included in this repository.
-- No PCPACK, PCAPK, APKF, XEPACK, PS3PACK, DDS dumps, copied game packs, or generated extraction outputs are included.
-- The toolkit works on files the user selects or copies locally. Original game files are not modified directly by the normal workflow.
-- Pack editing workflows are designed to create patched copies or exported output folders.
-- Temporary report, cache, build, and diagnostic bundle outputs are blocked by `.gitignore` and are not part of the public source release.
+- SM3 Toolkit: **v5.2.182**
+- SM3 Audio Separator: **v1.0.3**
 
-## What This Tool Includes
+This repository contains source code and build instructions. It does not contain the compiled release EXEs, game packs, extracted game assets, or Demucs model weights.
 
-- **Pack Extractor**: reads copied Spider-Man 3 PC pack files, lists contents, and extracts supported resources for review.
-- **Texture tools**: preview and texture patch-copy workflows for testing replacement textures.
-- **Texture Folder Viewer**: view folders of texture images safely.
-- **Hex Viewer**: read-only file viewing for packs, binaries, and text files.
-- **Old Animation Swapper**: experimental animation swap testing using copied pack files and same-size/layout safety rules.
-- **How To Use / About tabs**: built-in usage notes, credits, and beta status.
+## Main Toolkit Tabs
 
-## Source Files For Review
+1. Home
+2. Pack Extractor
+3. Hex/Text
+4. Tex Swapper
+5. Texture Folder Viewer
+6. MAT Editor
+7. Model Viewer
+8. New Animation Swapper
+9. Old Animation Swapper
+10. Sound Editor
+11. PCPACK Rebuild Lab
+12. How To Use
+13. About / Info
 
-Main launcher:
+Home is selected on startup. The release UI uses one Tk root and one integrated notebook.
+
+## Safety
+
+- Original game files are not intentionally modified by normal release workflows.
+- Extraction reads from the selected pack and writes to a separate output folder.
+- Texture, animation, sound, and rebuild workflows create new output copies.
+- Keep clean backups and test one change at a time.
+- No Spider-Man 3 game files, PCPACKs, PCAPKs, APKFs, Xbox packs, DDS dumps, or extracted assets are included.
+- Normal release workflows do not create Send-To-GPT bundles or internal research report packages.
+
+## Repository Layout
 
 ```text
-SM3_TOOLS.py
+SM3_TOOLS.py                    Main Toolkit launcher
+sm3_toolkit/                    Integrated Toolkit UI and services
+SM3_EXTRACTOR_FINAL/            Legacy Animation Swapper source/presets
+SM3_MODDING_TOOLKIT.spec        Main Toolkit PyInstaller build
+SM3_AUDIO_SEPARATOR/            Separate Audio Separator source/build
+BUILD_FROM_SOURCE.md            Detailed reproducible build guide
+BUILD_FROM_SOURCE_NEXUS.md      Nexus reviewer build notes
+SOURCE_MANIFEST_SHA256.csv      Source integrity manifest
 ```
 
-Toolkit package:
+## Run The Toolkit From Source
 
-```text
-sm3_toolkit/
-```
+Requirements:
 
-Animation swapper source requested for Nexus review:
-
-```text
-NEXUS_REVIEW_FILES/SM3_ANIMATION_SWAPPER.py
-SM3_EXTRACTOR_FINAL/12_OLD_ANIMATION_SWAPPER/SM3_ANIMATION_SWAPPER.py
-```
-
-## Requirements
-
-- Windows 10/11 recommended
-- Python 3.10 or newer
-- Tkinter, normally included with Python on Windows
-- Pillow, for image/texture previews
-- PyInstaller, only needed for Windows EXE builds
-
-Install dependencies:
+- Windows 10 or 11
+- Python 3.10 or newer with Tkinter
+- Pillow
+- imageio-ffmpeg for Sound Editor music replacement
 
 ```powershell
-python -m pip install -r requirements.txt
-```
-
-Run from source:
-
-```powershell
-python SM3_TOOLS.py
-```
-
-If your Windows Python launcher is configured, this also works:
-
-```powershell
+py -3 -m pip install -r requirements.txt
 py -3 SM3_TOOLS.py
 ```
 
-## Windows Build
+## Run The Audio Separator From Source
 
-The repository includes a PyInstaller spec file for local Windows builds:
+The Audio Separator has its own dependency list because Demucs and Torch are much larger than the main Toolkit dependencies.
 
 ```powershell
-python -m pip install -r requirements.txt
-python -m PyInstaller SM3_MODDING_TOOLKIT.spec --clean --noconfirm
+py -3 -m pip install -r SM3_AUDIO_SEPARATOR/requirements.txt
+py -3 SM3_AUDIO_SEPARATOR/SM3_AUDIO_SEPARATOR.py
 ```
 
-The built EXE should appear under:
+The selected Demucs model downloads automatically on first use. The application displays a clear download notice and remains responsive. Model weights are not stored in this repository or release ZIP.
 
-```text
-dist/SM3 MODDING TOOLKIT.exe
+## Build Windows Releases
+
+Main Toolkit:
+
+```powershell
+py -3 -m PyInstaller SM3_MODDING_TOOLKIT.spec --clean --noconfirm
 ```
 
-Release builds should be made from this same public source checkout.
+Audio Separator:
+
+```powershell
+Push-Location SM3_AUDIO_SEPARATOR
+py -3 -m PyInstaller SM3_AUDIO_SEPARATOR.spec --clean --noconfirm
+Pop-Location
+```
+
+See [BUILD_FROM_SOURCE.md](BUILD_FROM_SOURCE.md) for the complete two-EXE packaging procedure.
 
 ## Antivirus False Positives
 
-Unsigned packaged Windows utilities can trigger antivirus heuristic warnings, especially when built with PyInstaller and when the tool performs file reading, extraction, copying, and rebuild-style operations. This source repository is provided so reviewers can inspect the Python code and rebuild the executable themselves.
+PyInstaller bundles the Python runtime and native dependencies into a Windows application folder. Unsigned bundled-Python applications that inspect, extract, copy, or rebuild binary files can trigger reputation-based or heuristic detections. The complete source is published here so users and Nexus Mods reviewers can inspect and reproduce both builds.
 
-## Credits / Shoutout
+The release package uses Microsoft's official full offline x64 Visual C++ Redistributable. That Microsoft-signed installer is a release dependency and is not committed to this source repository.
+
+## Credits
 
 Created by **TSGAMING264**.
 
-Shoutout to **Devryx** and the **Web of Shadows Toolkit** developers for inspiration on how public Spider-Man modding tools can be presented and shared. This SM3 toolkit is a separate Spider-Man 3 PC project and does not include Spider-Man: Web of Shadows files or Spider-Man 3 game assets.
+Huge shoutout to **Devryx** and the developers and reverse engineers connected to the Web of Shadows Toolkit projects for inspiration and reference. SM3 Modding Toolkit is a separate Spider-Man 3 PC project.
 
 ## Disclaimer
 

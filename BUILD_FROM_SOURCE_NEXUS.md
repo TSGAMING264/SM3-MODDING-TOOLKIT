@@ -1,41 +1,55 @@
 # Build From Source - Nexus Review
 
-## Requirements
+This repository is the public source for SM3 Toolkit v5.2.182 and its separate SM3 Audio Separator v1.0.3 companion application.
 
-- Python 3.10+ recommended
-- Tkinter included with most Python installations
-- Pillow is recommended for image preview features
+## Main Toolkit
 
-## Run from source
-
-```bash
-python SM3_TOOLS.py
+```powershell
+py -3 -m pip install -r requirements.txt
+py -3 SM3_TOOLS.py
+py -3 -m PyInstaller SM3_MODDING_TOOLKIT.spec --clean --noconfirm
 ```
 
-The main toolkit source file is included at:
-`SM3_TOOLS.py`
+Expected build:
 
-The animation swapper source file requested by Nexus is included at:
-`SM3_EXTRACTOR_FINAL/12_OLD_ANIMATION_SWAPPER/SM3_ANIMATION_SWAPPER.py`
-
-A duplicate source-review copy is also included at:
-`NEXUS_REVIEW_FILES/SM3_ANIMATION_SWAPPER.py`
-
-## Optional dependency install
-
-```bash
-python -m pip install -r requirements.txt
+```text
+dist/SM3 Toolkit/SM3 Toolkit.exe
+dist/SM3 Toolkit/Toolkit Runtime/
 ```
 
-## Optional PyInstaller build
+## Audio Separator
 
-```bash
-python -m pip install pyinstaller
-pyinstaller SM3_MODDING_TOOLKIT.spec
+```powershell
+py -3 -m pip install -r SM3_AUDIO_SEPARATOR/requirements.txt
+Push-Location SM3_AUDIO_SEPARATOR
+py -3 -m PyInstaller SM3_AUDIO_SEPARATOR.spec --clean --noconfirm
+Pop-Location
 ```
 
-## Review notes
+Expected build:
 
-- No game assets are included in this source package.
-- The source package is intended for review and reproducible building.
-- Public release EXE detections may come from PyInstaller bundling behavior.
+```text
+SM3_AUDIO_SEPARATOR/dist/SM3 Audio Separator/SM3 Audio Separator.exe
+SM3_AUDIO_SEPARATOR/dist/SM3 Audio Separator/Audio Runtime/
+```
+
+The Audio Separator downloads the selected Demucs model on first use. Model weights are not included in this repository.
+
+## Review Entry Points
+
+- `SM3_TOOLS.py`: main Toolkit launcher
+- `sm3_toolkit/app.py`: integrated Toolkit window and visible tabs
+- `sm3_toolkit/tabs/`: user interface classes
+- `sm3_toolkit/services/`: pack, texture, model, animation, sound, and rebuild logic
+- `SM3_EXTRACTOR_FINAL/12_OLD_ANIMATION_SWAPPER/SM3_ANIMATION_SWAPPER.py`: legacy swapper source
+- `SM3_AUDIO_SEPARATOR/SM3_AUDIO_SEPARATOR.py`: companion separator source
+- `SM3_MODDING_TOOLKIT.spec`: main PyInstaller build
+- `SM3_AUDIO_SEPARATOR/SM3_AUDIO_SEPARATOR.spec`: separator PyInstaller build
+
+## Review Notes
+
+- No game files or extracted game assets are included.
+- Original packs are not intentionally overwritten by normal workflows.
+- Release workflows create output copies or extracted folders.
+- No compiled EXEs are committed to this source repository.
+- PyInstaller runtime bundling can trigger heuristic antivirus detections.
