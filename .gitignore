@@ -36,6 +36,12 @@ PATCHED*/
 *.pcapk
 *.APKF
 *.apkf
+*.anim
+*.askl
+*.mat
+*.mesh
+*.tex
+*.wrap.*
 *.XEPACK
 *.xepack
 *.PS3PACK

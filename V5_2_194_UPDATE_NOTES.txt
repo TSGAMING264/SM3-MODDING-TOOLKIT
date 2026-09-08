@@ -1,0 +1,35 @@
+SM3 MODDING TOOLKIT v5.2.194 — SLOT 2 WRAP OWNER FIX
+=====================================================
+
+Purpose
+-------
+Fix the XESM3 Mod Output 4B WRAP.ANIM workflow when a rebuilt/edited .wrap.anim
+is saved outside MOD LOADER READY / WRAP_EXTRACTS.
+
+What changed
+------------
+1. Slot 2 is now authoritative fallback ownership data for external WRAP.ANIM files.
+   - Slot 1 may be a rebuilt .anim OR .wrap.anim anywhere on disk.
+   - Slot 2 may be the MOD LOADER READY / extracted character pack folder.
+   - 4B reads the resource hash from Slot 1, resolves PACK/APKF/resource name through
+     Slot 2 filelist.apkf.txt, verifies the matching stock WRAP exists, and builds the
+     correct NativeWRAP route.
+
+2. Repeated WRAP suffix cleanup.
+   - Older output routes could produce names such as:
+       0x5634CAF3.sm3sprint.wrap.anim.wrap.anim.wrap.anim
+   - v5.2.194 strips transport suffixes when resolving the canonical resource name.
+   - Final mod output is canonical:
+       0x5634CAF3.sm3sprint.wrap.anim
+
+3. Existing canonical WRAP_EXTRACTS paths still work.
+   - If Slot 1 itself is inside WRAP_EXTRACTS, path ownership remains supported.
+   - When Slot 2 can also resolve the resource, PACK/APKF ownership is required to agree.
+
+4. UI wording clarifies Slot 2:
+   - "MOD LOADER READY / extracted pack folder"
+   - "Browse Owner Folder"
+
+No changes were made to Motion Editor codec math, auto-grow, character profiles,
+Tex Swapper, MAT Editor, Model Viewer, Old Animation Swapper, Pack Extractor,
+Xbox extraction, Sound Editor, or PCPACK Rebuild Lab.

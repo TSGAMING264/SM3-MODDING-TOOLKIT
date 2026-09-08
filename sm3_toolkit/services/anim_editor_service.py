@@ -319,18 +319,17 @@ class AnimScalarEditor:
 
 
 class AnimNamedProfileEditor(AnimScalarEditor):
-    """ANIM-only editor using the runtime-reconstructed 0xCFB154CD profile.
+    """ANIM-only editor using a built-in named skeleton profile.
 
-    Unlike ``AnimRawTrackEditor``, this exposes real field/node/component names
-    without requiring a serialized raw Spider-Man ASKL file. The profile's
-    runtime-captured per-element quantization scales are used for the scaled
-    value display.
+    v5.2.191 supports the shared Spider-Man/Black Suit/Peter 0xCFB154CD
+    profile and Player Goblin 0x900E49A5.  Unlike ``AnimRawTrackEditor``, this
+    exposes real field/node/component names without requiring an ASKL file.
     """
     def __init__(self, obj: Dict[str, Any], header: AnimHeader, named_rows):
         validate_codec_json_for_anim_header(obj, header)
-        from sm3_toolkit.services.spiderman_named_profile_service import load_profile
+        from sm3_toolkit.services.spiderman_named_profile_service import load_profile_for_hash
 
-        profile = load_profile()
+        profile = load_profile_for_hash(header.askl_hash)
         scales = profile.get("quantization_scales", [])
         bones = {int(b["index"]): b for b in profile.get("bones", [])}
         bindings: List[AnimTrackBinding] = []

@@ -27,10 +27,10 @@ except Exception as exc:  # pragma: no cover - startup fallback
 
 
 class ModelViewerTab(ttk.Frame):
-    """View-only native Spider-Man 3 PC .mesh viewer.
+    """View-only native Spider-Man 3 PC .mesh / .wrap.mesh viewer.
 
-    Deliberately accepts only SM3 .mesh resources.  There are no OBJ/DAE/FBX
-    import paths and no model editing/export controls in this tab.
+    Accepts loose SM3 MESH and NativeWRAP MESH resources. There are no
+    OBJ/DAE/FBX import paths and no model editing/export controls in this tab.
     """
 
     FAST_FACE_LIMIT = 14_000
@@ -42,7 +42,7 @@ class ModelViewerTab(ttk.Frame):
         self.visible_sections: set[int] = set()
 
         self.path_var = tk.StringVar()
-        self.status_var = tk.StringVar(value="Open a native Spider-Man 3 .mesh file to view it.")
+        self.status_var = tk.StringVar(value="Open a native Spider-Man 3 .mesh or .wrap.mesh file to view it.")
         self.solid_var = tk.BooleanVar(value=True)
         self.wire_var = tk.BooleanVar(value=False)
         self.grid_var = tk.BooleanVar(value=True)
@@ -82,15 +82,15 @@ class ModelViewerTab(ttk.Frame):
         ttk.Label(header, text="SM3 Model Viewer", font=("Segoe UI", 16, "bold")).grid(row=0, column=0, sticky="w")
         ttk.Label(
             header,
-            text="VIEW ONLY — opens native Spider-Man 3 PC .mesh resources and displays the actual in-game geometry. No SM2/WOS/OBJ/DAE/FBX import and no model editing/export.",
+            text="VIEW ONLY — opens native Spider-Man 3 PC .mesh and .wrap.mesh resources and displays the actual in-game geometry. No SM2/WOS/OBJ/DAE/FBX import and no model editing/export.",
             wraplength=1200,
             justify="left",
         ).grid(row=1, column=0, sticky="w", pady=(2, 0))
 
-        filebar = ttk.LabelFrame(self, text="SM3 MESH File", padding=8)
+        filebar = ttk.LabelFrame(self, text="SM3 MESH / WRAP.MESH File", padding=8)
         filebar.grid(row=1, column=0, sticky="ew", pady=(0, 8))
         filebar.columnconfigure(1, weight=1)
-        ttk.Button(filebar, text="OPEN SM3 MESH", command=self._open_mesh).grid(row=0, column=0, padx=(0, 6), sticky="w")
+        ttk.Button(filebar, text="OPEN SM3 MESH / WRAP.MESH", command=self._open_mesh).grid(row=0, column=0, padx=(0, 6), sticky="w")
         ttk.Entry(filebar, textvariable=self.path_var, state="readonly").grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(filebar, text="OPEN FOLDER", command=self._open_folder).grid(row=0, column=2, padx=(6, 0), sticky="e")
 
@@ -233,8 +233,13 @@ class ModelViewerTab(ttk.Frame):
             messagebox.showerror("SM3 Model Viewer", f"Pillow is required for the viewport.\n\n{PIL_ERROR}")
             return
         path = filedialog.askopenfilename(
-            title="Open Spider-Man 3 MESH",
-            filetypes=[("Spider-Man 3 MESH", "*.mesh"), ("MESH files", "*.MESH")],
+            title="Open Spider-Man 3 MESH / WRAP.MESH",
+            filetypes=[
+                ("Spider-Man 3 MESH / NativeWRAP MESH", "*.mesh *.wrap.mesh"),
+                ("NativeWRAP MESH", "*.wrap.mesh"),
+                ("Spider-Man 3 MESH", "*.mesh"),
+                ("All files", "*.*"),
+            ],
         )
         if not path:
             return
@@ -264,7 +269,7 @@ class ModelViewerTab(ttk.Frame):
 
     def _open_folder(self):
         if self.doc is None:
-            messagebox.showinfo("SM3 Model Viewer", "Open an SM3 .mesh file first.")
+            messagebox.showinfo("SM3 Model Viewer", "Open an SM3 .mesh or .wrap.mesh file first.")
             return
         open_path(self.doc.path.parent)
 

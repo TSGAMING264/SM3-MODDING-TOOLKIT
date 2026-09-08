@@ -31,6 +31,7 @@ except Exception as exc:  # pragma: no cover
     raise
 
 from sm3_toolkit.services import pack_extract_service as backend
+from sm3_toolkit.services import wrap_extract_service as wrap_backend
 from sm3_toolkit.services import apkf_reference_dump_service as ref_backend
 from sm3_toolkit.services import apkf_clean_database_service as clean_db_backend
 from sm3_toolkit.services import xbox_pack_extract_service as xbox_backend
@@ -43,7 +44,7 @@ from sm3_toolkit.sm3_pack_guard import (
 from sm3_toolkit.theme import COLORS
 
 APP_NAME = "SM3 Beta Pack Extractor"
-APP_VERSION = "v2.43 WOS-Style Resource Name Display"
+APP_VERSION = "v2.45 WRAP Buttons / MOD LOADER READY #2"
 # Megacity Tool dark-mode inspired palette.
 BG = "#15171c"
 PANEL = "#1f232b"
@@ -130,7 +131,7 @@ class PackExtractorTab(ttk.Frame):
         self.quiet_var = tk.BooleanVar(value=False)
         self.index_var = tk.BooleanVar(value=True)
         self.apk_var = tk.BooleanVar(value=True)
-        self.status_var = tk.StringVar(value="Select one SM3 PC pack and choose Classic Extract or Mod Loader Ready.")
+        self.status_var = tk.StringVar(value="Select one SM3 PC pack. MOD LOADER READY is the WRAP extraction route.")
         self.xbox_input_var = tk.StringVar(value="")
         self.xbox_out_var = tk.StringVar(value="")
         self.xbox_pc_compare_var = tk.StringVar(value="")
@@ -270,7 +271,7 @@ class PackExtractorTab(ttk.Frame):
         route_note.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(0, 6))
         ttk.Label(
             route_note,
-            text="CLASSIC = normal extracted folders only.  MOD LOADER READY = only 06_MOD_LOADER_READY ownership output.",
+            text="MOD LOADER READY = ownership-preserving WRAP extraction.  CLASSIC = normal extracted folders.",
             style="Muted.TLabel",
         ).pack(side=tk.LEFT)
 
@@ -297,17 +298,19 @@ class PackExtractorTab(ttk.Frame):
 
         buttons = ttk.Frame(tab)
         buttons.grid(row=5, column=0, columnspan=3, sticky="ew", pady=10)
+        # v5.2.186: final user-requested release order and visible numbering.
+        # LIST CONTENTS is #1, MOD LOADER READY is #2, CLASSIC EXTRACT is #3.
         ttk.Button(buttons, text="1) LIST CONTENTS", command=self.list_contents).pack(side=tk.LEFT, padx=(0, 8))
         ttk.Button(
             buttons,
-            text="2) CLASSIC EXTRACT",
-            command=self.run_classic_extraction,
+            text="2) MOD LOADER READY",
+            command=self.run_mod_loader_ready_extraction,
             style="Accent.TButton",
         ).pack(side=tk.LEFT, padx=(0, 8))
         ttk.Button(
             buttons,
-            text="3) MOD LOADER READY",
-            command=self.run_mod_loader_ready_extraction,
+            text="3) CLASSIC EXTRACT",
+            command=self.run_classic_extraction,
             style="Accent.TButton",
         ).pack(side=tk.LEFT, padx=(0, 12))
         ttk.Button(buttons, text="Open Output", command=self.open_output).pack(side=tk.LEFT, padx=4)
@@ -318,7 +321,7 @@ class PackExtractorTab(ttk.Frame):
 
         self.log_box = tk.Text(tab, height=5, bg=ENTRY_BG, fg=TEXT, insertbackground=TEXT, relief=tk.FLAT, font=("Consolas", 9), wrap="word", selectbackground=ACCENT)
         self.log_box.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(6, 0))
-        self.log("Ready. Select one SM3 pack, then choose Classic Extract or Mod Loader Ready.")
+        self.log("Ready. LIST CONTENTS is #1, MOD LOADER READY is #2 and performs ownership-preserving WRAP extraction, CLASSIC EXTRACT is #3.")
 
     def _build_xbox_tab(self, tab: ttk.Frame) -> None:
         tab.columnconfigure(1, weight=1)
@@ -893,20 +896,20 @@ class PackExtractorTab(ttk.Frame):
     def _build_info_tab(self, tab: ttk.Frame) -> None:
         msg = (
             "SM3 Pack Extractor - Clean Release Flow\n\n"
-            "The PC Extractor has two separate output routes so users never have to manage a Mod Loader Ready checkbox.\n\n"
+            "The PC Extractor has two separate output routes. The button name MOD LOADER READY is retained for compatibility, but it now performs native WRAP extraction.\n\n"
+            "MOD LOADER READY - #2 WRAP ROUTE:\n"
+            "- Extracts ownership-preserving standalone .wrap resources from the selected SM3 pack.\n"
+            "- Keeps the real SM3 O#### / outer hash / T## APKF hierarchy.\n"
+            "- Writes WRAP_EXTRACTS and _SM3_WRAP_EXTRACT_MANIFEST.json.\n"
+            "- Intended for xeSM3/exWoS-style loose-resource mod workflows.\n\n"
             "CLASSIC EXTRACT:\n"
             "- Extracts the normal SM3 browsing/editing folders.\n"
-            "- Does NOT create 06_MOD_LOADER_READY.\n"
             "- Use this for ordinary extracted resource work and toolkit workflows.\n\n"
-            "MOD LOADER READY:\n"
-            "- Extracts only the ownership-preserving 06_MOD_LOADER_READY output.\n"
-            "- Does NOT keep the Classic 01/02/03/04/05 extraction folders.\n"
-            "- Keeps filelist.txt, filelist.apkf.txt, ownership_manifest.json, and the real SM3 archive-owner hierarchy.\n\n"
             "Main workflow:\n"
             "1. Select one .PCPACK/.PCAPK/.APKF file.\n"
             "2. Select an output folder.\n"
-            "3. LIST CONTENTS is optional.\n"
-            "4. Choose either CLASSIC EXTRACT or MOD LOADER READY.\n"
+            "3. Click MOD LOADER READY (#2) for WRAP extraction.\n"
+            "4. LIST CONTENTS is #1; MOD LOADER READY is #2; CLASSIC EXTRACT remains #3.\n"
             "5. Use Open Output or Open Extracted Pack.\n\n"
             "Release rules:\n"
             "- One pack at a time.\n"
@@ -1480,7 +1483,78 @@ class PackExtractorTab(ttk.Frame):
         self._run_extraction_mode("classic")
 
     def run_mod_loader_ready_extraction(self) -> None:
-        self._run_extraction_mode("mod_loader_ready")
+        """Public button name retained; v5.2.184 keeps it on WRAP extraction."""
+        self._run_wrap_extraction()
+
+    def _run_wrap_extraction(self) -> None:
+        pack = self._pack()
+        out_root = self._out()
+        if pack is None or out_root is None:
+            return
+        if self.running:
+            messagebox.showinfo("Busy", "The extractor is already running.")
+            return
+
+        self.running = True
+        self.last_extract_mode = "wrap"
+        self.log("Running MOD LOADER READY WRAP extraction...")
+
+        def task() -> None:
+            try:
+                if looks_like_wrong_game_or_unsupported_sm3_path(pack):
+                    self.root.after(0, lambda: self._show_wrong_game_guard(pack))
+                    return
+                out_root.mkdir(parents=True, exist_ok=True)
+                self._backup_old_output(out_root, pack)
+
+                result = wrap_backend.run_wrap_extract(pack, out_root, log=self.log)
+                self.last_output_root = out_root
+                self.last_pack_output = Path(result["pack_root"])
+                wrap_root = Path(result["wrap_root"])
+                manifest = result.get("manifest", {}) if isinstance(result, dict) else {}
+
+                # Keep the on-screen list useful without creating Classic report folders.
+                self.all_rows = []
+                for row in manifest.get("resources", []):
+                    if not isinstance(row, dict) or row.get("status") != "OK":
+                        continue
+                    ftype = str(row.get("resource_type") or "").upper()
+                    name = str(row.get("resource_name") or "")
+                    h = str(row.get("resource_hash") or "")
+                    ext = "." + ftype.lower() if ftype else ""
+                    filename = self._display_resource_filename(h, name, ".wrap" + ext, fallback_type=ftype)
+                    self.all_rows.append({
+                        "pack": pack.name,
+                        "idx": f"O{int(row.get('archive_index') or 0):04d}",
+                        "size": str(row.get("wrap_size") or ""),
+                        "filename": filename,
+                        "type": ftype,
+                        "source": "WRAP",
+                        "family": friendly_family(ftype, name),
+                        "resource": filename,
+                        "kind": "wrap",
+                        "file_type": ftype,
+                    })
+                self.root.after(0, self.apply_filter)
+
+                written = int(manifest.get("wraps_written") or 0)
+                skipped = int(manifest.get("resources_skipped") or 0)
+                archive_errors = int(manifest.get("archive_parse_errors") or 0)
+                self.log(f"[DONE] MOD LOADER READY WRAP extraction complete: {wrap_root}")
+                self.log(
+                    f"[WRAP SUMMARY] {written} WRAP resource(s) | skipped {skipped} | "
+                    f"archive errors {archive_errors} | unresolved {manifest.get('unresolved_pointer_targets', 0)}"
+                )
+            except Exception as exc:
+                self.log(traceback.format_exc())
+                if exception_suggests_wrong_game(exc):
+                    self.root.after(0, lambda exc=exc: self._show_wrong_game_guard(pack, exc))
+                else:
+                    self.root.after(0, lambda exc=exc: messagebox.showerror("WRAP extraction failed", str(exc)))
+            finally:
+                self.running = False
+
+        threading.Thread(target=task, daemon=True).start()
 
     # Backward-compatible internal alias: old callers now use the Classic route.
     def run_extraction(self) -> None:
@@ -1582,7 +1656,13 @@ class PackExtractorTab(ttk.Frame):
         if not p:
             self.open_output()
             return
-        # Mod Loader Ready mode opens the ownership folder directly; Classic opens the pack root.
+        # MOD LOADER READY now means WRAP extraction; open WRAP_EXTRACTS directly.
+        if self.last_extract_mode == "wrap":
+            wr = p / "WRAP_EXTRACTS"
+            if wr.exists():
+                open_path(wr)
+                return
+        # Backward-compatible fallback for any older in-process mod-loader run.
         if self.last_extract_mode == "mod_loader_ready":
             ml = p / "06_MOD_LOADER_READY"
             if ml.exists():

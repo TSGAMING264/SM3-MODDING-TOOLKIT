@@ -1,0 +1,33 @@
+SM3 Toolkit v5.2.194 — Slot 2 WRAP Owner validation
+===================================================
+
+Runtime log supplied after the v5.2.193 Motion Editor test
+----------------------------------------------------------
+Target: 0x5634CAF3 sm3sprint
+NativeWRAP ANIM-UNWRAP: PASS
+Target/runtime archive: 0xCFB154CD / 0xCFB154CD
+Component0: 4056 bytes (auto-grown edited ANIM)
+NativeANIM route: APPLY-SHADOW-ARBITRARY
+ASKL: 0xCFB154CD
+Target tracks / donor tracks: 193 / 193
+POST-HANDLER unexpectedMutations: 0
+postHandlerMismatches: 0
+pointerIntegrity: PASS
+SHADOW-POST-HANDLER-OK: PASS
+ANIM-HANDOFF-RESULT: apply=APPLIED
+Target-specific NativeANIM REJECT: 0
+
+v5.2.194 Slot 2 regression
+--------------------------
+External edited WRAP.ANIM outside WRAP_EXTRACTS -> Slot 2 owner lookup: PASS
+Resolved pack: CH_SPIDERMAN
+Resolved archive: _O0069.0xCFB154CD.T36.apkf
+Resolved resource: 0x5634CAF3 sm3sprint
+Canonical output filename: PASS
+Inner ANIM hash 0x5634CAF3: PASS
+Edited component0 size 4056 preserved: PASS
+Ready ZIP build: PASS
+
+Raw edited .ANIM -> Slot 2 owner lookup -> WRAP rebuild: PASS
+Repeated .wrap.anim.wrap.anim.wrap.anim input -> canonical output name: PASS
+All Python sources compile: PASS (45 files)

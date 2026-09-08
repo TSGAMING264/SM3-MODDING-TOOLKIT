@@ -94,6 +94,9 @@ except Exception:
 
 from sm3_toolkit.services import tex_preview_core as core
 from sm3_toolkit.services import pack_extract_service as pack_route_backend
+from sm3_toolkit.services.wrap_output_service import (
+    write_wrap_from_pcpack_target, inspect_wrap_bytes, rebuild_wrap_from_shell_components,
+)
 from sm3_toolkit.services import xbox_pack_extract_service as xbox_pack_backend
 from sm3_toolkit.sm3_pack_guard import (
     WRONG_GAME_GUARD_MESSAGE,
@@ -767,15 +770,39 @@ def _parse_xbox_tex_file(path:Path, data:bytes)->dict:
     }
 
 def parse_native_tex_file(path:Path)->dict:
-    """Parse a loose/extracted SM3 PC or Xbox 360 .tex for folder browsing.
+    """Parse loose SM3 .tex or NativeWRAP .wrap.tex for folder browsing.
 
-    PC: historical [0x44 IMG][payload] and [0x44 IMG][PHYS][payload].
+    PC raw: [0x44 IMG][payload] or [0x44 IMG][PHYS][payload].
+    PC WRAP: standalone WRAP with TEX component0 (IMG descriptor) + component1 (PHYS payload).
     X360 Texture Lab v2: [0x84 Xenos descriptor][tiled component1].
     """
     path=Path(path)
     data=path.read_bytes()
+    wrap_meta=None
+    if data[:4]==b'WRAP':
+        info=inspect_wrap_bytes(data)
+        if info.component_count < 2:
+            raise ValueError(f'WRAP.TEX requires at least 2 components; found {info.component_count}.')
+        c0_start=info.component_offsets[0]; c0_size=info.component_sizes[0]
+        c1_start=info.component_offsets[1]; c1_size=info.component_sizes[1]
+        c0=data[c0_start:c0_start+c0_size]
+        c1=data[c1_start:c1_start+c1_size]
+        if len(c0) < NATIVE_TEX_HEADER_SIZE:
+            raise ValueError(f'WRAP.TEX component0 is too small ({len(c0)} bytes).')
+        # Feed the proven raw TEX parser the unwrapped components.  The WRAP patch
+        # tables remain untouched because this is a read-only preview path.
+        data=bytes(c0)+bytes(c1)
+        wrap_meta={
+            'container':'WRAP.TEX',
+            'wrap_archive_hash':f'0x{info.archive_hash:08X}',
+            'wrap_component_count':info.component_count,
+            'wrap_component_sizes':list(info.component_sizes),
+            'wrap_file_bytes':path.stat().st_size,
+        }
     if _looks_like_xbox_tex(data):
-        return _parse_xbox_tex_file(path,data)
+        rec=_parse_xbox_tex_file(path,data)
+        if wrap_meta: rec.update(wrap_meta)
+        return rec
     if len(data)<NATIVE_TEX_HEADER_SIZE:
         raise ValueError('File is smaller than the 0x44 SM3 IMG descriptor.')
     header=data[:NATIVE_TEX_HEADER_SIZE]
@@ -804,7 +831,7 @@ def parse_native_tex_file(path:Path)->dict:
     elif '.' in stem:
         asset=stem.split('.',1)[-1]
     fmt_text=native_tex_fourcc_text(fmt)
-    return {
+    rec={
         'platform':'PC','path':str(path),'name':path.name,'asset':asset,'hash_int':resource_hash,
         'filename_hash':f'0x{resource_hash:08X}','width':width,'height':height,
         'depth':depth,'mips':mips,'format_raw':fmt,'format_kind':fmt_text,
@@ -812,6 +839,17 @@ def parse_native_tex_file(path:Path)->dict:
         'has_phys_marker':has_phys,'payload_bytes':len(payload),'expected_payload_bytes':expected,
         'payload_status':payload_status,'file_bytes':len(data),
     }
+    if wrap_meta:
+        # Path.stem on foo.wrap.tex leaves foo.wrap; remove that UI-only suffix.
+        if rec['asset'].lower().endswith('.wrap'):
+            rec['asset']=rec['asset'][:-5]
+        rec.update(wrap_meta)
+        rec['source_kind']='WRAP.TEX'
+        rec['wrap_container']=True
+    else:
+        rec['source_kind']='TEX'
+        rec['wrap_container']=False
+    return rec
 
 def native_tex_preview_pil(record:dict):
     """Decode the first mip of a parsed SM3 PC/X360 .tex to a Pillow RGBA image."""
@@ -2755,6 +2793,7 @@ class TexSwapperTab(ttk.Frame):
         actions_menu.add_command(label='EXPORT EDIT-READY DDS + MANIFEST', command=self.export_all_header_locked_dds_manifest)
         actions_menu.add_command(label='.TEX: EXPORT SELECTED ORIGINAL .TEX', command=self.export_selected_original_tex)
         actions_menu.add_command(label='.TEX: DDS -> .TEX USING SELECTED EXTRACTOR SHELL', command=self.convert_dds_to_native_tex_selected)
+        actions_menu.add_command(label='WRAP: DDS -> WRAP.TEX USING SELECTED TARGET', command=self.convert_dds_to_wrap_tex_selected)
         actions_menu.add_command(label='SINGLE FILE EDITOR-SAFE PATCH -> WRITE PCPACK', command=self.single_file_gimp_safe_patch_write_pcpack)
         actions_menu.add_command(label='MULTIPLE FILE EDITOR-SAFE PATCH -> WRITE PCPACK', command=self.multiple_file_editor_safe_patch_write_pcpack)
         actions_menu.add_command(label='FINAL EDITOR-SAFE REIMPORT -> WRITE PATCHED PCPACK', command=self.final_safe_reimport_auto_normalize_folder)
@@ -2899,7 +2938,8 @@ class TexSwapperTab(ttk.Frame):
         ttk.Label(tab_main,text='LOOSE .TEX',font=('TkDefaultFont',10,'bold')).grid(row=9,column=0,columnspan=2,sticky='w',padx=3,pady=(0,3))
         _grid_btn(tab_main,'6) EXPORT ORIGINAL .TEX',self.export_selected_original_tex,10,0,2)
         _grid_btn(tab_main,'7) DDS -> SELECTED .TEX',self.convert_dds_to_native_tex_selected,11,0,2)
-        ttk.Label(tab_main,text='Classic keeps the fast PCPACK + loose .TEX actions together. Browse + Image has its own full page, so no extra browser window/button is needed here.',wraplength=300,justify='left').grid(row=12,column=0,columnspan=2,sticky='ew',padx=3,pady=(8,3))
+        _grid_btn(tab_main,'8) DDS -> SELECTED WRAP.TEX',self.convert_dds_to_wrap_tex_selected,12,0,2)
+        ttk.Label(tab_main,text='Classic keeps the fast PCPACK + loose .TEX actions together. Browse + Image has its own full page, so no extra browser window/button is needed here.',wraplength=300,justify='left').grid(row=13,column=0,columnspan=2,sticky='ew',padx=3,pady=(8,3))
 
         tab_recovery=_scroll_tab('Recovery')
         _grid_btn(tab_recovery,'RESTORE: All TEX from Clean Original Pack',self.restore_all_tex_from_clean_original,0,0,2)
@@ -2959,7 +2999,8 @@ class TexSwapperTab(ttk.Frame):
         actions.pack(fill='x',padx=12,pady=8)
         ttk.Button(actions,text='1) EXPORT SELECTED ORIGINAL .TEX',command=self.export_selected_original_tex).grid(row=0,column=0,sticky='ew',padx=4,pady=4)
         ttk.Button(actions,text='2) UNIVERSAL DDS -> .TEX (SELECTED SM3 TARGET)',command=self.convert_dds_to_native_tex_selected).grid(row=1,column=0,sticky='ew',padx=4,pady=4)
-        ttk.Button(actions,text='Open Output Folder',command=self.open_output_folder).grid(row=2,column=0,sticky='ew',padx=4,pady=4)
+        ttk.Button(actions,text='3) DDS -> WRAP.TEX (MOD LOADER)',command=self.convert_dds_to_wrap_tex_selected,style='Accent.TButton').grid(row=2,column=0,sticky='ew',padx=4,pady=4)
+        ttk.Button(actions,text='Open Output Folder',command=self.open_output_folder).grid(row=3,column=0,sticky='ew',padx=4,pady=4)
         actions.columnconfigure(0,weight=1)
 
         note=ttk.LabelFrame(page,text='What each page is for',padding=12)
@@ -2967,7 +3008,7 @@ class TexSwapperTab(ttk.Frame):
         ttk.Label(note,text=(
             'Classic Workflow = original PCPACK export/edit/reimport workflow.\n'
             '.TEX = loose native .TEX conversion using the selected game target identity.\n'
-            'Browse + Image = choose a folder of extracted/loose .tex files and review them directly inside the Toolkit.'
+            'Browse + Image = choose a folder of extracted/loose .tex or .wrap.tex files, preview them, and use separate loose/WRAP output buttons.'
         ),justify='left',wraplength=1050).pack(anchor='w')
 
     def _build_native_tex_browser_page(self):
@@ -2976,7 +3017,7 @@ class TexSwapperTab(ttk.Frame):
         ttk.Label(top,text='Browse + Image — SM3 PC / Xbox .TEX Review',font=('TkDefaultFont',14,'bold')).grid(row=0,column=0,columnspan=5,sticky='w')
         ttk.Label(top,text='Folder:').grid(row=1,column=0,sticky='w',pady=(8,0))
         ttk.Entry(top,textvariable=self.native_tex_folder_var).grid(row=1,column=1,sticky='ew',padx=4,pady=(8,0))
-        ttk.Button(top,text='Choose .TEX Folder',command=self.choose_native_tex_browser_folder).grid(row=1,column=2,padx=3,pady=(8,0))
+        ttk.Button(top,text='Choose .TEX / WRAP Folder',command=self.choose_native_tex_browser_folder).grid(row=1,column=2,padx=3,pady=(8,0))
         ttk.Button(top,text='Rescan',command=self.rescan_native_tex_browser_folder).grid(row=1,column=3,padx=3,pady=(8,0))
         ttk.Button(top,text='Open Folder',command=self.open_native_tex_browser_folder).grid(row=1,column=4,padx=3,pady=(8,0))
         ttk.Label(top,text='Search:').grid(row=2,column=0,sticky='w',pady=(6,0))
@@ -3011,12 +3052,18 @@ class TexSwapperTab(ttk.Frame):
         self.native_tex_browser_preview.pack(fill='both',expand=True,pady=6)
         self.native_tex_browser_info_var=tk.StringVar(value='')
         ttk.Label(right,textvariable=self.native_tex_browser_info_var,wraplength=560,justify='left').pack(fill='x',pady=(0,6))
+        # v5.2.188: use a compact two-column grid instead of one long packed
+        # row.  The old single row could push the last controls outside the
+        # visible right pane on smaller displays / DPI scaling.
         btns=ttk.Frame(right); btns.pack(fill='x')
-        ttk.Button(btns,text='DDS -> Selected .TEX Identity',command=self.native_tex_browser_convert_selected).pack(side='left',padx=2,pady=2)
-        ttk.Button(btns,text='EXPORT SELECTED .TEX',command=self.native_tex_browser_export_selected_tex).pack(side='left',padx=2,pady=2)
-        ttk.Button(btns,text='EXPORT TO DDS',command=self.native_tex_browser_export_selected_dds).pack(side='left',padx=2,pady=2)
-        ttk.Button(btns,text='OPEN OUTPUT',command=self.native_tex_browser_open_output).pack(side='left',padx=2,pady=2)
-        ttk.Button(btns,text='Reveal .TEX',command=self.native_tex_browser_reveal_selected).pack(side='left',padx=2,pady=2)
+        btns.columnconfigure(0,weight=1); btns.columnconfigure(1,weight=1)
+        ttk.Button(btns,text='DDS -> Selected .TEX Identity',command=self.native_tex_browser_convert_selected).grid(row=0,column=0,sticky='ew',padx=2,pady=2)
+        ttk.Button(btns,text='DDS -> Selected WRAP.TEX Identity',command=self.native_tex_browser_convert_selected_wrap,style='Accent.TButton').grid(row=0,column=1,sticky='ew',padx=2,pady=2)
+        ttk.Button(btns,text='EXPORT SELECTED .TEX',command=self.native_tex_browser_export_selected_tex).grid(row=1,column=0,sticky='ew',padx=2,pady=2)
+        ttk.Button(btns,text='EXPORT SELECTED WRAP.TEX',command=self.native_tex_browser_export_selected_wrap).grid(row=1,column=1,sticky='ew',padx=2,pady=2)
+        ttk.Button(btns,text='EXPORT TO DDS',command=self.native_tex_browser_export_selected_dds).grid(row=2,column=0,sticky='ew',padx=2,pady=2)
+        ttk.Button(btns,text='OPEN OUTPUT',command=self.native_tex_browser_open_output).grid(row=2,column=1,sticky='ew',padx=2,pady=2)
+        ttk.Button(btns,text='REVEAL SOURCE',command=self.native_tex_browser_reveal_selected).grid(row=3,column=0,columnspan=2,sticky='ew',padx=2,pady=2)
 
     def choose_pcpack(self):
         p=filedialog.askopenfilename(
@@ -3579,6 +3626,17 @@ class TexSwapperTab(ttk.Frame):
         )
         return Path(p) if p else None
 
+    def _choose_wrap_tex_save_path(self,default_name:str)->Path|None:
+        initial=self._native_tex_default_dir()
+        p=filedialog.asksaveasfilename(
+            title='Save MOD LOADER READY WRAP.TEX',
+            initialdir=str(initial),
+            initialfile=default_name,
+            defaultextension='.wrap.tex',
+            filetypes=[('SM3 NativeWRAP TEX','*.wrap.tex'),('All files','*.*')],
+        )
+        return Path(p) if p else None
+
     def export_selected_original_tex(self):
         """v5.2.108: export the exact selected extractor-style .tex from the clean PCPACK."""
         target=self.resolve_current_selected_target()
@@ -3625,7 +3683,7 @@ class TexSwapperTab(ttk.Frame):
     def choose_native_tex_browser_folder(self):
         start=self.native_tex_folder_var.get().strip() or self.replacement_folder_var.get().strip() or self.last_export_dir or str(Path.cwd())
         folder=filedialog.askdirectory(
-            title='Select folder containing SM3 PC/Xbox .TEX files',
+            title='Select folder containing SM3 .TEX / .WRAP.TEX files',
             initialdir=start if start and Path(start).exists() else None,
         )
         if not folder:
@@ -3665,9 +3723,9 @@ class TexSwapperTab(ttk.Frame):
         self.native_tex_browser_photo=None
         self.apply_native_tex_browser_filter()
         if not records:
-            self.native_tex_browser_preview.configure(image='',text='No readable SM3 .TEX files found in this folder.')
+            self.native_tex_browser_preview.configure(image='',text='No readable SM3 .TEX / .WRAP.TEX files found in this folder.')
             self.native_tex_browser_info_var.set('')
-            msg=f'No readable SM3 .tex files were found in:\n{folder}'
+            msg=f'No readable SM3 .tex / .wrap.tex files were found in:\n{folder}'
             if failures:
                 msg+=f'\n\nUnreadable .tex files: {len(failures)}\nFirst error: {failures[0][0].name}: {failures[0][1]}'
             self.set_status(msg.replace('\n',' | '))
@@ -3678,7 +3736,7 @@ class TexSwapperTab(ttk.Frame):
             self.native_tex_browser_tree.selection_set(first)
             self.native_tex_browser_tree.focus(first)
             self.on_native_tex_browser_select()
-        self.set_status(f'Browse + Image loaded {len(records)} readable .TEX files from {folder}. Unreadable: {len(failures)}.')
+        self.set_status(f'Browse + Image loaded {len(records)} readable .TEX / .WRAP.TEX files from {folder}. Unreadable: {len(failures)}.')
 
     def apply_native_tex_browser_filter(self):
         tree=getattr(self,'native_tex_browser_tree',None)
@@ -3727,12 +3785,20 @@ class TexSwapperTab(ttk.Frame):
             )
         else:
             marker='YES' if rec.get('has_phys_marker') else 'NO (legacy/read-compatible)'
+            wrap_note=''
+            if rec.get('wrap_container'):
+                wrap_note=(
+                    f"\nContainer: WRAP.TEX | parent APKF hash: {rec.get('wrap_archive_hash','')} | "
+                    f"components: {rec.get('wrap_component_sizes',[])}"
+                )
+                marker='WRAP component1'
             self.native_tex_browser_info_var.set(
-                f"{rec.get('name','')}\nPlatform: PC | Hash: {rec.get('filename_hash','')} | {rec.get('width')}x{rec.get('height')} | "
+                f"{rec.get('name','')}\nPlatform: PC | Source: {rec.get('source_kind','TEX')} | Hash: {rec.get('filename_hash','')} | {rec.get('width')}x{rec.get('height')} | "
                 f"{rec.get('format_kind','')} | mips {rec.get('mips')} | depth {rec.get('depth')}\n"
-                f"PHYS marker: {marker} | payload: {rec.get('payload_bytes')} bytes"
+                f"PHYS/data: {marker} | payload: {rec.get('payload_bytes')} bytes"
                 + (f" / expected {exp}" if exp is not None else '')
                 + f" | {rec.get('payload_status','')}"
+                + wrap_note
             )
         try:
             img=native_tex_preview_pil(rec)
@@ -3753,17 +3819,28 @@ class TexSwapperTab(ttk.Frame):
         self.convert_dds_using_native_tex_record(rec,parent=self.winfo_toplevel())
 
     def native_tex_browser_export_selected_tex(self):
+        """Export the selected resource as a real loose native .tex.
+
+        For a .wrap.tex selection this intentionally exports only component0 +
+        component1, not the WRAP container renamed to .tex.  That was the bug
+        visible in the v5.2.187 save dialog.
+        """
         rec=self.native_tex_browser_selected
         if not rec:
-            messagebox.showinfo('Browse + Image','Select one .TEX file first.')
+            messagebox.showinfo('Browse + Image','Select one .TEX / .WRAP.TEX file first.')
             return
         src=Path(rec['path'])
         if not src.is_file():
-            messagebox.showerror('Export Selected .TEX failed',f'Selected .TEX no longer exists:\n\n{src}')
+            messagebox.showerror('Export Selected .TEX failed',f'Selected source no longer exists:\n\n{src}')
             return
+        is_wrap=str(rec.get('container','')).upper()=='WRAP.TEX' or src.name.lower().endswith('.wrap.tex')
+        if is_wrap:
+            default_name=src.name[:-9]+'.tex' if src.name.lower().endswith('.wrap.tex') else src.stem+'.tex'
+        else:
+            default_name=src.name
         initial=Path(self.last_export_dir) if self.last_export_dir and Path(self.last_export_dir).exists() else src.parent
         out=filedialog.asksaveasfilename(
-            title='Export Selected .TEX',initialdir=str(initial),initialfile=src.name,
+            title='Export Selected .TEX',initialdir=str(initial),initialfile=default_name,
             defaultextension='.tex',filetypes=[('SM3 loose native TEX','*.tex'),('All files','*.*')],
         )
         if not out:
@@ -3771,17 +3848,142 @@ class TexSwapperTab(ttk.Frame):
         dst=Path(out)
         try:
             if src.resolve()==dst.resolve():
-                raise ValueError('Choose a different output location. The selected source .TEX is already at that path.')
+                raise ValueError('Choose a different output location. The selected source is already at that path.')
             dst.parent.mkdir(parents=True,exist_ok=True)
-            shutil.copy2(src,dst)
+            if is_wrap:
+                shell=src.read_bytes()
+                info=inspect_wrap_bytes(shell)
+                if info.component_count < 2:
+                    raise ValueError(f'WRAP.TEX needs 2 components; found {info.component_count}.')
+                parts=[]
+                for i in range(2):
+                    st=info.component_offsets[i]; sz=info.component_sizes[i]
+                    parts.append(shell[st:st+sz])
+                dst.write_bytes(parts[0]+parts[1])
+                mode='Unwrapped component0 + component1 from selected WRAP.TEX'
+            else:
+                shutil.copy2(src,dst)
+                mode='Exact loose SM3 .TEX copy'
             self.last_export_dir=str(dst.parent)
             self.output_var.set(str(dst.parent))
-            self.set_status(f'Exported selected .TEX unchanged: {src.name} -> {dst}')
-            messagebox.showinfo('Selected .TEX exported',f'Exact loose SM3 .TEX copied byte-for-byte unchanged:\n\n{dst}')
+            self.set_status(f'Exported selected loose .TEX: {src.name} -> {dst.name}')
+            messagebox.showinfo('Selected .TEX exported',f'{mode}:\n\n{dst}')
         except Exception as exc:
             traceback.print_exc()
             messagebox.showerror('Export Selected .TEX failed',str(exc))
             self.set_status(f'Export Selected .TEX failed: {exc}')
+
+    def native_tex_browser_export_selected_wrap(self):
+        """Copy the selected NativeWRAP TEX container byte-for-byte."""
+        rec=self.native_tex_browser_selected
+        if not rec:
+            messagebox.showinfo('Browse + Image','Select one .WRAP.TEX file first.')
+            return
+        src=Path(rec['path'])
+        is_wrap=str(rec.get('container','')).upper()=='WRAP.TEX' or src.name.lower().endswith('.wrap.tex')
+        if not is_wrap:
+            messagebox.showinfo('Export Selected WRAP.TEX','The selected file is a loose .TEX. Select a .wrap.tex resource for this button.')
+            return
+        if not src.is_file():
+            messagebox.showerror('Export Selected WRAP.TEX failed',f'Selected WRAP.TEX no longer exists:\n\n{src}')
+            return
+        initial=Path(self.last_export_dir) if self.last_export_dir and Path(self.last_export_dir).exists() else src.parent
+        out=filedialog.asksaveasfilename(
+            title='Export Selected WRAP.TEX',initialdir=str(initial),initialfile=src.name,
+            defaultextension='.wrap.tex',filetypes=[('SM3 NativeWRAP TEX','*.wrap.tex'),('All files','*.*')],
+        )
+        if not out:
+            return
+        dst=Path(out)
+        try:
+            if src.resolve()==dst.resolve():
+                raise ValueError('Choose a different output location. The selected WRAP.TEX is already at that path.')
+            dst.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy2(src,dst)
+            self.last_export_dir=str(dst.parent)
+            self.output_var.set(str(dst.parent))
+            self.set_status(f'Exported selected WRAP.TEX unchanged: {src.name} -> {dst.name}')
+            messagebox.showinfo('Selected WRAP.TEX exported',f'NativeWRAP TEX copied byte-for-byte unchanged:\n\n{dst}')
+        except Exception as exc:
+            traceback.print_exc()
+            messagebox.showerror('Export Selected WRAP.TEX failed',str(exc))
+            self.set_status(f'Export Selected WRAP.TEX failed: {exc}')
+
+    def native_tex_browser_convert_selected_wrap(self):
+        """Edited DDS -> selected .wrap.tex identity using the WRAP's own patch shell."""
+        rec=self.native_tex_browser_selected
+        if not rec:
+            messagebox.showinfo('Browse + Image','Select one .WRAP.TEX file first.')
+            return
+        src=Path(rec['path'])
+        is_wrap=str(rec.get('container','')).upper()=='WRAP.TEX' or src.name.lower().endswith('.wrap.tex')
+        if not is_wrap:
+            messagebox.showinfo('DDS -> Selected WRAP.TEX Identity','Select a .wrap.tex resource first. The loose .TEX button remains available beside this one.')
+            return
+        if str(rec.get('platform','PC')).upper()=='X360':
+            messagebox.showinfo('Xbox TEX is read-only for now','DDS -> Xbox WRAP.TEX is intentionally disabled until reverse Xenos retile/repack is proven safe.')
+            return
+        start=self.replacement_folder_var.get().strip() or self.last_export_dir or str(src.parent)
+        dds=filedialog.askopenfilename(
+            title=f"Select DDS for {rec.get('asset','texture')} WRAP.TEX",
+            initialdir=start if start and Path(start).exists() else None,
+            filetypes=[('DDS texture','*.dds'),('All files','*.*')],
+        )
+        if not dds:
+            return
+        default_name=src.name if src.name.lower().endswith('.wrap.tex') else f"{rec['filename_hash']}.{clean_name(rec.get('asset') or 'texture','texture')}.wrap.tex"
+        initial=Path(self.last_export_dir) if self.last_export_dir and Path(self.last_export_dir).exists() else src.parent
+        out=filedialog.asksaveasfilename(
+            title='Save Selected WRAP.TEX Identity',initialdir=str(initial),initialfile=default_name,
+            defaultextension='.wrap.tex',filetypes=[('SM3 NativeWRAP TEX','*.wrap.tex'),('All files','*.*')],
+        )
+        if not out:
+            return
+        dst=Path(out)
+        try:
+            shell=src.read_bytes()
+            info=inspect_wrap_bytes(shell)
+            if info.component_count != 2:
+                raise ValueError(f'WRAP.TEX needs exactly 2 components; found {info.component_count}.')
+            with tempfile.TemporaryDirectory(prefix='sm3_browser_wrap_tex_') as td:
+                raw_path=Path(td)/'replacement.tex'
+                tex_report=write_native_tex_from_dds_using_native_tex_shell(src,Path(dds),raw_path)
+                raw=raw_path.read_bytes()
+            c0_size=info.component_sizes[0]
+            if c0_size <= 0 or len(raw) < c0_size:
+                raise ValueError(f'Rebuilt loose TEX is too small for component0: {len(raw)} < {c0_size}.')
+            c0=raw[:c0_size]
+            c1=raw[c0_size:]
+            rebuilt,stats=rebuild_wrap_from_shell_components(shell,[c0,c1])
+            dst.parent.mkdir(parents=True,exist_ok=True)
+            dst.write_bytes(rebuilt)
+            final=inspect_wrap_bytes(rebuilt)
+            report={
+                'source_wrap':str(src),'dds':str(dds),'output':str(dst),
+                'resource_hash':rec.get('filename_hash'),'asset':rec.get('asset'),
+                'archive_hash':f'0x{final.archive_hash:08X}',
+                'source_component_sizes':list(info.component_sizes),
+                'replacement_component_sizes':list(final.component_sizes),
+                **stats,
+                'tex_report':tex_report,
+                'rule':'REBUILT_FROM_SELECTED_WRAP_PATCH_SHELL',
+            }
+            Path(str(dst)+'.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+            self.last_export_dir=str(dst.parent)
+            self.output_var.set(str(dst.parent))
+            self.replacement_folder_var.set(str(dst.parent))
+            self.set_status(f'WRAP.TEX identity created from selected shell: {src.name} -> {dst.name}')
+            messagebox.showinfo(
+                'WRAP.TEX Identity created',
+                'MOD LOADER READY WRAP.TEX created from the selected WRAP.TEX identity.\n\n'
+                f'Output: {dst}\n\n'
+                f'Components: {list(final.component_sizes)}\n'
+                f"Patches: internal {stats.get('internal_patches',0)} | external {stats.get('external_patches',0)} | global {stats.get('global_patches',0)}"
+            )
+        except Exception as exc:
+            traceback.print_exc()
+            messagebox.showerror('DDS -> Selected WRAP.TEX Identity failed',str(exc))
+            self.set_status(f'DDS -> Selected WRAP.TEX Identity failed: {exc}')
 
     def native_tex_browser_export_selected_dds(self):
         rec=self.native_tex_browser_selected
@@ -3917,6 +4119,62 @@ class TexSwapperTab(ttk.Frame):
             traceback.print_exc()
             messagebox.showerror('.TEX conversion failed',str(e))
             self.set_status(f'.TEX conversion failed: {e}')
+
+    def convert_dds_to_wrap_tex_selected(self):
+        """v5.2.184: selected SM3 target + edited DDS -> ownership-preserving .wrap.tex."""
+        target=self.resolve_current_selected_target()
+        if not target:
+            messagebox.showinfo('Select target first','Build Preview and select ONE TEX target first.')
+            return
+        pc=Path(self.pcpack_var.get())
+        if not pc.is_file():
+            messagebox.showerror('Missing PCPACK','Select the original SM3 PC pack first.')
+            return
+        start=self.replacement_folder_var.get().strip() or self.last_export_dir or str(self._native_tex_default_dir())
+        dds=filedialog.askopenfilename(
+            title='Select edited DDS for WRAP.TEX',
+            initialdir=start if start and Path(start).exists() else None,
+            filetypes=[('DDS texture','*.dds'),('All files','*.*')],
+        )
+        if not dds:
+            return
+        try:
+            asset=str(target.get('asset') or 'texture')
+            h=parse_sm3_hash_value(target.get('filename_hash'),asset)
+            safe=clean_name(asset,'texture')
+            out=self._choose_wrap_tex_save_path(f'0x{h:08X}.{safe}.wrap.tex')
+            if not out:
+                return
+            with tempfile.TemporaryDirectory(prefix='sm3_wrap_tex_') as td:
+                raw_tex=Path(td)/f'0x{h:08X}.{safe}.tex'
+                tex_report=write_native_tex_from_dds_using_extractor_shell(pc,target,Path(dds),raw_tex)
+                raw=raw_tex.read_bytes()
+                c0_size=int(target.get('component0_size') or tex_report.get('original_component0_bytes') or NATIVE_TEX_HEADER_SIZE)
+                if c0_size <= 0 or c0_size > len(raw):
+                    raise ValueError(f'Invalid selected TEX component0 size: {c0_size}')
+                c0=raw[:c0_size]
+                rest=raw[c0_size:]
+                if rest[:4] == NATIVE_TEX_PHYS_MAGIC:
+                    c1=rest[4:]
+                else:
+                    c1=rest
+                wrap_report=write_wrap_from_pcpack_target(pc,target,[c0,c1],out)
+            self.last_export_dir=str(out.parent)
+            self.output_var.set(str(out.parent))
+            self.set_status(f'WRAP.TEX complete: {asset} | 0x{h:08X} | {out.name}')
+            messagebox.showinfo(
+                'WRAP.TEX complete',
+                'MOD LOADER READY texture created successfully.\n\n'
+                f'Target: {asset}\nHash: 0x{h:08X}\n'
+                f'Output: {out}\n\n'
+                f"Components: {wrap_report.get('replacement_component_sizes')}\n"
+                f"Patches: internal {wrap_report.get('internal_patch_count')} | external {wrap_report.get('external_patch_count')} | global {wrap_report.get('global_patch_count')}\n\n"
+                'The old .TEX buttons are unchanged; use this WRAP button for the NativeWRAP mod-loader route.'
+            )
+        except Exception as e:
+            traceback.print_exc()
+            messagebox.showerror('WRAP.TEX conversion failed',str(e))
+            self.set_status(f'WRAP.TEX conversion failed: {e}')
 
     def convert_dds_to_native_tex_auto(self):
         """Legacy v5.2.107 synthetic-shell route; hidden from v5.2.108 normal UI."""

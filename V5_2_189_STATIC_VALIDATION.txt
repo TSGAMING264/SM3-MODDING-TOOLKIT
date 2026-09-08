@@ -1,0 +1,39 @@
+SM3 Toolkit v5.2.189 — Animation Identity Fix validation
+
+RESULT: 26/26 PASS
+
+PASS | app version v5.2.189
+PASS | generic loose ANIM identity retarget helper exists
+PASS | WRAP.ANIM inner retarget helper exists
+PASS | WRAP.ANIM final inner verification exists
+PASS | New loose ANIM writes target hash
+PASS | New WRAP route retargets parent archive
+PASS | New WRAP route retargets inner ANIM
+PASS | New target WRAP preflight check
+PASS | New donor WRAP preflight check
+PASS | Old loose ANIM copy retargets identity
+PASS | Old WRAP copy verifies inner identity
+PASS | Old swapper unwraps standalone WRAP.ANIM
+PASS | Old swapper stores WRAP shell separately
+PASS | Old swapper direct WRAP.ANIM browse enabled
+PASS | Old target WRAP shell rebuild route exists
+PASS | Pack extractor list first
+PASS | Pack extractor mod loader second
+PASS | Pack extractor classic third
+PASS | WRAP TEX identity button retained
+PASS | WRAP MESH viewer retained
+PASS | WRAP MAT support retained
+PASS | sm3_toolkit/tabs/pack_extractor_tab.py unchanged from v5.2.188
+PASS | sm3_toolkit/tabs/tex_swapper_tab.py unchanged from v5.2.188
+PASS | sm3_toolkit/tabs/model_viewer_tab.py unchanged from v5.2.188
+PASS | sm3_toolkit/tabs/mat_editor_tab.py unchanged from v5.2.188
+PASS | sm3_toolkit/services/tex_preview_core.py unchanged from v5.2.188
+
+Runtime/fixture tests completed separately:
+- STORY WRAP.ANIM retarget helper: 127/127 structural PASS
+- New WRAP.ANIM exact crash-hash regression: 0x623E1C4C <- 0xFF686056 PASS
+- New loose ANIM target-hash output PASS
+- Old Swapper WRAP folder selection: 127/127 PASS
+- Old Swapper exact-layout target-shell rebuild PASS
+
+NOTE: These are structural/offline tests, not proof that an arbitrary animation pair is gameplay-compatible.

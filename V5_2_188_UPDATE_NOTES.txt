@@ -1,0 +1,12 @@
+SM3 Toolkit v5.2.188 — WRAP TEX Browser / Identity Fix
+
+- Browse + Image actions now use a compact two-column grid so buttons remain visible on narrower windows / DPI scaling.
+- Added DDS -> Selected WRAP.TEX Identity.
+- Added EXPORT SELECTED WRAP.TEX.
+- The WRAP identity route uses the selected .wrap.tex as the authoritative shell, preserves its parent APKF identity and WRAP patch plan, rebuilds the TEX components from the chosen DDS, and saves a real .wrap.tex.
+- Existing DDS -> Selected .TEX Identity remains available.
+- WRAP.TEX preview metadata remains visible.
+- Fixed missing PatchPlan import in the selected-WRAP rebuild helper.
+- Pack Extractor remains: 1) LIST CONTENTS, 2) MOD LOADER READY, 3) CLASSIC EXTRACT.
+- WRAP.MESH, WRAP.MAT and WRAP.ANIM support from prior builds is retained.
+- Xbox Extractor and PC Pack Rebuild Lab are unchanged.

@@ -1,0 +1,39 @@
+SM3 Toolkit v5.2.186 — WRAP Preview + Animation Selection
+
+STATIC RESULT: 25/25 PASS
+
+PASS | app version v5.2.186
+PASS | Pack #1 LIST CONTENTS
+PASS | Pack #2 MOD LOADER READY
+PASS | Pack #3 CLASSIC EXTRACT
+PASS | MOD LOADER READY still routes WRAP extraction
+PASS | Tex Swapper detects WRAP magic
+PASS | Tex Swapper unwraps WRAP components
+PASS | Browse + Image labels WRAP.TEX
+PASS | Texture Folder Viewer v1.3
+PASS | Texture Folder Viewer marks SM3 WRAP.TEX
+PASS | New swapper scans WRAP.ANIM separately
+PASS | New swapper dedupe keeps raw+WRAP separately
+PASS | New swapper visible Kind column
+PASS | New swapper browse says WRAP.ANIM
+PASS | Old swapper direct WRAP source support
+PASS | Old swapper file picker includes WRAP.ANIM
+PASS | Existing WRAP.ANIM output button preserved
+PASS | AkyrosXD credit preserved
+PASS | AkyrosXD has no URL in About page
+PASS | Xbox extractor backend unchanged
+PASS | PC Pack Rebuild Lab UI unchanged
+PASS | PC Pack Rebuild backend unchanged
+PASS | WRAP output backend unchanged
+PASS | WRAP ANIM mod backend unchanged
+PASS | About page code unchanged except already-added v185 credit
+
+REAL CORPUS TESTS:
+PASS | STORY_MOVIE_4_PHASE3 WRAP.TEX parse: 34/34
+PASS | WRAP.TEX pixel preview sample: 8 decoded images
+PASS | legacy logical .TEX metadata equivalence
+PASS | Texture Folder Viewer opened real WRAP.TEX
+PASS | New Animation Swapper detected WRAP.ANIM: 127/127
+PASS | real WRAP.ANIM target <- WRAP.ANIM donor build
+PASS | Old Animation Swapper direct WRAP.ANIM source parsing
+PASS | Python compileall

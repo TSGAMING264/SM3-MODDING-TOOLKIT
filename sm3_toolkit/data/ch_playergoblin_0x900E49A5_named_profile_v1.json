@@ -1,0 +1,2131 @@
+{
+  "profile_version": 1,
+  "profile_name": "SM3 CH_PLAYERGOBLIN Named Skeleton Profile",
+  "resource_name": "ch_goblin",
+  "resource_hash": "0x900E49A5",
+  "resource_version": "0x00020110",
+  "provenance": "Recovered from user-supplied CH_PLAYERGOBLIN old-route raw ASKL + owning APKF on 2026-09-08. Used as a toolkit naming/profile fallback; WRAP.ASKL remains supported and preferred when present.",
+  "bone_count": 74,
+  "bone_record_size": 64,
+  "field_names": [
+    "FK_POSITION",
+    "FK_QUATERNION",
+    "FK_AXIS1_ROTATION",
+    "FK_ERROR_CORRECTION",
+    "FK_TRAJECTORY",
+    "FLOOR_OFFSET",
+    "CAMERA_FOV",
+    "MORPH_SLIDERS",
+    "BONE_SCALE"
+  ],
+  "field_counts": [
+    9,
+    38,
+    34,
+    22,
+    1,
+    1,
+    1,
+    0,
+    10
+  ],
+  "field_data_offsets": [
+    0,
+    144,
+    752,
+    896,
+    1248,
+    1280,
+    1296,
+    1312,
+    1312
+  ],
+  "validity_bit_bases": [
+    0,
+    9,
+    47,
+    81,
+    103,
+    104,
+    105,
+    106,
+    106
+  ],
+  "total_validity_bits": 116,
+  "pose_data_size": 1472,
+  "reference_pose_hex": "b80ee2b9574c98bf297493390000803fb80ee2b9007db9bb297493390000803f184994bd008035b230c726bd0000803f184994bd006cb33370c726bd0000803fa14e993f01fae2b9a8331ebd0000803f564c983f0069d1b5000000000000803f0000000000000000000000000000803fdee467bd80df183f2fc77b400000803f4dd7cfbda43f383f9934e8bf0000803f0000000000000000000000000000803feb04353ffb0435bfea2c8e35f72c8e35fbdd92bc0f4aa53bac787fbf31ca7bbde17f6e3dfe895c3d7791843db3a77e3fd4dd92bcbc54a5bbaa787fbf92cb7b3df77f6ebdfd895c3d769184bdb4a77e3f199e0bb600c0d0b9f5db34b5feff7fbf00fe5c29ca9b132e000000000000803f00fe5c29ca9b132e000000000000803fb53d6130ce752e3e46720035dd417c3f14f58d3101393cbd45e5f1b3c5ba7f3f15b2323fd3c936bf646845bd8484ca3c62db343f6bbf34bfe80aaf3c4a6134bd7a543c3fe2b526bf59af36bed14a5cbdb10bbc3a395c73bd6921ecbd51d67d3fbeed343fb147dc3c62d1253ce5f5343f71f627bf703cb5bb0f3b90bed539333f7e7483bdf683f03d54c200bdbb917d3f10b3cf396ba3cb3dc30e26b839bb7e3f5545d03938a7893d1884e0b7cb6b7f3f9270fd3c3b12b33d0421123d9cbb7e3ff50435bf80838a33f204353f163222b133c113b9e3a2cebcd5d56d3625eb7f3f483536bf69612dbf2795343ee27476bd9cb0383a156a73bdd5e4a23d29bc7e3fbeed34bfad47dc3c66d125bce5f5343f70f6273f4d3cb5bb0e3b903ed339333f7974833df583f03d55c2003db9917d3f0db3cfb96aa3cb3dbc04263837bb7e3fa743d0b937a7893d4677e037ca6b7f3f8470fdbc3a12b33d032112bd9abb7e3f27ceadb3f204353fa2753ab0f304353f34c11339e3a2cebc32646eb626eb7f3feb0435bffb04353fea2c8eb5f72c8e35f30435bff304353f2ecf9ab5288392350000000000000000000000000000803f0000000000000000000000000000803f2edecc3183fe8ba64cef2e340000803f07713a3c9d71c03c08713a3c694fc8400105413cd12c853dd2fcd73c06d0f93d624b323ebbaf153e2ae0403ea8891a3e853d3e3eeeddec3d246f233e2a55213c4a8cc73b3008853b3108053b0305413cc42c853dd5fcd73c00d0f93d604b323eb9af153e31e0403eaa891a3e7f3d3e3ee5ddec3d286f233e6c52213c0465943b05dc453b66bd423b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000574c983f000082420000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803f0000803fcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+  "quantization_scales": [
+    [
+      0.00048828125,
+      6.103515625e-05,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.0001220703125
+    ],
+    [
+      0.0009765625,
+      6.103515625e-05,
+      0.00010197007213719189,
+      0.000312129472149536,
+      0.00010197007213719189,
+      0.000312129472149536,
+      0.0005897170049138367,
+      0.0005897170631214976,
+      0.00017430236039217561,
+      0.0004852265410590917,
+      0.0003916753630619496,
+      0.0009765625,
+      0.0009765625,
+      0.00039162440225481987,
+      0.00019271143537480384,
+      0.0004791814717464149,
+      0.0009765625,
+      0.0009462381713092327,
+      0.0008806284167803824,
+      0.0009750282042659819,
+      0.0009765625,
+      0.0009765625,
+      0.00042063079308718443,
+      0.0003916244313586503,
+      0.00019271139171905816,
+      0.0004811763355974108,
+      0.0009765625,
+      0.0009462390444241464,
+      0.0008806276600807905,
+      0.0009750291355885565,
+      0.0009765625,
+      0.0009765625,
+      0.0004206302692182362,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0001220703125
+    ],
+    [
+      0.00012829246406909078,
+      0.0009765625,
+      0.000128292478621006,
+      0.0009765625,
+      0.00021031526557635516,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.00021031526557635516,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625,
+      0.0009765625
+    ],
+    [
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125
+    ],
+    null,
+    [
+      0.00048828125
+    ],
+    [
+      0.00048828125
+    ],
+    null,
+    [
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125,
+      0.00048828125
+    ]
+  ],
+  "position_bone_map": [
+    0,
+    1,
+    36,
+    61,
+    68,
+    70,
+    71,
+    72,
+    73
+  ],
+  "quaternion_bone_map": [
+    0,
+    1,
+    2,
+    4,
+    6,
+    8,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    20,
+    21,
+    24,
+    27,
+    30,
+    33,
+    36,
+    37,
+    42,
+    43,
+    45,
+    46,
+    49,
+    52,
+    55,
+    58,
+    61,
+    62,
+    68,
+    70,
+    71,
+    72,
+    73
+  ],
+  "axis1_bone_map": [
+    3,
+    5,
+    7,
+    9,
+    19,
+    22,
+    23,
+    25,
+    26,
+    28,
+    29,
+    31,
+    32,
+    34,
+    35,
+    38,
+    39,
+    40,
+    41,
+    44,
+    47,
+    48,
+    50,
+    51,
+    53,
+    54,
+    56,
+    57,
+    59,
+    60,
+    63,
+    64,
+    65,
+    66
+  ],
+  "bone_scale_bone_map_candidate": [],
+  "bone_scale_map_status": "ANIM_SPECIAL_IDS_REMAIN_AUTHORITATIVE_FOR_EDIT_TRACK_NAMES",
+  "bones": [
+    {
+      "index": 0,
+      "parent_index": -1,
+      "name": "bip01 footsteps",
+      "runtime_name_pointer": "0xFC00044C",
+      "runtime_id_or_hash": "0x0F8F9623",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "reference_position_xyzw": [
+        -0.00043117045424878597,
+        -1.189829707145691,
+        0.0002812457096297294,
+        1.0
+      ]
+    },
+    {
+      "index": 1,
+      "parent_index": -1,
+      "name": "bip01 pelvis",
+      "runtime_name_pointer": "0xFC000312",
+      "runtime_id_or_hash": "0xF0A8CACF",
+      "axis1_vector": [
+        2.996125658683013e-06,
+        -6.835981433694904e-13,
+        -1.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.7071062922477722,
+        -0.7071072459220886,
+        1.0592896160233067e-06,
+        1.0592910939521971e-06
+      ],
+      "reference_position_xyzw": [
+        -0.00043117045424878597,
+        -0.005660653114318848,
+        0.0002812457096297294,
+        1.0
+      ]
+    },
+    {
+      "index": 2,
+      "parent_index": 1,
+      "name": "bip01 l thigh",
+      "runtime_name_pointer": "0xFC000423",
+      "runtime_id_or_hash": "0x316E53DC",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.017928114160895348,
+        0.005044228862971067,
+        -0.9979350566864014,
+        -0.06147212162613869
+      ],
+      "reference_position_xyzw": [
+        1.9837170839309692e-07,
+        0.14492955803871155,
+        -2.527667675167322e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 3,
+      "parent_index": 2,
+      "name": "bip01 l calf",
+      "runtime_name_pointer": "0xFC000427",
+      "runtime_id_or_hash": "0xE26E451E",
+      "axis1_vector": [
+        -1.0104121201948146e-06,
+        -1.0,
+        -3.4084791877830867e-06,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        1.5606969050452335e-09,
+        -0.07616278529167175,
+        -1.9121072725170052e-08,
+        0.9970953464508057
+      ],
+      "reference_position_xyzw": [
+        -0.5985594987869263,
+        1.4901161193847656e-08,
+        -1.1641532182693481e-10,
+        1.0
+      ]
+    },
+    {
+      "index": 4,
+      "parent_index": 3,
+      "name": "bip01 l foot",
+      "runtime_name_pointer": "0xFC00042B",
+      "runtime_id_or_hash": "0xE2702640",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.05822742357850075,
+        0.053842537105083466,
+        0.06473057717084885,
+        0.9947463870048523
+      ],
+      "reference_position_xyzw": [
+        -0.4757501482963562,
+        1.4901161193847656e-08,
+        -1.4901161193847656e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 5,
+      "parent_index": 4,
+      "name": "bip01 l toe0",
+      "runtime_name_pointer": "0xFC00042F",
+      "runtime_id_or_hash": "0xE277D200",
+      "axis1_vector": [
+        6.912829917382624e-07,
+        -1.0,
+        -3.9858153400018637e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        2.2209749594992445e-09,
+        0.7071068286895752,
+        1.8382717570375462e-08,
+        0.7071068286895752
+      ],
+      "reference_position_xyzw": [
+        -0.1215132474899292,
+        0.0,
+        -0.15320615470409393,
+        1.0
+      ]
+    },
+    {
+      "index": 6,
+      "parent_index": 1,
+      "name": "bip01 r thigh",
+      "runtime_name_pointer": "0xFC000433",
+      "runtime_id_or_hash": "0xFF4BC062",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.017928041517734528,
+        -0.0050455015152692795,
+        -0.9979349374771118,
+        0.061473436653614044
+      ],
+      "reference_position_xyzw": [
+        -1.9883736968040466e-07,
+        -0.14492955803871155,
+        1.492153387516737e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 7,
+      "parent_index": 6,
+      "name": "bip01 r calf",
+      "runtime_name_pointer": "0xFC000437",
+      "runtime_id_or_hash": "0xF06D38E4",
+      "axis1_vector": [
+        8.986688726508874e-07,
+        -1.0,
+        3.631521849456476e-06,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -2.3839357154997742e-09,
+        -0.07616278529167175,
+        1.9549403873497795e-08,
+        0.9970954060554504
+      ],
+      "reference_position_xyzw": [
+        -0.5985594987869263,
+        2.9802322387695312e-08,
+        1.6298145055770874e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 8,
+      "parent_index": 7,
+      "name": "bip01 r foot",
+      "runtime_name_pointer": "0xFC00043B",
+      "runtime_id_or_hash": "0xF06F1A06",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.058227505534887314,
+        0.05384253337979317,
+        -0.06473056972026825,
+        0.9947464466094971
+      ],
+      "reference_position_xyzw": [
+        -0.4757500886917114,
+        5.960464477539063e-08,
+        -7.450580596923828e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 9,
+      "parent_index": 8,
+      "name": "bip01 r toe0",
+      "runtime_name_pointer": "0xFC00043F",
+      "runtime_id_or_hash": "0xF076C5C6",
+      "axis1_vector": [
+        -2.710411081352504e-06,
+        1.0,
+        -3.1816996397537878e-06,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        4.09778166954311e-08,
+        0.7071067690849304,
+        2.9281186364471523e-09,
+        0.7071068286895752
+      ],
+      "reference_position_xyzw": [
+        -0.1215132474899292,
+        -5.960464477539063e-08,
+        -0.15320616960525513,
+        1.0
+      ]
+    },
+    {
+      "index": 10,
+      "parent_index": 1,
+      "name": "bip01 spine",
+      "runtime_name_pointer": "0xFC000316",
+      "runtime_id_or_hash": "0x078732BB",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -2.080463900711038e-06,
+        -0.0003981590270996094,
+        -6.737530497957778e-07,
+        -0.9999998807907104
+      ],
+      "reference_position_xyzw": [
+        -0.12327014654874802,
+        1.6175908967852592e-07,
+        8.235641871578991e-05,
+        1.0
+      ]
+    },
+    {
+      "index": 11,
+      "parent_index": 10,
+      "name": "bip01 spine1",
+      "runtime_name_pointer": "0xFC000319",
+      "runtime_id_or_hash": "0xF86D8A4C",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        4.907012296495594e-14,
+        3.356229877349293e-11,
+        0.0,
+        1.0
+      ],
+      "reference_position_xyzw": [
+        -0.10349903255701065,
+        1.0186340659856796e-08,
+        8.241363684646785e-05,
+        1.0
+      ]
+    },
+    {
+      "index": 12,
+      "parent_index": 11,
+      "name": "bip01 spine2",
+      "runtime_name_pointer": "0xFC00031D",
+      "runtime_id_or_hash": "0xF86D8A4D",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        4.907012296495594e-14,
+        3.356229877349293e-11,
+        0.0,
+        1.0
+      ],
+      "reference_position_xyzw": [
+        -0.10349880158901215,
+        9.807990863919258e-09,
+        0.00023029401199892163,
+        1.0
+      ]
+    },
+    {
+      "index": 13,
+      "parent_index": 12,
+      "name": "bip01 neck",
+      "runtime_name_pointer": "0xFC000321",
+      "runtime_id_or_hash": "0x939C521D",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        8.194221412516356e-10,
+        0.17037126421928406,
+        4.785000555784791e-07,
+        0.9853799939155579
+      ],
+      "reference_position_xyzw": [
+        -0.34491053223609924,
+        3.323657438158989e-08,
+        0.022161157801747322,
+        1.0
+      ]
+    },
+    {
+      "index": 14,
+      "parent_index": 13,
+      "name": "bip01 head",
+      "runtime_name_pointer": "0xFC000324",
+      "runtime_id_or_hash": "0x9399078E",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        4.131502251425445e-09,
+        -0.045952800661325455,
+        -1.1264140908906484e-07,
+        0.9989436268806458
+      ],
+      "reference_position_xyzw": [
+        -0.0506058931350708,
+        -1.9208528101444244e-09,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 15,
+      "parent_index": 14,
+      "name": "bone l eye",
+      "runtime_name_pointer": "0xFC00032A",
+      "runtime_id_or_hash": "0x435EB333",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.6980298161506653,
+        -0.7140170931816101,
+        -0.048195257782936096,
+        0.02472139149904251
+      ],
+      "reference_position_xyzw": [
+        -0.11518162488937378,
+        0.030183251947164536,
+        -0.10018549859523773,
+        1.0
+      ]
+    },
+    {
+      "index": 16,
+      "parent_index": 14,
+      "name": "bone r eye",
+      "runtime_name_pointer": "0xFC000327",
+      "runtime_id_or_hash": "0x43CB4639",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.7064725160598755,
+        -0.7060458064079285,
+        0.021367505192756653,
+        -0.04403809458017349
+      ],
+      "reference_position_xyzw": [
+        -0.11417478322982788,
+        -0.037425536662340164,
+        -0.09923075884580612,
+        1.0
+      ]
+    },
+    {
+      "index": 17,
+      "parent_index": 13,
+      "name": "bip01 l clavicle",
+      "runtime_name_pointer": "0xFC00032D",
+      "runtime_id_or_hash": "0x829C50CB",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.7356640100479126,
+        -0.6512128114700317,
+        -0.17840327322483063,
+        -0.05378228798508644
+      ],
+      "reference_position_xyzw": [
+        0.07227444648742676,
+        0.09037087112665176,
+        -0.049313709139823914,
+        1.0
+      ]
+    },
+    {
+      "index": 18,
+      "parent_index": 17,
+      "name": "bip01 l upperarm",
+      "runtime_name_pointer": "0xFC000332",
+      "runtime_id_or_hash": "0x74F4E434",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.001434674602933228,
+        -0.05941412225365639,
+        -0.11529809981584549,
+        0.9915514588356018
+      ],
+      "reference_position_xyzw": [
+        -0.15585125982761383,
+        1.1920928955078125e-07,
+        -9.313225746154785e-10,
+        1.0
+      ]
+    },
+    {
+      "index": 19,
+      "parent_index": 18,
+      "name": "bip01 l forearm",
+      "runtime_name_pointer": "0xFC000337",
+      "runtime_id_or_hash": "0x219939D4",
+      "axis1_vector": [
+        -1.8599279894004894e-09,
+        -1.0,
+        -3.064168936361966e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -1.9426262681809803e-11,
+        -0.02522415481507778,
+        -7.0385559602925696e-09,
+        0.9996817708015442
+      ],
+      "reference_position_xyzw": [
+        -0.31671786308288574,
+        5.960464477539063e-08,
+        3.725290298461914e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 20,
+      "parent_index": 19,
+      "name": "bip01 l hand",
+      "runtime_name_pointer": "0xFC00033B",
+      "runtime_id_or_hash": "0xE2710343",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.7067526578903198,
+        0.026889653876423836,
+        0.010120721533894539,
+        0.7068770527839661
+      ],
+      "reference_position_xyzw": [
+        -0.2902079224586487,
+        -5.960464477539063e-08,
+        -3.725290298461914e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 21,
+      "parent_index": 20,
+      "name": "bip01 l finger0",
+      "runtime_name_pointer": "0xFC00033F",
+      "runtime_id_or_hash": "0x13530D93",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.6561041474342346,
+        -0.005530886352062225,
+        -0.28170058131217957,
+        0.7001011967658997
+      ],
+      "reference_position_xyzw": [
+        -0.035667479038238525,
+        -0.053032588213682175,
+        -0.015878379344940186,
+        1.0
+      ]
+    },
+    {
+      "index": 22,
+      "parent_index": 21,
+      "name": "bip01 l finger01",
+      "runtime_name_pointer": "0xFC000343",
+      "runtime_id_or_hash": "0x7DB4C024",
+      "axis1_vector": [
+        -3.738011500331595e-08,
+        -1.0,
+        -1.2050201725344323e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -2.45709075308298e-09,
+        0.19936805963516235,
+        1.723901377204129e-08,
+        0.979924738407135
+      ],
+      "reference_position_xyzw": [
+        -0.047614097595214844,
+        0.0,
+        1.4901161193847656e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 23,
+      "parent_index": 22,
+      "name": "bip01 l finger02",
+      "runtime_name_pointer": "0xFC000348",
+      "runtime_id_or_hash": "0x7DB4C025",
+      "axis1_vector": [
+        -9.774595355338533e-07,
+        -1.0,
+        1.1739361980289686e-06,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -3.5229632544542255e-09,
+        0.2079116851091385,
+        1.462538645746747e-09,
+        0.978147566318512
+      ],
+      "reference_position_xyzw": [
+        -0.04637610912322998,
+        0.0,
+        -1.1175870895385742e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 24,
+      "parent_index": 20,
+      "name": "bip01 l finger1",
+      "runtime_name_pointer": "0xFC00034D",
+      "runtime_id_or_hash": "0x13530D94",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.06418703496456146,
+        0.11743919551372528,
+        -0.03143532574176788,
+        0.9905049204826355
+      ],
+      "reference_position_xyzw": [
+        -0.11703896522521973,
+        -0.045717284083366394,
+        0.00031495094299316406,
+        1.0
+      ]
+    },
+    {
+      "index": 25,
+      "parent_index": 24,
+      "name": "bip01 l finger11",
+      "runtime_name_pointer": "0xFC000351",
+      "runtime_id_or_hash": "0x7DB4C045",
+      "axis1_vector": [
+        8.605337029621296e-07,
+        -1.0,
+        -4.004018876457849e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        4.1749421697545586e-09,
+        0.04361916705965996,
+        5.636411337661684e-10,
+        0.9990482330322266
+      ],
+      "reference_position_xyzw": [
+        -0.06450295448303223,
+        7.450580596923828e-09,
+        5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 26,
+      "parent_index": 25,
+      "name": "bip01 l finger12",
+      "runtime_name_pointer": "0xFC000356",
+      "runtime_id_or_hash": "0x7DB4C046",
+      "axis1_vector": [
+        1.9858525490690226e-08,
+        -1.0,
+        1.757753977926768e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        3.40296679723906e-08,
+        0.06975682079792023,
+        -1.3713028934603244e-08,
+        0.9975640773773193
+      ],
+      "reference_position_xyzw": [
+        -0.05021744966506958,
+        0.0,
+        5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 27,
+      "parent_index": 20,
+      "name": "bip01 l finger2",
+      "runtime_name_pointer": "0xFC00035B",
+      "runtime_id_or_hash": "0x13530D95",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.0003961552865803242,
+        0.09943278878927231,
+        -3.9591232052771375e-05,
+        0.9950442910194397
+      ],
+      "reference_position_xyzw": [
+        -0.11704415082931519,
+        -0.011483079753816128,
+        0.00028771162033081055,
+        1.0
+      ]
+    },
+    {
+      "index": 28,
+      "parent_index": 27,
+      "name": "bip01 l finger21",
+      "runtime_name_pointer": "0xFC00035F",
+      "runtime_id_or_hash": "0x7DB4C066",
+      "axis1_vector": [
+        -3.802109205253146e-08,
+        -1.0,
+        2.415319215742784e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -8.139844354104753e-11,
+        0.02617700584232807,
+        -1.705798613471643e-09,
+        0.9996572732925415
+      ],
+      "reference_position_xyzw": [
+        -0.06930863857269287,
+        1.862645149230957e-09,
+        1.1920928955078125e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 29,
+      "parent_index": 28,
+      "name": "bip01 l finger22",
+      "runtime_name_pointer": "0xFC000364",
+      "runtime_id_or_hash": "0x7DB4C067",
+      "axis1_vector": [
+        1.2348439781817433e-07,
+        -1.0,
+        5.536758251878382e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        5.834440930385654e-09,
+        0.13485091924667358,
+        1.9498870074130537e-08,
+        0.9908658266067505
+      ],
+      "reference_position_xyzw": [
+        -0.049311041831970215,
+        -9.313225746154785e-10,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 30,
+      "parent_index": 20,
+      "name": "bip01 l finger3",
+      "runtime_name_pointer": "0xFC000369",
+      "runtime_id_or_hash": "0x13530D96",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.00039724507951177657,
+        0.06721347570419312,
+        -2.6764391805045307e-05,
+        0.9977385401725769
+      ],
+      "reference_position_xyzw": [
+        -0.11704421043395996,
+        0.021297378465533257,
+        0.00026148557662963867,
+        1.0
+      ]
+    },
+    {
+      "index": 31,
+      "parent_index": 30,
+      "name": "bip01 l finger31",
+      "runtime_name_pointer": "0xFC00036D",
+      "runtime_id_or_hash": "0x7DB4C087",
+      "axis1_vector": [
+        -9.49290324570029e-07,
+        -1.0,
+        9.444284643223e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -4.1542772777347636e-08,
+        0.02181476727128029,
+        1.0648069093122103e-08,
+        0.9997621178627014
+      ],
+      "reference_position_xyzw": [
+        -0.0625983476638794,
+        0.0,
+        1.1920928955078125e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 32,
+      "parent_index": 31,
+      "name": "bip01 l finger32",
+      "runtime_name_pointer": "0xFC000372",
+      "runtime_id_or_hash": "0x7DB4C088",
+      "axis1_vector": [
+        5.876340196664387e-07,
+        -1.0,
+        -5.0120654293550615e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        4.679206710989092e-08,
+        0.05669308081269264,
+        -7.36311234206255e-09,
+        0.9983916282653809
+      ],
+      "reference_position_xyzw": [
+        -0.04885298013687134,
+        0.0,
+        -5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 33,
+      "parent_index": 20,
+      "name": "bip01 l finger4",
+      "runtime_name_pointer": "0xFC000377",
+      "runtime_id_or_hash": "0x13530D97",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.030937466770410538,
+        0.08743711560964584,
+        0.0356760174036026,
+        0.9950501918792725
+      ],
+      "reference_position_xyzw": [
+        -0.1170160174369812,
+        0.050311844795942307,
+        0.00022917985916137695,
+        1.0
+      ]
+    },
+    {
+      "index": 34,
+      "parent_index": 33,
+      "name": "bip01 l finger41",
+      "runtime_name_pointer": "0xFC00037B",
+      "runtime_id_or_hash": "0x7DB4C0A8",
+      "axis1_vector": [
+        5.182611744203314e-07,
+        -1.0,
+        -6.591142920342463e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        1.376265235109031e-08,
+        0.021814769133925438,
+        -3.37373240455463e-09,
+        0.9997620582580566
+      ],
+      "reference_position_xyzw": [
+        -0.04918086528778076,
+        -1.4901161193847656e-08,
+        1.1920928955078125e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 35,
+      "parent_index": 34,
+      "name": "bip01 l finger42",
+      "runtime_name_pointer": "0xFC000380",
+      "runtime_id_or_hash": "0x7DB4C0A9",
+      "axis1_vector": [
+        -5.8668057079103164e-08,
+        -1.0,
+        2.5134552217309647e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -1.6970409077998738e-08,
+        0.008726890198886395,
+        1.3785342645178389e-08,
+        0.9999619126319885
+      ],
+      "reference_position_xyzw": [
+        -0.04214143753051758,
+        3.3527612686157227e-08,
+        -2.980232238769531e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 36,
+      "parent_index": 20,
+      "name": "bone l prop hand",
+      "runtime_name_pointer": "0xFC000385",
+      "runtime_id_or_hash": "0xB544FF0C",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.70710688829422,
+        6.45004547550343e-08,
+        0.7071067094802856,
+        -2.3602573229197787e-09
+      ],
+      "reference_position_xyzw": [
+        -0.07240504026412964,
+        -1.0564690455794334e-08,
+        -0.04071730375289917,
+        1.0
+      ]
+    },
+    {
+      "index": 37,
+      "parent_index": 18,
+      "name": "bip01 l foretwist",
+      "runtime_name_pointer": "0xFC00038A",
+      "runtime_id_or_hash": "0xEE298C8F",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.00014090984768699855,
+        -0.02522415481507778,
+        3.5440218653093325e-06,
+        0.9996817708015442
+      ],
+      "reference_position_xyzw": [
+        -0.31671786308288574,
+        5.960464477539063e-08,
+        3.725290298461914e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 38,
+      "parent_index": 37,
+      "name": "bip01 l foretwist1",
+      "runtime_name_pointer": "0xFC00038F",
+      "runtime_id_or_hash": "0xB35B1EA0",
+      "axis1_vector": [
+        1.0,
+        -5.718347395600176e-08,
+        8.982772783383552e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.00014095469668973237,
+        -5.667225022598643e-10,
+        5.630760302466342e-10,
+        1.0
+      ],
+      "reference_position_xyzw": [
+        -0.14510387182235718,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 39,
+      "parent_index": 18,
+      "name": "bone l upperarm split1",
+      "runtime_name_pointer": "0xFC000394",
+      "runtime_id_or_hash": "0x72AC6F39",
+      "axis1_vector": [
+        -1.0,
+        -7.594349540340772e-07,
+        5.775852332590148e-05,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.008497963659465313,
+        -1.1168038716036222e-09,
+        6.212571435071368e-08,
+        0.9999638795852661
+      ],
+      "reference_position_xyzw": [
+        1.4901161193847656e-08,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 40,
+      "parent_index": 18,
+      "name": "bone l upperarm split2",
+      "runtime_name_pointer": "0xFC00039A",
+      "runtime_id_or_hash": "0x72AC6F3A",
+      "axis1_vector": [
+        -1.0,
+        3.7466301705535443e-07,
+        5.622437674901448e-05,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.005665346514433622,
+        -2.0753492674385754e-11,
+        3.1597100047520144e-08,
+        0.9999839067459106
+      ],
+      "reference_position_xyzw": [
+        -0.1055387556552887,
+        -2.205371856689453e-06,
+        0.002670351415872574,
+        1.0
+      ]
+    },
+    {
+      "index": 41,
+      "parent_index": 18,
+      "name": "bone l upperarm split3",
+      "runtime_name_pointer": "0xFC0003A0",
+      "runtime_id_or_hash": "0x72AC6F3B",
+      "axis1_vector": [
+        -1.0,
+        4.552968675852753e-06,
+        5.1372640882618725e-05,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.002832684898748994,
+        -9.02497243604472e-10,
+        1.4075905774291186e-08,
+        0.9999959468841553
+      ],
+      "reference_position_xyzw": [
+        -0.21107760071754456,
+        -4.470348358154297e-06,
+        0.005340703763067722,
+        1.0
+      ]
+    },
+    {
+      "index": 42,
+      "parent_index": 13,
+      "name": "bip01 r clavicle",
+      "runtime_name_pointer": "0xFC0003A6",
+      "runtime_id_or_hash": "0x9ADBB791",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.7117505073547363,
+        -0.6772676110267639,
+        0.17635022103786469,
+        -0.06017006188631058
+      ],
+      "reference_position_xyzw": [
+        0.07227444648742676,
+        -0.09037071466445923,
+        -0.049314215779304504,
+        1.0
+      ]
+    },
+    {
+      "index": 43,
+      "parent_index": 42,
+      "name": "bip01 r upperarm",
+      "runtime_name_pointer": "0xFC0003AB",
+      "runtime_id_or_hash": "0x8D344AFA",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.0007045359816402197,
+        -0.05942733958363533,
+        0.0795380249619484,
+        0.9950585961341858
+      ],
+      "reference_position_xyzw": [
+        -0.15585124492645264,
+        -1.1920928955078125e-07,
+        -2.7939677238464355e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 44,
+      "parent_index": 43,
+      "name": "bip01 r forearm",
+      "runtime_name_pointer": "0xFC0003B0",
+      "runtime_id_or_hash": "0xDC83DFDA",
+      "axis1_vector": [
+        4.600090974804516e-09,
+        -1.0,
+        1.6514374578946445e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -1.6983803252657026e-11,
+        -0.02522415481507778,
+        2.2373420893728735e-09,
+        0.999681830406189
+      ],
+      "reference_position_xyzw": [
+        -0.3167179524898529,
+        5.960464477539063e-08,
+        1.862645149230957e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 45,
+      "parent_index": 44,
+      "name": "bip01 r hand",
+      "runtime_name_pointer": "0xFC0003B4",
+      "runtime_id_or_hash": "0xF06FF709",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.7067526578903198,
+        0.02688964642584324,
+        -0.010120725259184837,
+        0.7068770527839661
+      ],
+      "reference_position_xyzw": [
+        -0.2902079224586487,
+        -1.1920928955078125e-07,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 46,
+      "parent_index": 45,
+      "name": "bip01 r finger0",
+      "runtime_name_pointer": "0xFC0003B8",
+      "runtime_id_or_hash": "0xCE3DB399",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.6561040878295898,
+        -0.00553087005391717,
+        0.2817005515098572,
+        0.7001010775566101
+      ],
+      "reference_position_xyzw": [
+        -0.03566741943359375,
+        0.05303257331252098,
+        -0.015878379344940186,
+        1.0
+      ]
+    },
+    {
+      "index": 47,
+      "parent_index": 46,
+      "name": "bip01 r finger01",
+      "runtime_name_pointer": "0xFC0003BC",
+      "runtime_id_or_hash": "0x95F426EA",
+      "axis1_vector": [
+        -2.1271861783134227e-07,
+        -1.0,
+        -1.886999427824776e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -1.8374346488769788e-09,
+        0.19936805963516235,
+        -1.5548152987321373e-08,
+        0.9799246788024902
+      ],
+      "reference_position_xyzw": [
+        -0.047614216804504395,
+        -5.960464477539063e-08,
+        -1.4901161193847656e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 48,
+      "parent_index": 47,
+      "name": "bip01 r finger02",
+      "runtime_name_pointer": "0xFC0003C1",
+      "runtime_id_or_hash": "0x95F426EB",
+      "axis1_vector": [
+        -2.450813951782038e-07,
+        -1.0,
+        -5.220550747253583e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -1.3603025372788125e-09,
+        0.20791170001029968,
+        -6.8176908563089e-09,
+        0.9781476259231567
+      ],
+      "reference_position_xyzw": [
+        -0.046375930309295654,
+        5.960464477539063e-08,
+        -7.450580596923828e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 49,
+      "parent_index": 45,
+      "name": "bip01 r finger1",
+      "runtime_name_pointer": "0xFC0003C6",
+      "runtime_id_or_hash": "0xCE3DB39A",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.06418699771165848,
+        0.11743918806314468,
+        0.03143532946705818,
+        0.990504801273346
+      ],
+      "reference_position_xyzw": [
+        -0.11634868383407593,
+        0.04531104117631912,
+        -0.002596557140350342,
+        1.0
+      ]
+    },
+    {
+      "index": 50,
+      "parent_index": 49,
+      "name": "bip01 r finger11",
+      "runtime_name_pointer": "0xFC0003CA",
+      "runtime_id_or_hash": "0x95F4270B",
+      "axis1_vector": [
+        1.3998383110447321e-06,
+        -1.0,
+        -1.27855130926946e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        4.902032557652092e-08,
+        0.04361916333436966,
+        -2.3377694446935493e-08,
+        0.9990482330322266
+      ],
+      "reference_position_xyzw": [
+        -0.06450289487838745,
+        -7.450580596923828e-09,
+        5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 51,
+      "parent_index": 50,
+      "name": "bip01 r finger12",
+      "runtime_name_pointer": "0xFC0003CF",
+      "runtime_id_or_hash": "0x95F4270C",
+      "axis1_vector": [
+        -1.4351011259350344e-06,
+        -1.0,
+        1.0152152896125699e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -6.337339186757163e-08,
+        0.06975682824850082,
+        2.0000246792051257e-08,
+        0.9975640177726746
+      ],
+      "reference_position_xyzw": [
+        -0.050217509269714355,
+        -7.450580596923828e-09,
+        1.1920928955078125e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 52,
+      "parent_index": 45,
+      "name": "bip01 r finger2",
+      "runtime_name_pointer": "0xFC0003D4",
+      "runtime_id_or_hash": "0xCE3DB39B",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.0003961551992688328,
+        0.09943278133869171,
+        3.958189336117357e-05,
+        0.9950441718101501
+      ],
+      "reference_position_xyzw": [
+        -0.11644667387008667,
+        0.011485433205962181,
+        -0.0026721954345703125,
+        1.0
+      ]
+    },
+    {
+      "index": 53,
+      "parent_index": 52,
+      "name": "bip01 r finger21",
+      "runtime_name_pointer": "0xFC0003D8",
+      "runtime_id_or_hash": "0x95F4272C",
+      "axis1_vector": [
+        -5.631084718515922e-07,
+        -1.0,
+        3.2150808237929596e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -8.024264586126151e-10,
+        0.026177017018198967,
+        6.764837578998595e-09,
+        0.9996572732925415
+      ],
+      "reference_position_xyzw": [
+        -0.06930869817733765,
+        2.7939677238464355e-09,
+        5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 54,
+      "parent_index": 53,
+      "name": "bip01 r finger22",
+      "runtime_name_pointer": "0xFC0003DD",
+      "runtime_id_or_hash": "0x95F4272D",
+      "axis1_vector": [
+        1.8641628685145406e-07,
+        -1.0,
+        -1.6371348010579823e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -1.1809922817462848e-08,
+        0.1348509043455124,
+        9.947141776933677e-09,
+        0.99086594581604
+      ],
+      "reference_position_xyzw": [
+        -0.046638548374176025,
+        -1.862645149230957e-09,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 55,
+      "parent_index": 45,
+      "name": "bip01 r finger3",
+      "runtime_name_pointer": "0xFC0003E2",
+      "runtime_id_or_hash": "0xCE3DB39C",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.00039723256486468017,
+        0.06721346825361252,
+        2.675842188182287e-05,
+        0.9977384805679321
+      ],
+      "reference_position_xyzw": [
+        -0.1166391372680664,
+        -0.02129499427974224,
+        -0.0027306675910949707,
+        1.0
+      ]
+    },
+    {
+      "index": 56,
+      "parent_index": 55,
+      "name": "bip01 r finger31",
+      "runtime_name_pointer": "0xFC0003E6",
+      "runtime_id_or_hash": "0x95F4274D",
+      "axis1_vector": [
+        -2.2570728219761804e-07,
+        -1.0,
+        -1.457310006003354e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        6.6913257157352746e-09,
+        0.021814759820699692,
+        5.483070886214136e-09,
+        0.9997620582580566
+      ],
+      "reference_position_xyzw": [
+        -0.06259828805923462,
+        -1.862645149230957e-09,
+        -5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 57,
+      "parent_index": 56,
+      "name": "bip01 r finger32",
+      "runtime_name_pointer": "0xFC0003EB",
+      "runtime_id_or_hash": "0x95F4274E",
+      "axis1_vector": [
+        5.387524879552075e-07,
+        -1.0,
+        -5.9031144417076575e-09,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        2.389854181217288e-08,
+        0.05669308453798294,
+        -1.4578155571598472e-08,
+        0.9983916878700256
+      ],
+      "reference_position_xyzw": [
+        -0.04885309934616089,
+        -1.862645149230957e-09,
+        -5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 58,
+      "parent_index": 45,
+      "name": "bip01 r finger4",
+      "runtime_name_pointer": "0xFC0003F0",
+      "runtime_id_or_hash": "0xCE3DB39D",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.03093744069337845,
+        0.08743710815906525,
+        -0.0356760136783123,
+        0.9950500726699829
+      ],
+      "reference_position_xyzw": [
+        -0.11649727821350098,
+        -0.05010708421468735,
+        -0.002738475799560547,
+        1.0
+      ]
+    },
+    {
+      "index": 59,
+      "parent_index": 58,
+      "name": "bip01 r finger41",
+      "runtime_name_pointer": "0xFC0003F4",
+      "runtime_id_or_hash": "0x95F4276E",
+      "axis1_vector": [
+        3.699682054048026e-07,
+        -1.0,
+        -3.012046079220454e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -1.1755751039288498e-08,
+        0.021814772859215736,
+        -1.459377330093048e-08,
+        0.9997619986534119
+      ],
+      "reference_position_xyzw": [
+        -0.04918074607849121,
+        1.1175870895385742e-08,
+        5.960464477539063e-08,
+        1.0
+      ]
+    },
+    {
+      "index": 60,
+      "parent_index": 59,
+      "name": "bip01 r finger42",
+      "runtime_name_pointer": "0xFC0003F9",
+      "runtime_id_or_hash": "0x95F4276F",
+      "axis1_vector": [
+        -1.2529801551863784e-07,
+        -1.0,
+        -5.571017069883055e-08,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -6.032396804300788e-12,
+        0.008726898580789566,
+        3.406914306225417e-09,
+        0.9999619722366333
+      ],
+      "reference_position_xyzw": [
+        -0.042141497135162354,
+        -1.862645149230957e-08,
+        -2.384185791015625e-07,
+        1.0
+      ]
+    },
+    {
+      "index": 61,
+      "parent_index": 45,
+      "name": "bone r prop hand",
+      "runtime_name_pointer": "0xFC0003FE",
+      "runtime_id_or_hash": "0xD5713E92",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -8.093439163303628e-08,
+        0.7071067094802856,
+        -6.783357209272367e-10,
+        0.7071067690849304
+      ],
+      "reference_position_xyzw": [
+        -0.07240504026412964,
+        8.354982128366828e-08,
+        -0.04071754217147827,
+        1.0
+      ]
+    },
+    {
+      "index": 62,
+      "parent_index": 43,
+      "name": "bip01 r foretwist",
+      "runtime_name_pointer": "0xFC000403",
+      "runtime_id_or_hash": "0x0E55CC15",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.00014090986223891377,
+        -0.02522415481507778,
+        -3.552308498910861e-06,
+        0.999681830406189
+      ],
+      "reference_position_xyzw": [
+        -0.3167179524898529,
+        5.960464477539063e-08,
+        1.862645149230957e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 63,
+      "parent_index": 62,
+      "name": "bip01 r foretwist1",
+      "runtime_name_pointer": "0xFC000408",
+      "runtime_id_or_hash": "0xD90F4EE6",
+      "axis1_vector": [
+        -1.0,
+        -3.595213016183152e-08,
+        9.535462481835566e-07,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.00014095462393015623,
+        -5.701966676596726e-10,
+        9.179165205708273e-10,
+        0.9999999403953552
+      ],
+      "reference_position_xyzw": [
+        -0.1451040506362915,
+        0.0,
+        3.725290298461914e-09,
+        1.0
+      ]
+    },
+    {
+      "index": 64,
+      "parent_index": 43,
+      "name": "bone r upperarm split1",
+      "runtime_name_pointer": "0xFC00040D",
+      "runtime_id_or_hash": "0xE3C7BB3F",
+      "axis1_vector": [
+        1.0,
+        -1.63360812166502e-06,
+        -8.148213964886963e-05,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.0040771677158772945,
+        4.291766941832975e-09,
+        -6.628474125136563e-08,
+        0.9999916553497314
+      ],
+      "reference_position_xyzw": [
+        -5.960464477539063e-08,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 65,
+      "parent_index": 43,
+      "name": "bone r upperarm split2",
+      "runtime_name_pointer": "0xFC000413",
+      "runtime_id_or_hash": "0xE3C7BB40",
+      "axis1_vector": [
+        1.0,
+        -2.4411103822785662e-06,
+        -8.232822438003495e-05,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.002718115458264947,
+        3.3654479203448773e-09,
+        -4.7119307566845237e-08,
+        0.9999963045120239
+      ],
+      "reference_position_xyzw": [
+        -0.10553908348083496,
+        2.2649765014648438e-06,
+        0.0026632072404026985,
+        1.0
+      ]
+    },
+    {
+      "index": 66,
+      "parent_index": 43,
+      "name": "bone r upperarm split3",
+      "runtime_name_pointer": "0xFC000419",
+      "runtime_id_or_hash": "0xE3C7BB41",
+      "axis1_vector": [
+        1.0,
+        -7.487772109016078e-07,
+        4.633492062566802e-05,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.0013590585440397263,
+        -4.172931791779355e-11,
+        -3.5343926896302946e-08,
+        0.9999991059303284
+      ],
+      "reference_position_xyzw": [
+        -0.21107810735702515,
+        4.708766937255859e-06,
+        0.005326411686837673,
+        1.0
+      ]
+    },
+    {
+      "index": 67,
+      "parent_index": 12,
+      "name": "bone_prop_sword",
+      "runtime_name_pointer": "0xFC00041F",
+      "runtime_id_or_hash": "0xC2802172",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.514863133430481,
+        -0.48468083143234253,
+        -0.4846811890602112,
+        -0.5148637890815735
+      ],
+      "reference_position_xyzw": [
+        -0.2785760462284088,
+        0.010419950820505619,
+        0.21190711855888367,
+        1.0
+      ]
+    },
+    {
+      "index": 68,
+      "parent_index": 1,
+      "name": "bone skystick",
+      "runtime_name_pointer": "0xFC000445",
+      "runtime_id_or_hash": "0x82430819",
+      "axis1_vector": [
+        1.9020895969390494e-12,
+        2.6917175086071943e-12,
+        -1.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.7071062922477722,
+        0.7071072459220886,
+        -1.0592896160233067e-06,
+        1.0592910939521971e-06
+      ],
+      "reference_position_xyzw": [
+        1.1977120637893677,
+        -0.0004329234652686864,
+        -0.03862348198890686,
+        1.0
+      ]
+    },
+    {
+      "index": 69,
+      "parent_index": 1,
+      "name": "ch_goblinair",
+      "runtime_name_pointer": "0xFC000450",
+      "runtime_id_or_hash": "0x65B1CE21",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.7071067690849304,
+        0.7071067690849304,
+        -1.1534191344253486e-06,
+        1.0916019164142199e-06
+      ],
+      "reference_position_xyzw": [
+        1.1898295879364014,
+        -1.5602272469550371e-06,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 70,
+      "parent_index": 1,
+      "name": "sync",
+      "runtime_name_pointer": "0xFC000443",
+      "runtime_id_or_hash": "0x004120DD",
+      "axis1_vector": [
+        4.054217031534968e-12,
+        9.702199980921034e-13,
+        -1.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        -0.7071067690849304,
+        0.7071067690849304,
+        -1.1534191344253486e-06,
+        1.0916019164142199e-06
+      ],
+      "reference_position_xyzw": [
+        1.1898295879364014,
+        -1.5602272469550371e-06,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 71,
+      "parent_index": -1,
+      "name": "fakeroot",
+      "runtime_name_pointer": "0xFC000454",
+      "runtime_id_or_hash": "0x4E07E71B",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "reference_position_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "index": 72,
+      "parent_index": -1,
+      "name": "camera_target",
+      "runtime_name_pointer": "0xFC000457",
+      "runtime_id_or_hash": "0xA985FD4F",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "reference_position_xyzw": [
+        -0.056614749133586884,
+        0.5971603393554688,
+        3.9340322017669678,
+        1.0
+      ]
+    },
+    {
+      "index": 73,
+      "parent_index": -1,
+      "name": "game_camera",
+      "runtime_name_pointer": "0xFC00045B",
+      "runtime_id_or_hash": "0x7E2711A2",
+      "axis1_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "reference_quaternion_xyzw": [
+        5.962440319251527e-09,
+        -9.71404806602899e-16,
+        1.6292068494294654e-07,
+        1.0
+      ],
+      "reference_position_xyzw": [
+        -0.10148487240076065,
+        0.7197210788726807,
+        -1.8141051530838013,
+        1.0
+      ]
+    }
+  ]
+}

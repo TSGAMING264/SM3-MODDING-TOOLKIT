@@ -1,0 +1,25 @@
+SM3 MODDING TOOLKIT v5.2.187 — WRAP MODEL + MAT SELECT
+
+MODEL VIEWER
+- Direct .wrap.mesh selection added.
+- NativeWRAP MESH is reconstructed in memory from component0 metadata + component1 PHYS.
+- Legacy .mesh remains supported.
+- Real STORY_MOVIE_4_PHASE3 test: 80/80 WRAP.MESH decoded.
+
+MAT EDITOR
+- Direct .wrap.mat selection added to the normal Open MAT dialog.
+- WRAP.MAT component0 is edited with the existing MAT controls.
+- SAVE CHANGES on a loaded WRAP.MAT preserves the original WRAP shell/patch tables and creates a .bak.
+- SAVE WRAP MAT reuses the loaded WRAP shell directly.
+- Legacy .mat remains supported.
+- Real MEGACITY test: 2663/2663 WRAP.MAT files opened.
+
+REGRESSION
+- Pack Extractor remains 1) LIST CONTENTS / 2) MOD LOADER READY / 3) CLASSIC EXTRACT.
+- WRAP.TEX preview support retained.
+- WRAP.ANIM selection retained.
+- Xbox Extractor unchanged.
+- PC Pack Rebuild Lab unchanged.
+
+NEXT
+- Full testing / Nexus regression pass.

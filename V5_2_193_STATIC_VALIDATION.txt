@@ -1,0 +1,27 @@
+SM3 Toolkit v5.2.193 — Motion Editor Restore + Auto-Grow validation
+===================================================================
+PASS | Python compileall
+PASS | v5.2.182 New Animation Swapper function inventory preserved (no old methods missing)
+PASS | Spider-Man / Black Suit / Peter shared 0xCFB154CD profile retained
+PASS | Player Goblin 0x900E49A5 profile retained
+PASS | exact sm3sprint +1000 capacity regression reproduced
+PASS | automatic arbitrary-size ANIM rebuild 4044 -> 4056 bytes
+PASS | rebuilt ANIM scalar frames re-decode exactly
+PASS | resized ANIM WRAP shell rebuild 4172 -> 4184 bytes
+PASS | resized WRAP internal/external relocation verification
+PASS | resized WRAP unwrap -> edited canonical ANIM byte-exact
+PASS | one-click same-identity WRAP mod uses edited raw Motion Editor ANIM
+PASS | direct Classic ANIM remains decodable after auto-grow
+PASS | direct WRAP.ANIM identity preserved
+PASS | parent WRAP archive identity preserved
+PASS | Motion Editor Auto-Grow is user-visible and defaults ON
+PASS | v182 codec controls restored under Advanced
+
+Exact user-case values:
+resource=0x5634CAF3 sm3sprint
+frames=22
+tracks=193
+edit=track 3 / frames 5-10 / +1000
+strict_required_bits=30020
+strict_capacity_bits=29952
+auto_grow_delta=+12 bytes

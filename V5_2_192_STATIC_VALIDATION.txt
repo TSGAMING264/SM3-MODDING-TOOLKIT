@@ -1,0 +1,33 @@
+SM3 Toolkit v5.2.192 — Motion Editor UI Cleanup validation
+
+RESULT: 27/27 PASS
+
+PASS | version v5.2.192
+PASS | single full-width normal Step 2 route
+PASS | ASKL fallback clearly labeled
+PASS | exact-file fallback clearly named
+PASS | folder-scan fallback clearly named
+PASS | exact-file helper text present
+PASS | folder-scan helper text present
+PASS | old confusing Step 2 labels removed
+PASS | advanced exact-file label clarified
+PASS | advanced folder label clarified
+PASS | browse_decoder_askl handler retained
+PASS | select_decoder_askl_folder handler retained
+PASS | guided auto-map handler retained
+PASS | classic Motion output retained
+PASS | WRAP Motion output retained
+PASS | XESM3 output retained
+PASS | unchanged from v5.2.191: sm3_toolkit/services/anim_decoder_service.py
+PASS | unchanged from v5.2.191: sm3_toolkit/services/anim_editor_service.py
+PASS | unchanged from v5.2.191: sm3_toolkit/services/anim_mod_output_service.py
+PASS | unchanged from v5.2.191: sm3_toolkit/services/wrap_output_service.py
+PASS | unchanged from v5.2.191: sm3_toolkit/tabs/pack_extractor_tab.py
+PASS | unchanged from v5.2.191: sm3_toolkit/tabs/tex_swapper_tab.py
+PASS | unchanged from v5.2.191: sm3_toolkit/tabs/model_viewer_tab.py
+PASS | unchanged from v5.2.191: sm3_toolkit/tabs/mat_editor_tab.py
+PASS | unchanged from v5.2.191: sm3_toolkit/tabs/old_animation_swapper_tab.py
+PASS | unchanged from v5.2.191: sm3_toolkit/tabs/pcpack_rebuild_lab_tab.py
+PASS | Python compileall PASS
+
+Scope: UI clarity only. Motion/ASKL parsing, character profiles, editor codec, Classic output and WRAP output logic are unchanged from v5.2.191.

@@ -1,0 +1,24 @@
+SM3 Toolkit v5.2.190 — Motion Editor NativeWRAP Input Fix
+
+FOCUSED FIX
+- ANIM Motion Editor now consumes MOD LOADER READY .wrap.anim directly.
+- WRAP.ANIM internal byte-relative pointers are normalized in memory to the ANIM codec token layout before editing.
+- No source WRAP is modified by the normalization step.
+- Motion Editor still accepts legacy loose .anim files.
+
+ASKL / SKELETON
+- Select ASKL accepts .askl and .wrap.askl.
+- Folder scan accepts MOD LOADER READY / WRAP_EXTRACTS trees.
+- WRAP.ASKL internal relocation fields are normalized in memory before ASKL layout parsing.
+- Resource identity comes from the ASKL component itself, not the parent APKF hash.
+- When a non-Spider-Man WRAP.ANIM has a sibling matching WRAP.ASKL in its O#### archive, START FRESH + LOAD / MAP can resolve it automatically.
+- Spider-Man 0xCFB154CD built-in named profile behavior remains unchanged.
+
+UNCHANGED
+- v5.2.189 ANIM target-identity fix remains intact.
+- New/Old Animation Swapper WRAP.ANIM output routes remain intact.
+- WRAP.TEX, WRAP.MESH, WRAP.MAT and Pack Extractor features are unchanged.
+- Xbox Extractor and PCPACK Rebuild Lab are unchanged.
+
+NOTE
+The Motion Editor itself edits ANIM motion data and skeleton mapping; it does not require a MESH input. Model Viewer remains the tool for .mesh/.wrap.mesh viewing.

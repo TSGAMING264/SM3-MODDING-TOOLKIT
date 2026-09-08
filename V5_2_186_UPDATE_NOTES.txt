@@ -1,0 +1,38 @@
+SM3 MODDING TOOLKIT v5.2.186
+================================
+
+WRAP preview + selection cleanup.
+
+PACK EXTRACTOR
+1) LIST CONTENTS
+2) MOD LOADER READY
+3) CLASSIC EXTRACT
+
+MOD LOADER READY keeps the same WRAP extraction backend. Only the visible 2) numbering was restored.
+
+TEX SWAPPER — BROWSE + IMAGE
+- NativeWRAP .wrap.tex is now unwrapped in memory before the existing TEX decoder runs.
+- Real width/height/format/mips/hash are shown instead of WRAP-header garbage values.
+- Legacy .tex stays supported.
+
+TEXTURE FOLDER VIEWER
+- NativeWRAP .wrap.tex preview is supported through the same parser/decoder as Tex Swapper.
+- Legacy .tex, DDS, and normal image support stays available.
+
+NEW ANIMATION SWAPPER
+- .wrap.anim can be explicitly selected as SWAP OUT or SWAP IN.
+- Scan results keep legacy ANIM and WRAP.ANIM as separate rows instead of deduplicating one away.
+- A Kind column shows ANIM vs WRAP.ANIM.
+- Existing CREATE WRAP.ANIM SWAP MOD route is unchanged.
+
+OLD ANIMATION SWAPPER
+- Pack A / Pack B browser can now select a loose .anim or .wrap.anim directly.
+- WRAP.ANIM shells are unwrapped to their animation component bytes for the legacy pair UI.
+- Existing NEW WRAP.ANIM COPY button stays available.
+
+UNCHANGED
+- Xbox Extractor
+- PC Pack Rebuild Lab
+- WRAP output backend
+- NativeWRAP animation mod backend
+- About page / AkyrosXD final credit

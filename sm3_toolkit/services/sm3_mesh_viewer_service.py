@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-"""Native Spider-Man 3 PC loose .mesh decoder used by Model Viewer.
+"""Native Spider-Man 3 PC .mesh / .wrap.mesh decoder used by Model Viewer.
 
 This is intentionally VIEW-ONLY.  It never writes or rebuilds mesh files.
 
-The loose SM3 mesh resources extracted by the toolkit contain the serialized
-metadata component followed by the physical vertex/index stream.  The parser
-below validates that complete layout before exposing geometry to the UI.
+Loose SM3 mesh resources contain the serialized metadata component followed by
+the physical vertex/index stream. NativeWRAP `.wrap.mesh` stores those as WRAP
+component0 + component1; the loader reconstructs the same view-only byte stream
+in memory before running the existing native SM3 geometry decoder.
 """
 
 from dataclasses import dataclass, field
@@ -126,7 +127,7 @@ _TYPE_SIZES = {
 # other in-game assets use the larger quantization steps below.  We infer the
 # actual step from each section's serialized bounds instead of filename rules.
 _COMMON_POSITION_SCALES = (64, 128, 256, 512, 1000, 1024, 2048, 4096, 8192, 16384, 32767)
-_FILENAME_RE = re.compile(r"^0x([0-9A-Fa-f]{8})\.(.+)\.mesh$", re.IGNORECASE)
+_FILENAME_RE = re.compile(r"^0x([0-9A-Fa-f]{8})\.(.+?)(?:\.wrap)?\.mesh$", re.IGNORECASE)
 
 
 def _align16(value: int) -> int:
@@ -368,17 +369,41 @@ def _decode_positions(data: bytes, stream_offset: int, count: int, stride: int,
 
 def load_sm3_mesh(path: str | Path) -> SM3MeshDocument:
     p = Path(path)
-    if p.suffix.lower() != ".mesh":
-        raise SM3MeshError("Model Viewer accepts Spider-Man 3 .mesh files only.")
+    lower_name = p.name.lower()
+    is_wrap_mesh = lower_name.endswith(".wrap.mesh")
+    is_loose_mesh = lower_name.endswith(".mesh") and not is_wrap_mesh
+    if not (is_loose_mesh or is_wrap_mesh):
+        raise SM3MeshError("Model Viewer accepts Spider-Man 3 .mesh and .wrap.mesh files only.")
     if not p.is_file():
         raise SM3MeshError(f"MESH file not found: {p}")
 
-    data = p.read_bytes()
+    if is_wrap_mesh:
+        try:
+            from sm3_toolkit.services.wrap_output_service import inspect_wrap_bytes
+            shell = p.read_bytes()
+            info = inspect_wrap_bytes(shell)
+            if info.component_count != 2:
+                raise SM3MeshError(
+                    f"NativeWRAP MESH expected metadata + PHYS (2 components), got {info.component_count}."
+                )
+            components = [
+                shell[info.component_offsets[i]:info.component_offsets[i] + info.component_sizes[i]]
+                for i in range(info.component_count)
+            ]
+            data = b"".join(components)
+        except SM3MeshError:
+            raise
+        except Exception as exc:
+            raise SM3MeshError(f"Could not unwrap NativeWRAP MESH: {exc}") from exc
+    else:
+        data = p.read_bytes()
     magic, mesh_hash, flags, section_count, metadata_end, meta_sections = _parse_metadata(data)
     data_start = _detect_data_start(data, metadata_end, meta_sections)
     file_hash, asset_name = _parse_filename(p)
 
     warnings: list[str] = []
+    if is_wrap_mesh:
+        warnings.append("NativeWRAP MESH: component0 + PHYS component decoded in memory.")
     if file_hash is not None and file_hash != mesh_hash:
         warnings.append(
             f"Filename hash 0x{file_hash:08X} does not match embedded MESH hash 0x{mesh_hash:08X}."

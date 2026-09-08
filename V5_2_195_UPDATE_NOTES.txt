@@ -1,0 +1,39 @@
+SM3 MODDING TOOLKIT v5.2.195 — FINAL HOW TO UPDATE
+===================================================
+
+Purpose
+-------
+Bring the built-in How To Use tab fully up to date with the final Motion Editor
+workflow from v5.2.193 and the Slot 2 WRAP owner recovery fix from v5.2.194.
+
+What changed
+------------
+1. Added the complete guided Motion Editor workflow:
+   - .anim / .wrap.anim input
+   - automatic character / ASKL mapping
+   - frame-range editing
+   - BUILD + VERIFY
+   - AUTO-GROW + RELOCATE behavior
+   - Classic .ANIM, WRAP.ANIM, and XESM3 mod-output choices
+
+2. Documented AUTO-GROW + RELOCATE:
+   - Enabled by default.
+   - If edited compressed motion no longer fits the original allocation, the
+     Motion Editor can grow the ANIM, relocate affected pointers, re-decode, and
+     verify the result instead of forcing the user to make a smaller edit.
+
+3. Documented the final 4B Slot 1 / Slot 2 workflow:
+   - Slot 1 may be a rebuilt .anim or .wrap.anim anywhere on disk.
+   - Slot 2 is the matching MOD LOADER READY / extracted pack folder.
+   - 4B uses Slot 2 to recover and verify PACK/APKF/WRAP ownership for external
+     Motion Editor output.
+   - Repeated .wrap.anim suffixes are normalized to one canonical suffix.
+
+4. Refreshed WRAP wording in the general guide:
+   - MAT Editor: .mat / .wrap.mat
+   - Model Viewer: .mesh / .wrap.mesh
+   - Motion Editor: .anim / .wrap.anim and .askl / .wrap.askl
+
+No Motion Editor codec, WRAP rebuild, character profile, animation swapper,
+texture, material, model, sound, extractor, Xbox, or PCPACK rebuild logic was
+changed in v5.2.195. This is a release-guide/version-text update only.

@@ -1,0 +1,31 @@
+SM3 Toolkit v5.2.195 — Final How To validation
+===============================================
+
+Scope
+-----
+Documentation/release-guide update only. No Motion Editor codec, WRAP rebuild,
+character profile, swapper, texture, material, model, sound, extraction, Xbox,
+or PCPACK rebuild behavior was intentionally changed.
+
+Validation
+----------
+PASS | All Python source files compile in-memory (no generated pycache shipped)
+PASS | app.py changed only on the displayed APP_VERSION line
+PASS | HowToUseTab widget/class implementation is byte-identical to v5.2.194
+PASS | Built-in How To documents Motion Editor .anim / .wrap.anim input
+PASS | Built-in How To documents .askl / .wrap.askl character mapping
+PASS | Built-in How To documents Spider-Man / Black Suit / Peter / Player Goblin profiles
+PASS | Built-in How To documents frame-range editing and BUILD + VERIFY
+PASS | Built-in How To documents AUTO-GROW + RELOCATE default behavior
+PASS | Built-in How To documents Classic .ANIM and WRAP.ANIM outputs
+PASS | Built-in How To documents 4B Slot 1 external-file support
+PASS | Built-in How To documents Slot 2 MOD LOADER READY owner recovery
+PASS | Built-in How To documents canonical .wrap.anim suffix cleanup
+PASS | Built-in How To refreshes .wrap.mat and .wrap.mesh support wording
+PASS | All v5.2.194 source/assets outside the guide/version text remain byte-identical
+
+Release conclusion
+------------------
+v5.2.195 is suitable as the source handoff for the final Windows EXE build.
+Runtime behavior remains the v5.2.194 codebase; this update makes the built-in
+How To match the already-tested Motion Editor and WRAP owner workflows.

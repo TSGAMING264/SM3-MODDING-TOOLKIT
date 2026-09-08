@@ -1,0 +1,19 @@
+SM3 MODDING TOOLKIT v5.2.192 — MOTION EDITOR UI CLEANUP
+
+WHY
+- The two Step 2 ASKL fallback buttons looked like duplicate required actions.
+- Their logic was correct, but the presentation was confusing.
+
+MOTION EDITOR STEP 2
+- Normal route is now one full-width primary button:
+    2) START FRESH + AUTO-MAP CHARACTER / ASKL
+- ASKL manual tools are now grouped under:
+    OPTIONAL ASKL FALLBACK — ONLY IF AUTO-MAP FAILS / OTHER CHARACTERS
+- Fallback actions are renamed:
+    PICK ONE EXACT ASKL / WRAP.ASKL FILE
+    AUTO-FIND MATCHING ASKL IN A FOLDER
+- Each fallback action has a short explanation underneath.
+- Advanced Controls use the same clearer naming.
+
+NO LOGIC CHANGES
+- Character mapping, WRAP.ANIM input, WRAP.ASKL input, Classic output, WRAP output, animation swappers, TEX, MAT, Model Viewer, extractor and rebuild lab are unchanged from v5.2.191.

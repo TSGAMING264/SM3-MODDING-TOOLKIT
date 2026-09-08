@@ -1,11 +1,11 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-title SM3 Modding Toolkit v5.2.182
+title SM3 Modding Toolkit v5.2.196
 
 echo ================================================
-echo   SM3 MODDING TOOLKIT v5.2.182
-echo   BUILT-IN HOW TO RELEASE
+echo   SM3 MODDING TOOLKIT v5.2.196
+echo   CHARACTER MOTION + CLASSIC / WRAP OUTPUT
 echo ================================================
 echo.
 

@@ -2,7 +2,7 @@
 
 This guide builds the two applications included in the official SM3 Toolkit package:
 
-- SM3 Toolkit v5.2.182
+- SM3 Modding Toolkit v5.2.196 FINAL ABOUT CREDIT
 - SM3 Audio Separator v1.0.3
 
 They remain separate applications and must not be merged into one EXE or runtime folder.
@@ -31,11 +31,10 @@ py -3 -m venv .venv-toolkit
 .\.venv-toolkit\Scripts\python -m PyInstaller SM3_MODDING_TOOLKIT.spec --clean --noconfirm
 ```
 
-Expected output:
+Expected output (the supplied v5.2.196 spec is a windowed one-file build):
 
 ```text
-dist/SM3 Toolkit/SM3 Toolkit.exe
-dist/SM3 Toolkit/Toolkit Runtime/
+dist/SM3 Modding Toolkit.exe
 ```
 
 Run from source without building:
@@ -76,9 +75,8 @@ Create one release folder with this layout:
 
 ```text
 SM3 Toolkit/
-  SM3 Toolkit.exe
+  SM3 Modding Toolkit.exe
   SM3 Audio Separator.exe
-  Toolkit Runtime/
   Audio Runtime/
   Dependencies/
     VC_redist.x64.exe
@@ -98,16 +96,21 @@ Verify its Microsoft Authenticode signature before release. Do not substitute a 
 
 The Audio Separator includes Demucs and its runtime but intentionally excludes model weights. On the first separation with a selected model, the application displays a download notice and downloads the required model. Internet access is required until that first model download finishes.
 
+The main Toolkit embeds its Python/Tkinter/Pillow/imageio-ffmpeg runtime in its
+EXE. The Audio Separator keeps its larger Torch/Demucs files in the separate
+`Audio Runtime` directory. Do not merge these applications.
+
 ## 6. Runtime Checks
 
 From the assembled release folder:
 
 ```powershell
-& '.\SM3 Toolkit.exe' --verify-runtime
 & '.\SM3 Audio Separator.exe' --verify-runtime
 ```
 
-Both commands should return exit code `0`.
+The Audio Separator command should return exit code `0`. Launch
+`SM3 Modding Toolkit.exe` normally and confirm Home is selected, all 13 tabs
+open, and the Motion Editor/How To/About checks in `RELEASE_NOTES_v5_2_196.md`.
 
 ## 7. Why PyInstaller Can Flag
 

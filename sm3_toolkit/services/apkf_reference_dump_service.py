@@ -218,6 +218,7 @@ def _decode_target(payload: bytes, components: List[Dict[str, Any]], packed: int
         'target_local_offset': local,
     }
 
+
 def _parse_relocations(
     payload: bytes,
     cursor: int,

@@ -28,6 +28,7 @@ import tkinter as tk
 from sm3_toolkit import paths
 from sm3_toolkit.sm3_pack_guard import WRONG_GAME_GUARD_MESSAGE, looks_like_wrong_game_or_unsupported_sm3_path, wrong_game_detail
 from sm3_toolkit.theme import COLORS
+from sm3_toolkit.services.wrap_output_service import write_wrap_from_pcpack_target, retarget_anim_component_resource_hash, read_wrap_anim_resource_hash, inspect_wrap_bytes, rebuild_wrap_from_shell_components
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -674,6 +675,7 @@ class ExtractedAnimSet:
         self.resources: List[ResourceEntry] = []
         self.errors: List[str] = []
         self._blob_sources = {}  # source_apkf_label -> APKF bytes or focused extracted component bytes
+        self._wrap_sources = {}  # source_apkf_label -> full standalone .wrap.anim shell bytes
         self.detect_info = {
             "path": str(path),
             "kind": self.kind,
@@ -690,26 +692,48 @@ class ExtractedAnimSet:
         nm = name_from_path_text(rel)
         h = hash_from_text(rel)
         label = f"LOOSE_FILE_{rel}"
-        if blob:
-            self._blob_sources[label] = blob
+        component_blob = blob
+        component_size = int(size)
+        pack_kind = self.kind
+
+        # v5.2.189: .wrap.anim is a container, not raw ANIM bytes.  Preserve
+        # the full shell separately while exposing only component0 to the
+        # existing animation comparison/swap logic.
+        if blob and str(rel).lower().endswith(".wrap.anim"):
+            info = inspect_wrap_bytes(blob)
+            if info.component_count != 1:
+                raise ValueError(
+                    f"Old Animation Swapper supports one-component WRAP.ANIM inputs; got {info.component_count}: {rel}"
+                )
+            c0_start = info.component_offsets[0]
+            c0_size = info.component_sizes[0]
+            component_blob = blob[c0_start:c0_start + c0_size]
+            component_size = c0_size
+            if len(component_blob) >= 8:
+                h = struct.unpack_from("<I", component_blob, 0x04)[0]
+            self._wrap_sources[label] = blob
+            pack_kind = "STANDALONE_WRAP_ANIM"
+
+        if component_blob:
+            self._blob_sources[label] = component_blob
         self.resources.append(ResourceEntry(
             platform=self.platform,
             pack_path=str(self.path),
-            pack_kind=self.kind,
+            pack_kind=pack_kind,
             global_index=idx,
             file_type="ANIM",
             local_index=idx,
             filename=nm,
             filename_hash=h,
             file_header_offset=0,
-            component_sizes=[size],
-            component_offsets=[(0, size)],
+            component_sizes=[component_size],
+            component_offsets=[(0, component_size)],
             source_outer_index=-1,
             source_outer_hash=0,
             source_outer_type_id=0,
             source_outer_offset=0,
             source_apkf_label=label,
-            apkf_endian="n/a",
+            apkf_endian="wrap-standalone" if pack_kind == "STANDALONE_WRAP_ANIM" else "n/a",
         ))
 
     def _component_sizes_from_entry_json(self, meta: dict) -> List[int]:
@@ -887,6 +911,10 @@ class ExtractedAnimSet:
                     continue
                 self._add_loose(rel, p.stat().st_size, idx, blob)
                 idx += 1
+        elif self.path.is_file() and self.path.name.lower().endswith(".wrap.anim"):
+            blob = self.path.read_bytes()
+            self._add_loose(self.path.name, len(blob), idx, blob)
+            idx += 1
         else:
             with zipfile.ZipFile(self.path, "r") as z:
                 names = [n for n in z.namelist() if not n.endswith("/")]
@@ -962,6 +990,10 @@ class ExtractedAnimSet:
         for i in range(entry.component_count):
             out += self.component_blob(entry, i)
         return bytes(out)
+
+    def wrap_blob(self, entry):
+        """Return the original full .wrap.anim shell when this entry came from one."""
+        return self._wrap_sources.get(entry.source_apkf_label, b"")
 
     def component_sha_list(self, entry):
         return [sha1(self.component_blob(entry, i)) for i in range(entry.component_count)]
@@ -1304,6 +1336,9 @@ def load_pack_or_extracted(path: Path, preferred_platform="PC"):
     detected_platform = detect_platform_from_extracted_path(path, preferred_platform)
 
     if path.is_dir():
+        return ExtractedAnimSet(path, platform_hint=detected_platform)
+
+    if path.is_file() and path.name.lower().endswith(".wrap.anim"):
         return ExtractedAnimSet(path, platform_hint=detected_platform)
 
     if path.is_file() and path.suffix.lower() == ".txt":
@@ -3203,6 +3238,7 @@ class OldAnimationSwapperTab(ttk.Frame):
             ("Preview Selected", self.preview),
             ("PATCH SELECTED PAIR -> NEW PC PACK", self.rvb_to_pc_patch),
             ("PATCH SELECTED PAIR -> NEW ANIM COPY", self.patch_selected_pair_to_new_anim_copy),
+            ("PATCH SELECTED PAIR -> NEW WRAP.ANIM COPY", self.patch_selected_pair_to_new_wrap_anim_copy),
             ("ABOUT / INFO", self.show_about_info),
         ]
         for i, (label, cmd) in enumerate(bottom_buttons):
@@ -3523,7 +3559,8 @@ class OldAnimationSwapperTab(ttk.Frame):
         p = filedialog.askopenfilename(
             title="Choose SM3 animation pack",
             filetypes=[
-                ("SM3 PC/Xbox packs", "*.PCPACK *.XEPACK *.zip *.txt *.hex"),
+                ("SM3 animation inputs", "*.PCPACK *.XEPACK *.zip *.txt *.hex *.wrap.anim"),
+                ("Standalone WRAP.ANIM", "*.wrap.anim"),
                 ("PC packs", "*.PCPACK"),
                 ("Xbox packs", "*.XEPACK"),
                 ("Pack/output ZIP", "*.zip"),
@@ -3864,12 +3901,16 @@ class OldAnimationSwapperTab(ttk.Frame):
                 title="Save selected pair as new loose ANIM copy",
                 defaultextension=".anim",
                 initialfile=default_name,
-                filetypes=[("SM3 ANIM", "*.anim"), ("All files", "*.*")],
+                filetypes=[("SM3 ANIM / WRAP.ANIM", "*.anim"), ("All files", "*.*")],
             )
             if not out:
                 return
 
+            target_hash_int = int(dest_entry.filename_hash) & 0xFFFFFFFF
+            replacement_blob = retarget_anim_component_resource_hash(replacement_blob, target_hash_int)
             Path(out).write_bytes(replacement_blob)
+            if struct.unpack_from("<I", replacement_blob, 0x04)[0] != target_hash_int:
+                raise ValueError("Loose ANIM identity verification failed after target retarget.")
             self.write(
                 f"\nNew ANIM copy saved: {out}\n"
                 f"Target identity: {target_hash}.{dest_entry.display_name}.anim\n"
@@ -3881,10 +3922,102 @@ class OldAnimationSwapperTab(ttk.Frame):
                 f"Saved new loose ANIM copy:\n{out}\n\n"
                 f"Target: {dest_entry.display_name}\n"
                 f"Replacement: {src_entry.display_name}\n\n"
-                "The output filename uses the Pack A target identity; the file bytes come from Pack B.",
+                "The output uses the Pack A target identity. Pack B motion/layout is preserved, while ANIM +0x04 is retargeted to the Pack A target hash.",
             )
         except Exception as e:
             messagebox.showerror("ANIM copy failed", str(e))
+            self.write(f"ERROR: {e}\n")
+
+
+    def patch_selected_pair_to_new_wrap_anim_copy(self):
+        """v5.2.189: build a target-identity-correct .wrap.anim using the PC target's exact APKF patch map."""
+        try:
+            if not self.pack_a or not self.pack_b:
+                raise ValueError("Load/verify packs first.")
+            dest_is_a, src_is_a = self.side_for_pc_and_rvb()
+            dest_pack = self.pack_a if dest_is_a else self.pack_b
+            src_pack = self.pack_a if src_is_a else self.pack_b
+            dest_entry = self.selected(dest_is_a)
+            src_entry = self.selected(src_is_a)
+            if dest_entry.file_type.upper() != "ANIM" or src_entry.file_type.upper() != "ANIM":
+                raise ValueError("Select ANIM entries on both sides first.")
+            if dest_entry.component_count != 1 or src_entry.component_count != 1:
+                raise ValueError("WRAP.ANIM copy currently requires one-component ANIM entries.")
+            if dest_entry.component_sizes != src_entry.component_sizes:
+                raise ValueError(
+                    "WRAP.ANIM copy is exact-layout only in Old Animation Swapper. "
+                    f"Target components={dest_entry.component_sizes}, source={src_entry.component_sizes}."
+                )
+            replacement_blob = src_pack.combined_blob(src_entry)
+            if not replacement_blob:
+                raise ValueError("The selected replacement ANIM has no readable payload bytes.")
+            target_name = clean_name(dest_entry.display_name, "anim")
+            target_hash_text = hex32(dest_entry.filename_hash)
+            default_name = f"{target_hash_text}.{target_name}.wrap.anim"
+            out = filedialog.asksaveasfilename(
+                title="Save selected pair as new WRAP.ANIM copy",
+                defaultextension=".wrap.anim",
+                initialfile=default_name,
+                filetypes=[("SM3 NativeWRAP ANIM", "*.wrap.anim"), ("All files", "*.*")],
+            )
+            if not out:
+                return
+            target_hash_int = int(dest_entry.filename_hash) & 0xFFFFFFFF
+            replacement_blob = retarget_anim_component_resource_hash(replacement_blob, target_hash_int)
+            target = {
+                "file_type": "ANIM",
+                "filename_hash": target_hash_text,
+                "source_apkf_absolute_base": hex(dest_entry.source_outer_offset),
+                "source_outer_index": dest_entry.source_outer_index,
+                "source_outer_hash": hex32(dest_entry.source_outer_hash),
+                "source_outer_type": f"0x{dest_entry.source_outer_type_id:X}",
+            }
+            target_shell = b""
+            if hasattr(dest_pack, "wrap_blob"):
+                try:
+                    target_shell = dest_pack.wrap_blob(dest_entry)
+                except Exception:
+                    target_shell = b""
+
+            if target_shell:
+                wrapped, stats = rebuild_wrap_from_shell_components(target_shell, [replacement_blob])
+                Path(out).write_bytes(wrapped)
+                report = {
+                    **stats,
+                    "output": str(out),
+                    "resource_type": "ANIM",
+                    "resource_hash": target_hash_text,
+                    "source": "TARGET_WRAP_SHELL",
+                }
+            else:
+                if not Path(dest_pack.path).is_file():
+                    raise ValueError(
+                        "Target must be a real PC pack or a directly selected/extracted .wrap.anim shell."
+                    )
+                report = write_wrap_from_pcpack_target(
+                    Path(dest_pack.path), target, [replacement_blob], Path(out)
+                )
+            inner_hash = read_wrap_anim_resource_hash(Path(out).read_bytes())
+            if inner_hash != target_hash_int:
+                raise ValueError(
+                    f"WRAP.ANIM inner identity verification failed: inner=0x{inner_hash:08X} target=0x{target_hash_int:08X}"
+                )
+            self.write(
+                f"\nNew WRAP.ANIM copy saved: {out}\n"
+                f"Target identity: {target_hash_text}.{dest_entry.display_name}.wrap.anim\n"
+                f"Replacement payload: {src_entry.display_name} ({len(replacement_blob)} bytes)\n"
+                f"Inner ANIM hash retargeted: 0x{inner_hash:08X}\n"
+                f"WRAP patches: internal {report.get('internal_patch_count')} | external {report.get('external_patch_count')} | global {report.get('global_patch_count')}\n"
+                "No PCPACK was modified.\n"
+            )
+            messagebox.showinfo(
+                "WRAP.ANIM copy complete",
+                f"Saved NativeWRAP animation:\n{out}\n\n"
+                f"Target: {dest_entry.display_name}\nReplacement: {src_entry.display_name}\n\n"
+                "The legacy .ANIM button is unchanged; use this button for the WRAP mod-loader route.",
+            )
+        except Exception as e:
+            messagebox.showerror("WRAP.ANIM copy failed", str(e))
             self.write(f"ERROR: {e}\n")
 
 

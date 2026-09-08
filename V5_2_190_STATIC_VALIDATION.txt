@@ -1,0 +1,17 @@
+SM3 Toolkit v5.2.190 — Motion Editor NativeWRAP Input validation
+
+PASS | Python compileall
+PASS | app version v5.2.190
+PASS | Motion Editor picker accepts .anim / .wrap.anim
+PASS | ASKL picker accepts .askl / .wrap.askl
+PASS | MOD LOADER READY WRAP_EXTRACTS auto-search route present
+PASS | STORY_MOVIE_4_PHASE3 WRAP.ANIM header normalization: 127/127
+PASS | STORY_MOVIE_4_PHASE3 WRAP.ANIM codec decode: 127/127
+PASS | STORY_MOVIE_4_PHASE3 WRAP.ASKL parse: 12/12
+PASS | non-CFB STORY animations found matching WRAP.ASKL: 119/119
+PASS | matched WRAP.ANIM + WRAP.ASKL pose decoder construction: 119/119
+PASS | CFB154CD STORY animations use built-in named profile: 8/8
+PASS | untouched normalized WRAP.ANIM codec roundtrip byte-identical
+PASS | v5.2.189 target identity retarget code retained
+
+This is offline/static validation. Final Motion Editor runtime behavior still requires an in-game test of an edited animation mod.

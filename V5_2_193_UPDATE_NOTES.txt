@@ -1,0 +1,34 @@
+SM3 MODDING TOOLKIT v5.2.193 — MOTION EDITOR RESTORE + AUTO-GROW FIX
+====================================================================
+
+Motion Editor fixes
+- Restores the v5.2.182 arbitrary-size loose ANIM rebuild capability directly to the guided Motion Editor.
+- Step 6 now has AUTO-GROW enabled by default. It first attempts normal template-size encoding and only grows the ANIM when the compressed bitstream exceeds the original payload capacity.
+- Auto-grow inserts DWORD-aligned payload room, relocates proven local ANIM pointer tokens, then re-decodes every requested scalar frame for exact verification.
+- Advanced Controls once again expose the useful v182 codec options: Auto-select compression descriptors, Auto-grow + relocate, Bit-identical roundtrip, Decode to editable JSON.
+
+WRAP.ANIM fixes
+- Added an ANIM-specific WRAP shell rebuilder for resized Motion Editor output.
+- Metadata-tail patch target offsets are relocated when payload growth shifts the ANIM tail.
+- Internal WRAP references are recovered from the edited ANIM's own canonical local pointer tokens.
+- Post-build verification unwraps the rebuilt WRAP and requires a byte-exact match to the edited canonical ANIM.
+- One-click WRAP.ANIM output now uses the edited same-identity raw Motion Editor ANIM instead of accidentally resolving the untouched stock matching WRAP.
+
+Preserved from v5.2.192/v5.2.191
+- .anim and .wrap.anim Motion Editor input.
+- .askl and .wrap.askl skeleton input/auto-map.
+- Spider-Man / Black Suit / Peter shared 0xCFB154CD profile.
+- Player Goblin 0x900E49A5 profile.
+- Classic .ANIM output, direct .WRAP.ANIM output, and XESM3 output.
+- Clear optional ASKL fallback UI.
+
+Exact regression reproduced from user test
+- 0x5634CAF3 sm3sprint.wrap.anim
+- 22 frames / 193 scalar tracks
+- Track 3, frames 5-10, delta +1000
+- Strict fixed payload: expected fail (30020 bits required / 29952 bits available)
+- Auto-grow: PASS, canonical ANIM 4044 -> 4056 bytes (+12)
+- Re-decode: exact edited scalar frames PASS
+- WRAP rebuild: 4172 -> 4184 bytes; 2 external / 6 internal patches
+- WRAP -> canonical ANIM byte-exact verification PASS
+- One-click same-identity WRAP mod build PASS

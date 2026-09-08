@@ -4,6 +4,7 @@ import csv
 import json
 import queue
 import re
+import shutil
 import threading
 from pathlib import Path
 import tkinter as tk
@@ -26,6 +27,7 @@ from sm3_toolkit.services.anim_decoder_service import (
     format_summary as format_anim_decode_summary,
     format_animation_summary as format_anim_timeline_summary,
     inspect_anim_header,
+    read_anim_payload,
 )
 
 from sm3_toolkit.services.anim_codec_service import (
@@ -48,7 +50,16 @@ from sm3_toolkit.services.anim_editor_service import (
 from sm3_toolkit.services.anim_mod_output_service import (
     build_anim_mod_loader_output,
     build_anim_swap_xesm3_output,
+    build_wrap_anim_xesm3_output,
     inspect_anim_identity as inspect_mod_output_anim_identity,
+)
+
+from sm3_toolkit.services.wrap_output_service import (
+    inspect_wrap_bytes,
+    rebuild_wrap_from_shell_components,
+    rebuild_wrap_anim_from_shell,
+    find_matching_wrap_resource,
+    read_wrap_anim_resource_hash,
 )
 
 from sm3_toolkit.services.spiderman_named_profile_service import (
@@ -58,6 +69,9 @@ from sm3_toolkit.services.spiderman_named_profile_service import (
     export_named_track_map_csv,
     export_named_track_map_json,
     inspect_anim_identity as inspect_named_profile_anim_identity,
+    has_builtin_profile,
+    identify_character,
+    profile_display_name,
 )
 
 from sm3_toolkit.services.new_animation_swapper_service import (
@@ -124,6 +138,8 @@ def _clean_anim_display_name(path: Path) -> tuple[str, str]:
     if m:
         hash_text = m.group(1).upper().replace("0X", "0x")
         stem = m.group(2)
+    if stem.lower().endswith(".wrap"):
+        stem = stem[:-5]
     return hash_text, stem
 
 
@@ -239,6 +255,11 @@ class NewAnimationSwapperTab(ttk.Frame):
         self.codec_rebuilt_var = tk.StringVar()
         self.codec_auto_codecs_var = tk.BooleanVar(value=True)
         self.codec_allow_resize_var = tk.BooleanVar(value=False)
+        # v5.2.193 — guided Motion Editor restores the v182 arbitrary-size
+        # loose ANIM rebuild automatically when an edit no longer fits the
+        # original compressed payload.  The legacy codec checkbox remains
+        # independent for direct codec/rebuilder use.
+        self.editor_auto_grow_var = tk.BooleanVar(value=True)
         self.codec_status_var = tk.StringVar(
             value="Select an ANIM, run ROUNDTRIP, then decode to editable JSON."
         )
@@ -262,7 +283,7 @@ class NewAnimationSwapperTab(ttk.Frame):
             value="Guided mode: follow Steps 1-7 from top to bottom."
         )
         self.editor_skeleton_status_var = tk.StringVar(
-            value="Skeleton: select an ANIM first. Spider-Man 0xCFB154CD is detected automatically."
+            value="Skeleton: select an ANIM first. Spider-Man / Black Suit / Peter share built-in 0xCFB154CD; Player Goblin WRAP.ASKL is auto-detected."
         )
         self.editor_selection_summary_var = tk.StringVar(
             value="Nothing selected yet — load/map the animation first."
@@ -806,7 +827,7 @@ class NewAnimationSwapperTab(ttk.Frame):
         step1 = ttk.LabelFrame(editor_page, text="STEP 1 — SELECT ANIMATION", padding=(10, 8))
         step1.grid(row=2, column=0, sticky="ew", padx=4, pady=5)
         step1.columnconfigure(1, weight=1)
-        ttk.Label(step1, text="ANIM file", style="CardLabel.TLabel").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        ttk.Label(step1, text="ANIM / WRAP.ANIM file", style="CardLabel.TLabel").grid(row=0, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(step1, textvariable=self.decoder_anim_var).grid(row=0, column=1, sticky="ew", padx=4, pady=4)
         ttk.Button(step1, text="1A) BROWSE ANIM", command=self.browse_decoder_anim, style="Accent.TButton").grid(row=0, column=2, sticky="ew", padx=4, pady=4)
         ttk.Button(step1, text="Use Source OUT", command=self.use_source_out_for_editor).grid(row=0, column=3, sticky="ew", padx=4, pady=4)
@@ -817,20 +838,57 @@ class NewAnimationSwapperTab(ttk.Frame):
         step2.grid(row=3, column=0, sticky="ew", padx=4, pady=5)
         for col in range(4):
             step2.columnconfigure(col, weight=1)
+
+        # The normal route gets full visual priority.  v5.2.191 placed two ASKL
+        # fallback actions beside this button with identical visual weight, which
+        # made them look like duplicate required steps.  Keep the same commands,
+        # but separate them clearly as optional recovery tools.
         ttk.Button(
             step2,
-            text="2) START FRESH + LOAD / MAP",
+            text="2) START FRESH + AUTO-MAP CHARACTER / ASKL",
             command=self.editor_guided_load_map,
             style="Accent.TButton",
-        ).grid(row=0, column=0, columnspan=2, sticky="ew", padx=(4, 6), pady=4)
-        ttk.Button(step2, text="Other Character: Select ASKL", command=self.browse_decoder_askl).grid(row=0, column=2, sticky="ew", padx=4, pady=4)
-        ttk.Button(step2, text="Other Character: Scan ASKL Folder", command=self.select_decoder_askl_folder).grid(row=0, column=3, sticky="ew", padx=4, pady=4)
+        ).grid(row=0, column=0, columnspan=4, sticky="ew", padx=4, pady=(4, 5))
         ttk.Label(
             step2,
-            text="Spider-Man 0xCFB154CD needs no ASKL selection. Other characters may need their matching ASKL before Step 2.",
+            text=(
+                "NORMAL ROUTE: use the button above first. Spider-Man, Black Suit and Peter use the built-in "
+                "0xCFB154CD named profile. Player Goblin uses 0x900E49A5 with sibling .wrap.askl auto-discovery "
+                "and a built-in named fallback."
+            ),
             style="Muted.TLabel", wraplength=1040,
-        ).grid(row=1, column=0, columnspan=4, sticky="w", padx=4, pady=(2, 0))
-        ttk.Label(step2, textvariable=self.editor_status_var, style="CardLabel.TLabel", wraplength=1040).grid(row=2, column=0, columnspan=4, sticky="w", padx=4, pady=(5, 0))
+        ).grid(row=1, column=0, columnspan=4, sticky="w", padx=4, pady=(0, 6))
+
+        askl_fallback = ttk.LabelFrame(
+            step2,
+            text="OPTIONAL ASKL FALLBACK — ONLY IF AUTO-MAP FAILS / OTHER CHARACTERS",
+            padding=(8, 6),
+        )
+        askl_fallback.grid(row=2, column=0, columnspan=4, sticky="ew", padx=4, pady=(2, 5))
+        askl_fallback.columnconfigure(0, weight=1)
+        askl_fallback.columnconfigure(1, weight=1)
+        ttk.Button(
+            askl_fallback,
+            text="PICK ONE EXACT ASKL / WRAP.ASKL FILE",
+            command=self.browse_decoder_askl,
+        ).grid(row=0, column=0, sticky="ew", padx=(2, 5), pady=3)
+        ttk.Button(
+            askl_fallback,
+            text="AUTO-FIND MATCHING ASKL IN A FOLDER",
+            command=self.select_decoder_askl_folder,
+        ).grid(row=0, column=1, sticky="ew", padx=(5, 2), pady=3)
+        ttk.Label(
+            askl_fallback,
+            text="Use this when you already know the exact skeleton file.",
+            style="Muted.TLabel", wraplength=500,
+        ).grid(row=1, column=0, sticky="w", padx=3, pady=(0, 2))
+        ttk.Label(
+            askl_fallback,
+            text="Use this to scan a character / MOD LOADER READY folder and match the animation's ASKL hash automatically.",
+            style="Muted.TLabel", wraplength=500,
+        ).grid(row=1, column=1, sticky="w", padx=3, pady=(0, 2))
+
+        ttk.Label(step2, textvariable=self.editor_status_var, style="CardLabel.TLabel", wraplength=1040).grid(row=3, column=0, columnspan=4, sticky="w", padx=4, pady=(5, 0))
 
         # STEP 3 -----------------------------------------------------------------
         step3 = ttk.LabelFrame(editor_page, text="STEP 3 — CHOOSE WHAT TO EDIT", padding=(10, 8))
@@ -898,17 +956,39 @@ class NewAnimationSwapperTab(ttk.Frame):
         ttk.Label(step6, textvariable=self.editor_review_var, style="CardLabel.TLabel", wraplength=1040).grid(row=0, column=0, columnspan=2, sticky="w", padx=4, pady=(2, 6))
         ttk.Button(step6, text="RESET / START FRESH", command=self.editor_guided_load_map).grid(row=1, column=0, sticky="ew", padx=(4, 6), pady=4)
         ttk.Button(step6, text="6) BUILD + VERIFY ANIMATION", command=self.editor_build_anim, style="Accent.TButton").grid(row=1, column=1, sticky="ew", padx=(6, 4), pady=4)
+        ttk.Checkbutton(
+            step6,
+            text="AUTO-GROW edited ANIM if compressed payload needs more room (recommended)",
+            variable=self.editor_auto_grow_var,
+        ).grid(row=2, column=0, columnspan=2, sticky="w", padx=4, pady=(4, 1))
+        ttk.Label(
+            step6,
+            text="Restored v182 codec capability: when required, Motion Editor grows the loose ANIM payload, relocates proven local pointer tokens, then re-decodes every edited scalar for verification.",
+            style="Muted.TLabel", wraplength=1040,
+        ).grid(row=3, column=0, columnspan=2, sticky="w", padx=4, pady=(1, 2))
 
         # STEP 7 -----------------------------------------------------------------
-        step7 = ttk.LabelFrame(editor_page, text="STEP 7 — CREATE THE XESM3 MOD", padding=(10, 8))
+        step7 = ttk.LabelFrame(editor_page, text="STEP 7 — CHOOSE OUTPUT", padding=(10, 8))
         step7.grid(row=8, column=0, sticky="ew", padx=4, pady=5)
-        step7.columnconfigure(0, weight=1)
+        for col in range(3):
+            step7.columnconfigure(col, weight=1)
         ttk.Label(
             step7,
-            text="After Step 6 passes verification, the rebuilt ANIM is queued automatically. Continue to XESM3 Mod Output to name and build the mod.",
+            text=(
+                "After Step 6 passes verification, choose a direct classic .ANIM, a NativeWRAP .WRAP.ANIM, "
+                "or continue to XESM3 Mod Output. These output choices work for every Motion Editor character profile."
+            ),
             style="Muted.TLabel", wraplength=1040,
-        ).grid(row=0, column=0, sticky="w", padx=4, pady=(2, 5))
-        ttk.Button(step7, text="7) GO TO XESM3 MOD OUTPUT", command=self.editor_open_xesm3_output, style="Accent.TButton").grid(row=1, column=0, sticky="ew", padx=4, pady=4)
+        ).grid(row=0, column=0, columnspan=3, sticky="w", padx=4, pady=(2, 5))
+        ttk.Button(
+            step7, text="7A) SAVE CLASSIC .ANIM", command=self.editor_export_classic_anim
+        ).grid(row=1, column=0, sticky="ew", padx=4, pady=4)
+        ttk.Button(
+            step7, text="7B) SAVE WRAP.ANIM", command=self.editor_export_wrap_anim, style="Accent.TButton"
+        ).grid(row=1, column=1, sticky="ew", padx=4, pady=4)
+        ttk.Button(
+            step7, text="7C) GO TO XESM3 MOD OUTPUT", command=self.editor_open_xesm3_output
+        ).grid(row=1, column=2, sticky="ew", padx=4, pady=4)
 
         # ADVANCED ---------------------------------------------------------------
         advanced_toggle_row = ttk.Frame(editor_page, style="Body.TFrame")
@@ -931,8 +1011,8 @@ class NewAnimationSwapperTab(ttk.Frame):
 
         ttk.Label(advanced, text="A1) ASKL / Skeleton (if auto-map fails)", style="CardLabel.TLabel").grid(row=0, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(advanced, textvariable=self.decoder_askl_var).grid(row=0, column=1, columnspan=2, sticky="ew", padx=4, pady=4)
-        ttk.Button(advanced, text="Select ASKL File", command=self.browse_decoder_askl).grid(row=0, column=3, sticky="ew", padx=4, pady=4)
-        ttk.Button(advanced, text="Scan Folder", command=self.select_decoder_askl_folder).grid(row=0, column=4, sticky="ew", padx=4, pady=4)
+        ttk.Button(advanced, text="Pick Exact ASKL File", command=self.browse_decoder_askl).grid(row=0, column=3, sticky="ew", padx=4, pady=4)
+        ttk.Button(advanced, text="Auto-Find in Folder", command=self.select_decoder_askl_folder).grid(row=0, column=4, sticky="ew", padx=4, pady=4)
 
         ttk.Label(advanced, text="A2) Editable JSON (optional)", style="CardLabel.TLabel").grid(row=1, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(advanced, textvariable=self.codec_json_var).grid(row=1, column=1, columnspan=2, sticky="ew", padx=4, pady=4)
@@ -971,8 +1051,15 @@ class NewAnimationSwapperTab(ttk.Frame):
         ttk.Button(advanced, text="A5) ADD DELTA THIS FRAME", command=self.editor_add_delta_current).grid(row=7, column=2, sticky="ew", padx=4, pady=4)
         ttk.Button(advanced, text="REFRESH VALUE", command=self._editor_refresh_value).grid(row=7, column=3, columnspan=2, sticky="ew", padx=4, pady=4)
 
+        ttk.Separator(advanced, orient="horizontal").grid(row=8, column=0, columnspan=5, sticky="ew", padx=4, pady=7)
+        ttk.Label(advanced, text="A6) v182 Codec / Rebuild Options", style="CardLabel.TLabel").grid(row=9, column=0, sticky="w", padx=4, pady=4)
+        ttk.Checkbutton(advanced, text="Auto-select compression descriptors", variable=self.codec_auto_codecs_var).grid(row=9, column=1, sticky="w", padx=4, pady=4)
+        ttk.Checkbutton(advanced, text="Auto-grow + relocate if needed", variable=self.editor_auto_grow_var).grid(row=9, column=2, sticky="w", padx=4, pady=4)
+        ttk.Button(advanced, text="BIT-IDENTICAL ROUNDTRIP", command=self.codec_roundtrip_test).grid(row=9, column=3, sticky="ew", padx=4, pady=4)
+        ttk.Button(advanced, text="DECODE TO EDITABLE JSON", command=self.codec_decode_to_json).grid(row=9, column=4, sticky="ew", padx=4, pady=4)
+
         editor_text_frame = ttk.Frame(advanced, style="Body.TFrame")
-        editor_text_frame.grid(row=8, column=0, columnspan=5, sticky="nsew", padx=4, pady=(6, 0))
+        editor_text_frame.grid(row=10, column=0, columnspan=5, sticky="nsew", padx=4, pady=(6, 0))
         editor_text_frame.columnconfigure(0, weight=1)
         self.editor_text = tk.Text(
             editor_text_frame,
@@ -1079,7 +1166,7 @@ class NewAnimationSwapperTab(ttk.Frame):
         ttk.Button(target_top, text="Scan", command=self.scan_pc_destination_slots).grid(row=0, column=3, sticky="ew", padx=(4, 0))
         self.swap_target_search_var.trace_add("write", lambda *_: self.refresh_swap_target_tree())
         ttk.Entry(step1, textvariable=self.source_file_var, state="readonly").grid(row=1, column=0, sticky="ew", pady=(0, 4))
-        ttk.Label(step1, text="Double-click an extracted animation below, select it, or browse the exact .anim file you want to swap OUT.", style="Muted.TLabel").grid(row=2, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(step1, text="Double-click an extracted animation below, select it, or browse the exact .anim / .wrap.anim file you want to swap OUT.", style="Muted.TLabel").grid(row=2, column=0, sticky="w", pady=(0, 4))
         target_frame = ttk.Frame(step1, style="Body.TFrame")
         target_frame.grid(row=3, column=0, sticky="nsew")
         target_frame.columnconfigure(0, weight=1); target_frame.rowconfigure(0, weight=1)
@@ -1104,7 +1191,7 @@ class NewAnimationSwapperTab(ttk.Frame):
         ttk.Button(repl_top, text="Browse Swap-In ANIM", command=self.browse_swap_replacement).grid(row=0, column=2, sticky="ew", padx=(4, 0))
         self.swap_replacement_search_var.trace_add("write", lambda *_: self.refresh_swap_replacement_tree())
         ttk.Entry(step2, textvariable=self.target_file_var, state="readonly").grid(row=1, column=0, sticky="ew", pady=(0, 4))
-        ttk.Label(step2, text="Double-click an extracted animation below, select it, or browse any .anim file you want to swap IN. The Toolkit will not block your choice.", style="Muted.TLabel").grid(row=2, column=0, sticky="w", pady=(0, 4))
+        ttk.Label(step2, text="Double-click an extracted animation below, select it, or browse any .anim / .wrap.anim file you want to swap IN. The Toolkit will not block your choice.", style="Muted.TLabel").grid(row=2, column=0, sticky="w", pady=(0, 4))
         repl_frame = ttk.Frame(step2, style="Body.TFrame")
         repl_frame.grid(row=3, column=0, sticky="nsew"); repl_frame.columnconfigure(0, weight=1); repl_frame.rowconfigure(0, weight=1)
         self.swap_replacement_tree = ttk.Treeview(repl_frame, columns=cols, show="headings", height=11)
@@ -1141,9 +1228,10 @@ class NewAnimationSwapperTab(ttk.Frame):
         step4 = ttk.LabelFrame(page, text="STEP 4 — CREATE XESM3 ANIMATION MOD", padding=(8, 7))
         step4.grid(row=5, column=0, columnspan=2, sticky="ew", padx=4, pady=4)
         step4.columnconfigure(0, weight=1)
-        ttk.Button(step4, text="4) CREATE XESM3 ANIMATION SWAP MOD", command=self.build_guided_xesm3_anim_swap, style="Accent.TButton").grid(row=0, column=0, sticky="ew", padx=4, pady=4)
-        ttk.Button(step4, text="Open Last Mod", command=self.open_guided_swap_output).grid(row=0, column=1, sticky="ew", padx=4, pady=4)
-        ttk.Label(step4, textvariable=self.swap_build_status_var, style="Muted.TLabel", wraplength=1080).grid(row=1, column=0, columnspan=2, sticky="w", padx=4, pady=(2, 4))
+        ttk.Button(step4, text="4A) CREATE XESM3 .ANIM SWAP MOD", command=self.build_guided_xesm3_anim_swap).grid(row=0, column=0, sticky="ew", padx=4, pady=4)
+        ttk.Button(step4, text="4B) CREATE WRAP.ANIM SWAP MOD", command=self.build_guided_wrap_anim_swap, style="Accent.TButton").grid(row=1, column=0, sticky="ew", padx=4, pady=4)
+        ttk.Button(step4, text="Open Last Mod", command=self.open_guided_swap_output).grid(row=0, column=1, rowspan=2, sticky="nsew", padx=4, pady=4)
+        ttk.Label(step4, textvariable=self.swap_build_status_var, style="Muted.TLabel", wraplength=1080).grid(row=2, column=0, columnspan=2, sticky="w", padx=4, pady=(2, 4))
 
     def _swap_tree_path(self, tree):
         selected = tree.selection()
@@ -1205,7 +1293,7 @@ class NewAnimationSwapperTab(ttk.Frame):
             cur = cur.parent
 
     def browse_swap_target(self):
-        path = filedialog.askopenfilename(title="Select animation file to SWAP OUT", filetypes=[("SM3 ANIM", "*.anim"), ("All files", "*.*")])
+        path = filedialog.askopenfilename(title="Select animation file to SWAP OUT", filetypes=[("SM3 ANIM / WRAP.ANIM", "*.anim"), ("All files", "*.*")])
         if path:
             p = Path(path)
             self.source_file_var.set(path)
@@ -1213,7 +1301,7 @@ class NewAnimationSwapperTab(ttk.Frame):
             self._auto_detect_extracted_root_from_target(p)
 
     def browse_swap_replacement(self):
-        path = filedialog.askopenfilename(title="Select replacement / donor SM3 ANIM", filetypes=[("SM3 ANIM", "*.anim"), ("All files", "*.*")])
+        path = filedialog.askopenfilename(title="Select replacement / donor SM3 ANIM", filetypes=[("SM3 ANIM / WRAP.ANIM", "*.anim"), ("All files", "*.*")])
         if path:
             self.target_file_var.set(path)
             self.swap_build_status_var.set(f"Replacement selected: {Path(path).name}")
@@ -1282,6 +1370,47 @@ class NewAnimationSwapperTab(ttk.Frame):
             self.swap_build_status_var.set(f"BUILD FAILED — {exc}")
             messagebox.showerror("Create XESM3 animation swap", str(exc))
             self.log(f"Guided XESM3 ANIM swap failed: {exc}")
+
+    def build_guided_wrap_anim_swap(self):
+        """v5.2.184 WRAP button: target <- donor NativeWRAP animation mod."""
+        try:
+            target = Path(self.source_file_var.get().strip().strip('"'))
+            donor = Path(self.target_file_var.get().strip().strip('"'))
+            extracted = Path(self.extracted_character_folder_var.get().strip().strip('"'))
+            out_raw = self.out_dir_var.get().strip().strip('"')
+            if not target.is_file():
+                raise FileNotFoundError("STEP 1: choose a valid target animation first.")
+            if not donor.is_file():
+                raise FileNotFoundError("STEP 2: choose a valid replacement animation first.")
+            if not extracted.is_dir():
+                raise FileNotFoundError("Choose the MOD LOADER READY extracted pack folder containing WRAP_EXTRACTS.")
+            if not out_raw:
+                raise FileNotFoundError("STEP 3: choose an output folder first.")
+            out = Path(out_raw); out.mkdir(parents=True, exist_ok=True)
+            result = build_wrap_anim_xesm3_output(
+                target_anim=target,
+                donor_anim=donor,
+                extracted_pack_root=extracted,
+                output_root=out,
+                mod_name=self.swap_mod_name_var.get(),
+                make_zip=True,
+            )
+            self._last_guided_swap_output = Path(result.mod_root)
+            self.swap_build_status_var.set(
+                f"WRAP BUILD PASS ✅ — target 0x{result.target_hash:08X} | {result.donor_mode} | {Path(result.zip_path).name}"
+            )
+            self.log(
+                f"Guided WRAP.ANIM swap PASS: target 0x{result.target_hash:08X} <- donor 0x{result.donor_hash:08X} -> "
+                f"{result.pack}/{result.archive}/{Path(result.output_wrap_anim).name}"
+            )
+            try:
+                open_path(Path(result.mod_root))
+            except Exception:
+                pass
+        except Exception as exc:
+            self.swap_build_status_var.set(f"WRAP BUILD FAILED — {exc}")
+            messagebox.showerror("WRAP.ANIM Swap", str(exc))
+            self.log(f"Guided WRAP.ANIM swap failed: {exc}")
 
     def open_guided_swap_output(self):
         path = self._last_guided_swap_output
@@ -1568,7 +1697,7 @@ class NewAnimationSwapperTab(ttk.Frame):
     def browse_source_file(self):
         path = filedialog.askopenfilename(
             title="Select Source OUT / destination animation slot",
-            filetypes=[("Animation files", "*.anim"), ("All files", "*.*")],
+            filetypes=[("Animation / WRAP.ANIM files", "*.anim"), ("All files", "*.*")],
         )
         if path:
             self.source_file_var.set(path)
@@ -1576,7 +1705,7 @@ class NewAnimationSwapperTab(ttk.Frame):
     def browse_target_file(self):
         path = filedialog.askopenfilename(
             title="Select Replacement IN animation",
-            filetypes=[("Animation files", "*.anim"), ("All files", "*.*")],
+            filetypes=[("Animation / WRAP.ANIM files", "*.anim"), ("All files", "*.*")],
         )
         if path:
             self.target_file_var.set(path)
@@ -1699,7 +1828,7 @@ class NewAnimationSwapperTab(ttk.Frame):
     def _codec_anim_path(self) -> Path:
         raw = self.decoder_anim_var.get().strip().strip('"')
         if not raw:
-            raise AnimCodecError("Select a loose/extracted SM3 .anim first.")
+            raise AnimCodecError("Select an extracted SM3 .anim or .wrap.anim first.")
         path = Path(raw)
         if not path.exists() or not path.is_file():
             raise AnimCodecError(f"ANIM file not found: {path}")
@@ -1778,7 +1907,7 @@ class NewAnimationSwapperTab(ttk.Frame):
     def codec_roundtrip_test(self):
         try:
             anim_path = self._codec_anim_path()
-            data = anim_path.read_bytes()
+            data = read_anim_payload(anim_path)
             decoded = codec_decode_anim(data)
             rebuilt, info = codec_encode_frames_into_template(data, decoded, auto_codecs=False)
             if rebuilt != data:
@@ -1810,7 +1939,7 @@ class NewAnimationSwapperTab(ttk.Frame):
     def codec_decode_to_json(self):
         try:
             anim_path = self._codec_anim_path()
-            decoded = codec_decode_anim(anim_path.read_bytes())
+            decoded = codec_decode_anim(read_anim_payload(anim_path))
             edited, _rebuilt, reports = self._codec_output_dirs(anim_path)
             json_path = edited / f"{anim_path.name}.json"
             csv_path = reports / f"{anim_path.name}.frames.csv"
@@ -1833,7 +1962,14 @@ class NewAnimationSwapperTab(ttk.Frame):
             messagebox.showerror("NAS ANIM Codec", str(exc))
             self.log(f"NAS Codec JSON decode failed: {exc}")
 
-    def codec_build_edited_anim(self):
+    def codec_build_edited_anim(self, motion_editor_auto_grow: bool = False):
+        """Build edited scalar frames back into an ANIM template.
+
+        Direct legacy codec use keeps its explicit resize checkbox behavior.
+        Guided Motion Editor may request an automatic retry with the proven
+        arbitrary-size loose-resource relocator when (and only when) the
+        recompressed bitstream exceeds the original payload capacity.
+        """
         self.codec_rebuilt_var.set("")
         try:
             anim_path = self._codec_anim_path()
@@ -1844,18 +1980,39 @@ class NewAnimationSwapperTab(ttk.Frame):
             if not json_path.exists() or not json_path.is_file():
                 raise AnimCodecError(f"Editable JSON not found: {json_path}")
             obj = codec_load_json(json_path)
-            template = anim_path.read_bytes()
-            rebuilt_bytes, info = codec_encode_frames_into_template(
-                template, obj,
-                auto_codecs=bool(self.codec_auto_codecs_var.get()),
-                allow_arbitrary_size=bool(self.codec_allow_resize_var.get()),
-            )
+            template = read_anim_payload(anim_path)
+            explicit_resize = bool(self.codec_allow_resize_var.get())
+            auto_grow_retry = False
+            try:
+                rebuilt_bytes, info = codec_encode_frames_into_template(
+                    template, obj,
+                    auto_codecs=bool(self.codec_auto_codecs_var.get()),
+                    allow_arbitrary_size=explicit_resize,
+                )
+            except AnimCodecError as first_exc:
+                capacity_error = (
+                    "encoded bitstream requires" in str(first_exc)
+                    and "template payload has only" in str(first_exc)
+                )
+                if not (motion_editor_auto_grow and capacity_error and not explicit_resize):
+                    raise
+                rebuilt_bytes, info = codec_encode_frames_into_template(
+                    template, obj,
+                    auto_codecs=bool(self.codec_auto_codecs_var.get()),
+                    allow_arbitrary_size=True,
+                )
+                auto_grow_retry = True
+                self.log(
+                    "NAS Motion Editor AUTO-GROW: fixed-size payload was too small; "
+                    f"rebuilt loose ANIM with relocated local tokens ({info.get('size_delta_bytes', 0):+} bytes)."
+                )
             verify = codec_decode_anim(rebuilt_bytes)
             requested_frames = [[int(v) for v in row] for row in obj["frames"]]
             if verify.frames != requested_frames:
                 raise AnimCodecError("Rebuilt ANIM decoded, but scalar frames do not match the editable JSON.")
             _edited, rebuilt_dir, reports = self._codec_output_dirs(anim_path)
-            out_path = rebuilt_dir / f"{anim_path.stem}_EDITED.anim"
+            base_name = anim_path.name[:-10] if anim_path.name.lower().endswith(".wrap.anim") else anim_path.stem
+            out_path = rebuilt_dir / f"{base_name}_EDITED.anim"
             out_path.write_bytes(rebuilt_bytes)
             report = {
                 "status": "PASS",
@@ -1869,6 +2026,7 @@ class NewAnimationSwapperTab(ttk.Frame):
                 "free_bits": info["free_bits"],
                 "auto_codecs": info["auto_codecs"],
                 "allow_arbitrary_size": info.get("allow_arbitrary_size", False),
+                "motion_editor_auto_grow_retry": auto_grow_retry,
                 "rebuild_mode": info.get("rebuild_mode", "TEMPLATE_SIZE"),
                 "resized": info.get("resized", False),
                 "size_delta_bytes": info.get("size_delta_bytes", 0),
@@ -1891,8 +2049,9 @@ class NewAnimationSwapperTab(ttk.Frame):
             )
             self._set_codec_text(summary)
             mode = info.get("rebuild_mode", "TEMPLATE_SIZE")
+            grow_note = " | AUTO-GROW USED" if auto_grow_retry else ""
             self.codec_status_var.set(
-                f"BUILD PASS [{mode}]: {out_path.name} — size {info.get('old_file_size')} -> {info.get('new_file_size')} bytes; {info['free_bits']} free bits."
+                f"BUILD PASS [{mode}]{grow_note}: {out_path.name} — size {info.get('old_file_size')} -> {info.get('new_file_size')} bytes; {info['free_bits']} free bits."
             )
             self.log(f"NAS Codec build PASS: {out_path.name}; scalar frames verified after re-decode.")
             return True
@@ -2061,7 +2220,7 @@ class NewAnimationSwapperTab(ttk.Frame):
         """Normal-user path: always rebuild editable JSON fresh from the selected ANIM."""
         raw = self.decoder_anim_var.get().strip().strip('"')
         if not raw or not Path(raw).is_file():
-            messagebox.showwarning("ANIM Motion Editor", "STEP 1: Select a valid .anim file first.")
+            messagebox.showwarning("ANIM Motion Editor", "STEP 1: Select a valid .anim or .wrap.anim file first.")
             return
         # Avoid silently reopening an edited JSON from an earlier attempt.
         self.codec_json_var.set("")
@@ -2072,7 +2231,7 @@ class NewAnimationSwapperTab(ttk.Frame):
         if self._anim_editor is not None:
             self._editor_update_range_summary()
             self.editor_review_var.set(
-                "Animation loaded fresh from the original ANIM. Choose Motion / Bone / Axis, then choose a frame range."
+                "Animation loaded fresh from the selected ANIM / WRAP.ANIM. Choose Motion / Bone / Axis, then choose a frame range."
             )
 
     def editor_guided_apply_range(self):
@@ -2119,6 +2278,164 @@ class NewAnimationSwapperTab(ttk.Frame):
         except Exception as exc:
             messagebox.showerror("ANIM Motion Editor", str(exc))
 
+    def _editor_verified_rebuilt_path(self) -> Path:
+        raw = self.codec_rebuilt_var.get().strip().strip('"')
+        if not raw or not Path(raw).is_file():
+            raise AnimCodecError("STEP 6 must pass first. Build + Verify the edited animation before exporting.")
+        rebuilt = Path(raw)
+        source_raw = self.decoder_anim_var.get().strip().strip('"')
+        if not source_raw or not Path(source_raw).is_file():
+            raise AnimCodecError("The original Motion Editor ANIM / WRAP.ANIM source is no longer available.")
+        source = Path(source_raw)
+        source_header = inspect_anim_header(source)
+        rebuilt_header = inspect_anim_header(rebuilt)
+        if rebuilt_header.resource_hash != source_header.resource_hash:
+            raise AnimCodecError(
+                f"Edited ANIM resource hash changed unexpectedly: source=0x{source_header.resource_hash:08X} "
+                f"rebuilt=0x{rebuilt_header.resource_hash:08X}."
+            )
+        if rebuilt_header.askl_hash != source_header.askl_hash:
+            raise AnimCodecError(
+                f"Edited ANIM ASKL hash changed unexpectedly: source=0x{source_header.askl_hash:08X} "
+                f"rebuilt=0x{rebuilt_header.askl_hash:08X}."
+            )
+        return rebuilt
+
+    def editor_export_classic_anim(self):
+        """Save the verified Motion Editor result as a classic loose .anim."""
+        try:
+            rebuilt = self._editor_verified_rebuilt_path()
+            source = Path(self.decoder_anim_var.get().strip().strip('"'))
+            header = inspect_anim_header(rebuilt)
+            if source.name.lower().endswith('.wrap.anim'):
+                default_name = source.name[:-10] + '.anim'
+            elif source.name.lower().endswith('.anim'):
+                default_name = source.name
+            else:
+                default_name = f"0x{header.resource_hash:08X}.edited.anim"
+            out = filedialog.asksaveasfilename(
+                title="Save Motion Editor Classic .ANIM",
+                initialfile=default_name,
+                defaultextension=".anim",
+                filetypes=[("SM3 Classic ANIM", "*.anim"), ("All files", "*.*")],
+            )
+            if not out:
+                return
+            dst = Path(out)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(rebuilt, dst)
+            verify = inspect_anim_header(dst)
+            if verify.resource_hash != header.resource_hash or verify.askl_hash != header.askl_hash:
+                raise AnimCodecError("Classic ANIM post-write identity verification failed.")
+            self.editor_status_var.set(
+                f"CLASSIC OUTPUT PASS: {dst.name} — 0x{verify.resource_hash:08X} / ASKL 0x{verify.askl_hash:08X}."
+            )
+            self.editor_review_var.set(
+                f"CLASSIC .ANIM SAVED ✅ — {dst.name}. Motion edit and resource/skeleton identity verified."
+            )
+            self.log(f"Motion Editor CLASSIC .ANIM PASS: {dst}")
+            messagebox.showinfo("Motion Editor Classic Output", f"Classic .ANIM saved successfully:\n\n{dst}")
+        except Exception as exc:
+            messagebox.showerror("Motion Editor Classic Output", str(exc))
+            self.log(f"Motion Editor Classic output failed: {exc}")
+
+    def _editor_find_wrap_shell(self, source: Path, resource_hash: int) -> Path:
+        if source.name.lower().endswith('.wrap.anim'):
+            return source
+
+        roots = []
+        extracted = self.extracted_character_folder_var.get().strip().strip('"')
+        if extracted and Path(extracted).exists():
+            roots.append(Path(extracted))
+        # Search nearby old/raw and MOD LOADER READY sibling structures.
+        roots.append(source.parent)
+        roots.extend(list(source.parents)[:6])
+        seen = set()
+        for root in roots:
+            key = str(root.resolve()) if root.exists() else str(root)
+            if key in seen or not root.exists():
+                continue
+            seen.add(key)
+            try:
+                return find_matching_wrap_resource(root, resource_hash, 'anim')
+            except Exception:
+                pass
+
+        chosen = filedialog.askopenfilename(
+            title=f"Select original WRAP.ANIM shell for 0x{resource_hash:08X}",
+            initialdir=str(source.parent),
+            filetypes=[("SM3 NativeWRAP ANIM", "*.wrap.anim"), ("All files", "*.*")],
+        )
+        if not chosen:
+            raise AnimCodecError(
+                f"No matching original .wrap.anim shell was found for 0x{resource_hash:08X}. "
+                "Run MOD LOADER READY or select the matching WRAP.ANIM manually."
+            )
+        return Path(chosen)
+
+    def editor_export_wrap_anim(self):
+        """Save the verified Motion Editor result inside the original NativeWRAP shell."""
+        try:
+            rebuilt = self._editor_verified_rebuilt_path()
+            source = Path(self.decoder_anim_var.get().strip().strip('"'))
+            header = inspect_anim_header(rebuilt)
+            shell_path = self._editor_find_wrap_shell(source, header.resource_hash)
+            shell = shell_path.read_bytes()
+            info = inspect_wrap_bytes(shell)
+            if info.component_count < 1:
+                raise AnimCodecError("Selected WRAP.ANIM shell contains no ANIM component.")
+
+            # ANIM-specific rebuild is required for arbitrary-size Motion Editor
+            # output because payload growth shifts metadata-tail pointer fields.
+            # It also works for same-size edits and verifies a byte-exact
+            # WRAP -> canonical ANIM roundtrip before returning.
+            wrapped, stats = rebuild_wrap_anim_from_shell(shell, rebuilt.read_bytes())
+            inner_hash = read_wrap_anim_resource_hash(wrapped)
+            if inner_hash != header.resource_hash:
+                raise AnimCodecError(
+                    f"WRAP.ANIM inner identity verification failed: inner=0x{inner_hash:08X} "
+                    f"expected=0x{header.resource_hash:08X}."
+                )
+            final_info = inspect_wrap_bytes(wrapped)
+            if final_info.archive_hash != info.archive_hash:
+                raise AnimCodecError("WRAP.ANIM parent archive identity changed unexpectedly.")
+
+            if shell_path.name.lower().endswith('.wrap.anim'):
+                default_name = shell_path.name
+            else:
+                default_name = f"0x{header.resource_hash:08X}.edited.wrap.anim"
+            out = filedialog.asksaveasfilename(
+                title="Save Motion Editor WRAP.ANIM",
+                initialfile=default_name,
+                defaultextension=".wrap.anim",
+                filetypes=[("SM3 NativeWRAP ANIM", "*.wrap.anim"), ("All files", "*.*")],
+            )
+            if not out:
+                return
+            dst = Path(out)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes(wrapped)
+            verify_bytes = dst.read_bytes()
+            if read_wrap_anim_resource_hash(verify_bytes) != header.resource_hash:
+                raise AnimCodecError("WRAP.ANIM post-write inner hash verification failed.")
+            verify_info = inspect_wrap_bytes(verify_bytes)
+            if verify_info.archive_hash != info.archive_hash:
+                raise AnimCodecError("WRAP.ANIM post-write archive identity verification failed.")
+            self.editor_status_var.set(
+                f"WRAP OUTPUT PASS: {dst.name} — inner 0x{header.resource_hash:08X} / archive 0x{verify_info.archive_hash:08X}."
+            )
+            self.editor_review_var.set(
+                f"WRAP.ANIM SAVED ✅ — {dst.name}. Motion edit, inner ANIM identity, and WRAP ownership verified."
+            )
+            self.log(
+                f"Motion Editor WRAP.ANIM PASS: {dst}; internal={stats.get('internal_patches', 0)} "
+                f"external={stats.get('external_patches', 0)} global={stats.get('global_patches', 0)}"
+            )
+            messagebox.showinfo("Motion Editor WRAP Output", f"NativeWRAP .ANIM saved successfully:\n\n{dst}")
+        except Exception as exc:
+            messagebox.showerror("Motion Editor WRAP Output", str(exc))
+            self.log(f"Motion Editor WRAP output failed: {exc}")
+
     def editor_open_xesm3_output(self):
         raw = self.anim_mod_output_anim_var.get().strip().strip('"')
         if not raw or not Path(raw).is_file():
@@ -2137,32 +2454,46 @@ class NewAnimationSwapperTab(ttk.Frame):
         try:
             anim_path = Path(self.decoder_anim_var.get().strip().strip('"'))
             if not anim_path.is_file():
-                raise AnimDecodeError("Select a valid extracted .anim file.")
+                raise AnimDecodeError("Select a valid extracted .anim or .wrap.anim file.")
             header = inspect_anim_header(anim_path)
             parent_apkf = find_parent_apkf_for_anim(anim_path)
             parent_data = parent_apkf.read_bytes() if parent_apkf is not None else None
 
-            # v5.2.132: Spider-Man 0xCFB154CD can use the runtime-reconstructed
-            # named profile directly. No serialized raw ASKL/T4 selection is
-            # required for the Quick Motion Editor test path. Other skeletons
-            # retain the v5.2.129 file/folder validation flow.
+            # v5.2.191 character-aware Motion Editor mapping.
+            # Spider-Man, Black Suit and Peter share 0xCFB154CD. Other known
+            # characters first use their real raw/WRAP ASKL from MOD LOADER
+            # READY; Player Goblin also has a named built-in fallback.
             skeleton_raw = self.decoder_askl_var.get().strip().strip('"')
-            use_builtin_named = int(header.askl_hash) == 0xCFB154CD and not (skeleton_raw and Path(skeleton_raw).is_file())
             skeleton_path = None
-            source_kind = "CFB154CD_RUNTIME_NAMED_PROFILE" if use_builtin_named else ""
-            if not use_builtin_named:
-                if not skeleton_raw or not Path(skeleton_raw).is_file():
-                    raise AnimDecodeError(
-                        "For non-0xCFB154CD ANIMs, use Select ASKL File or Select Folder + Scan. "
-                        "Spider-Man 0xCFB154CD can use the built-in runtime named profile automatically."
-                    )
+            source_kind = ""
+            character_label = identify_character(anim_path, header.askl_hash)
+
+            if skeleton_raw and Path(skeleton_raw).is_file():
                 skeleton_path = validate_matching_sm3_skeleton_source_path(anim_path, Path(skeleton_raw))
                 source_kind = classify_sm3_skeleton_source(anim_path, skeleton_path)
+            else:
+                # The shared Spider-Man family profile is authoritative and
+                # does not need a serialized ASKL in CH_SPIDERMAN/BLACKSUIT/PETER.
+                if int(header.askl_hash) != 0xCFB154CD:
+                    found = self._auto_find_decoder_askl(quiet=True)
+                    if found is not None and Path(found).is_file():
+                        skeleton_path = validate_matching_sm3_skeleton_source_path(anim_path, Path(found))
+                        source_kind = classify_sm3_skeleton_source(anim_path, skeleton_path)
+
+                if skeleton_path is None:
+                    if has_builtin_profile(header.askl_hash):
+                        source_kind = f"BUILTIN_NAMED_PROFILE_{int(header.askl_hash):08X}"
+                    else:
+                        raise AnimDecodeError(
+                            f"No matching skeleton was found automatically for {character_label} / "
+                            f"0x{int(header.askl_hash):08X}. Use the OPTIONAL ASKL FALLBACK: pick an exact ASKL file or auto-find one in a folder. "
+                            "MOD LOADER READY .wrap.askl files are supported directly."
+                        )
 
             raw_json = self.codec_json_var.get().strip().strip('"')
             json_path = Path(raw_json) if raw_json else None
             if json_path is None or not json_path.exists():
-                decoded = codec_decode_anim(anim_path.read_bytes())
+                decoded = codec_decode_anim(read_anim_payload(anim_path))
                 edited, _rebuilt, _reports = self._codec_output_dirs(anim_path)
                 json_path = edited / f"{anim_path.name}.json"
                 json_path.write_text(
@@ -2173,12 +2504,12 @@ class NewAnimationSwapperTab(ttk.Frame):
 
             obj = codec_load_json(json_path)
             decoder = None
-            if source_kind == "CFB154CD_RUNTIME_NAMED_PROFILE":
-                named_rows = build_named_track_map(anim_path.read_bytes())
+            if source_kind.startswith("BUILTIN_NAMED_PROFILE_"):
+                named_rows = build_named_track_map(read_anim_payload(anim_path))
                 editor = AnimNamedProfileEditor(obj, header, named_rows)
-                mode_name = "CFB154CD RUNTIME NAMED PROFILE"
+                mode_name = f"{character_label} BUILT-IN NAMED PROFILE"
             elif source_kind in ("RAW_ASKL", "WRAP_ASKL"):
-                decoder = SM3AnimPoseDecoder(anim_path.read_bytes(), skeleton_path.read_bytes(), parent_data)
+                decoder = SM3AnimPoseDecoder(read_anim_payload(anim_path), skeleton_path.read_bytes(), parent_data)
                 editor = AnimScalarEditor(obj, decoder)
                 mode_name = f"ASKL-AWARE / {source_kind}"
             else:
@@ -2248,22 +2579,25 @@ class NewAnimationSwapperTab(ttk.Frame):
                     "FK_QUATERNION is normalized by the game after scaling.\n"
                     "Use SET for an exact raw value or ADD DELTA for a controlled visible change. SAVE JSON before leaving the editor."
                 )
-            elif source_kind == "CFB154CD_RUNTIME_NAMED_PROFILE":
+            elif source_kind.startswith("BUILTIN_NAMED_PROFILE_"):
+                profile_name = profile_display_name(header.askl_hash)
                 self.editor_status_var.set(
-                    f"NAMED PROFILE MAP PASS: {editor.frame_count} frames / {editor.track_count} tracks / {resolved} named scalars."
+                    f"NAMED PROFILE MAP PASS: {character_label} — {editor.frame_count} frames / {editor.track_count} tracks / {resolved} named scalars."
                 )
                 detail = (
-                    "CFB154CD RUNTIME NAMED MOTION MAP PASS\n"
+                    "BUILT-IN CHARACTER NAMED MOTION MAP PASS\n"
+                    f"Character: {character_label}\n"
                     f"ANIM: {anim_path.name}\n"
-                    "Skeleton profile: built-in ch_spiderman / 0xCFB154CD / 85 nodes\n"
-                    "Serialized raw ASKL file: not required for this profile-backed editor path\n"
+                    f"Skeleton profile: {profile_name}\n"
+                    f"ASKL hash: 0x{int(header.askl_hash):08X}\n"
+                    "Serialized ASKL file: not required for this profile-backed fallback path\n"
                     f"Editable JSON: {json_path}\n"
                     f"Frames: {editor.frame_count}\n"
                     f"Compressed scalar tracks: {editor.track_count}\n"
                     f"Bone-mapped scalar tracks: {named}\n"
                     f"Resolved bone-name scalar tracks: {resolved}\n\n"
-                    "Editing rule: values remain the exact signed compressed integers. Runtime-captured per-element scales are shown for context. "
-                    "Build verification still uses the v5.2.129 decode -> encode -> re-decode path."
+                    "Editing rule: values remain exact signed compressed integers. Per-element profile scales are shown for context. "
+                    "Build verification still uses decode -> encode -> re-decode."
                 )
             else:
                 self.editor_status_var.set(
@@ -2283,11 +2617,15 @@ class NewAnimationSwapperTab(ttk.Frame):
                     "Named field/bone mapping activates automatically when a matching raw or WRAP ASKL is selected or found by folder scan."
                 )
             self._set_editor_text(detail)
-            skeleton_label = skeleton_path.name if skeleton_path is not None else "built-in 0xCFB154CD runtime profile"
-            if source_kind == "CFB154CD_RUNTIME_NAMED_PROFILE":
-                self.editor_skeleton_status_var.set("Skeleton: Spider-Man / 0xCFB154CD — detected automatically ✅")
+            skeleton_label = skeleton_path.name if skeleton_path is not None else f"built-in 0x{int(header.askl_hash):08X} profile"
+            if source_kind.startswith("BUILTIN_NAMED_PROFILE_"):
+                self.editor_skeleton_status_var.set(
+                    f"Skeleton: {character_label} / 0x{int(header.askl_hash):08X} — built-in named profile ✅"
+                )
             elif skeleton_path is not None:
-                self.editor_skeleton_status_var.set(f"Skeleton: {skeleton_path.name} — match verified ✅")
+                self.editor_skeleton_status_var.set(
+                    f"Skeleton: {character_label} / {skeleton_path.name} — {source_kind} match verified ✅"
+                )
             self._editor_update_range_summary()
             self.log(
                 f"NAS Motion Editor {mode_name} PASS: {anim_path.name}; {editor.frame_count} frames, "
@@ -2462,21 +2800,23 @@ class NewAnimationSwapperTab(ttk.Frame):
         try:
             if not self.editor_save_json():
                 return
-            if not self.codec_build_edited_anim():
+            if not self.codec_build_edited_anim(
+                motion_editor_auto_grow=bool(self.editor_auto_grow_var.get())
+            ):
                 self.editor_status_var.set("BUILD FAILED — see NAS Codec status/log.")
                 return
             if self.codec_rebuilt_var.get().strip():
                 rebuilt_path = Path(self.codec_rebuilt_var.get().strip().strip('"'))
                 self.editor_status_var.set(
-                    f"BUILD PASS: {rebuilt_path.name} — verified by NAS re-decode. Queued for XESM3 Mod Output."
+                    f"BUILD PASS: {rebuilt_path.name} — verified by NAS re-decode. Ready for Classic, WRAP, or XESM3 output."
                 )
                 if rebuilt_path.is_file():
                     self.anim_mod_output_anim_var.set(str(rebuilt_path))
                     self.anim_mod_status_var.set(
-                        f"Motion Editor BUILD PASS queued for XESM3: {rebuilt_path.name}"
+                        f"Motion Editor BUILD PASS ready for output: {rebuilt_path.name}"
                     )
                     self.editor_review_var.set(
-                        f"BUILD + VERIFY PASS ✅ — {rebuilt_path.name} is ready for Step 7 / XESM3 Mod Output."
+                        f"BUILD + VERIFY PASS ✅ — {rebuilt_path.name} is ready for Step 7 Classic / WRAP / XESM3 output."
                     )
         except Exception as exc:
             messagebox.showerror("NAS Motion Editor", str(exc))
@@ -2506,11 +2846,16 @@ class NewAnimationSwapperTab(ttk.Frame):
                 except Exception:
                     self.decoder_askl_var.set("")
             self.decoder_status_var.set(
-                f"ANIM 0x{header.resource_hash:08X} loaded — {header.sample_count} samples, expects skeleton 0x{header.askl_hash:08X}. Select ASKL File or Select Folder + Scan."
+                f"ANIM 0x{header.resource_hash:08X} loaded from {'WRAP.ANIM' if path.name.lower().endswith('.wrap.anim') else 'ANIM'} — {header.sample_count} samples, expects skeleton 0x{header.askl_hash:08X}. Use the optional ASKL fallback: pick an exact ASKL / WRAP.ASKL or auto-find one in a folder."
             )
+            character_label = identify_character(path, header.askl_hash)
             if int(header.askl_hash) == 0xCFB154CD:
                 self.editor_skeleton_status_var.set(
-                    f"Animation: 0x{header.resource_hash:08X} • {header.sample_count} frames • Spider-Man skeleton detected automatically ✅"
+                    f"Animation: 0x{header.resource_hash:08X} • {header.sample_count} frames • {character_label} shared 0xCFB154CD profile detected automatically ✅"
+                )
+            elif has_builtin_profile(header.askl_hash):
+                self.editor_skeleton_status_var.set(
+                    f"Animation: 0x{header.resource_hash:08X} • {header.sample_count} frames • {character_label} 0x{header.askl_hash:08X}. WRAP.ASKL auto-map preferred; built-in named fallback available ✅"
                 )
             else:
                 self.editor_skeleton_status_var.set(
@@ -2523,8 +2868,8 @@ class NewAnimationSwapperTab(ttk.Frame):
 
     def browse_decoder_anim(self):
         path = filedialog.askopenfilename(
-            title="Select extracted SM3 ANIM",
-            filetypes=[("SM3 ANIM", "*.anim"), ("All files", "*.*")],
+            title="Select extracted SM3 ANIM / WRAP.ANIM",
+            filetypes=[("SM3 ANIM / WRAP.ANIM", "*.anim *.wrap.anim"), ("All files", "*.*")],
         )
         if path:
             self._set_decoder_anim_path(Path(path), try_askl=False)
@@ -2532,7 +2877,7 @@ class NewAnimationSwapperTab(ttk.Frame):
     def browse_decoder_askl(self):
         path = filedialog.askopenfilename(
             title="Select matching ASKL / skeleton source",
-            filetypes=[("ASKL / Skeleton", "*.askl *.hsam"), ("ASKL", "*.askl"), ("Outer T4 HSAM", "*.hsam"), ("All files", "*.*")],
+            filetypes=[("ASKL / WRAP.ASKL / Skeleton", "*.askl *.wrap.askl *.hsam"), ("ASKL / WRAP.ASKL", "*.askl *.wrap.askl"), ("Outer T4 HSAM", "*.hsam"), ("All files", "*.*")],
         )
         if path:
             try:
@@ -2611,6 +2956,23 @@ class NewAnimationSwapperTab(ttk.Frame):
         raw_root = self.extracted_character_folder_var.get().strip().strip('"')
         search_roots: list[Path] = []
 
+        # v5.2.190: MOD LOADER READY / WRAP_EXTRACTS is now a first-class
+        # Motion Editor source.  Search the owning O#### archive first so an
+        # ANIM folder can resolve its sibling ASKL folder automatically, then
+        # widen to WRAP_EXTRACTS if needed.
+        wrap_owner = None
+        wrap_root = None
+        for parent in [anim_path.parent, *anim_path.parents]:
+            if re.match(r"^O\d+\.0x[0-9A-Fa-f]{8}\.T[0-9A-Fa-f]+\.apkf$", parent.name, flags=re.IGNORECASE):
+                wrap_owner = parent
+            if parent.name.upper() == "WRAP_EXTRACTS":
+                wrap_root = parent
+                break
+        if wrap_owner is not None and wrap_owner.is_dir():
+            search_roots.append(wrap_owner)
+        if wrap_root is not None and wrap_root.is_dir() and wrap_root not in search_roots:
+            search_roots.append(wrap_root)
+
         # Legacy convenience auto-find retained for internal calls. v5.2.128
         # validates candidates by parsed contents instead of WOS/SM3 path names.
         pack_root = None
@@ -2680,9 +3042,9 @@ class NewAnimationSwapperTab(ttk.Frame):
             anim_path = Path(self.decoder_anim_var.get().strip().strip('"'))
             askl_path = Path(self.decoder_askl_var.get().strip().strip('"'))
             if not anim_path.exists() or not anim_path.is_file():
-                raise AnimDecodeError("Select a valid extracted .anim file.")
+                raise AnimDecodeError("Select a valid extracted .anim or .wrap.anim file.")
             if not askl_path.exists() or not askl_path.is_file():
-                raise AnimDecodeError("After selecting ANIM, use Select ASKL File or Select Folder + Scan.")
+                raise AnimDecodeError("After selecting ANIM, use the optional ASKL fallback: pick the exact file or auto-find it in a folder.")
             parent_apkf = find_parent_apkf_for_anim(anim_path)
             parent_data = parent_apkf.read_bytes() if parent_apkf is not None else None
             if classify_sm3_skeleton_source(anim_path, askl_path) not in ("RAW_ASKL", "WRAP_ASKL"):
@@ -2691,7 +3053,7 @@ class NewAnimationSwapperTab(ttk.Frame):
                     "The selected source is only a T4 HSAM, so use ANIM Motion Editor RAW_TRACKS mode or select/scan a folder containing the matching ASKL."
                 )
             askl_path = validate_matching_sm3_askl_path(anim_path, askl_path)
-            decoder = SM3AnimPoseDecoder(anim_path.read_bytes(), askl_path.read_bytes(), parent_data)
+            decoder = SM3AnimPoseDecoder(read_anim_payload(anim_path), askl_path.read_bytes(), parent_data)
             frame = int(self.decoder_frame_var.get())
             result = decoder.decode_frame(frame)
             summary = format_anim_decode_summary(decoder, result)
@@ -2723,9 +3085,9 @@ class NewAnimationSwapperTab(ttk.Frame):
         anim_path = Path(self.decoder_anim_var.get().strip().strip('"'))
         askl_path = Path(self.decoder_askl_var.get().strip().strip('"'))
         if not anim_path.exists() or not anim_path.is_file():
-            raise AnimDecodeError("Select a valid extracted .anim file.")
+            raise AnimDecodeError("Select a valid extracted .anim or .wrap.anim file.")
         if not askl_path.exists() or not askl_path.is_file():
-            raise AnimDecodeError("After selecting ANIM, use Select ASKL File or Select Folder + Scan.")
+            raise AnimDecodeError("After selecting ANIM, use the optional ASKL fallback: pick the exact file or auto-find it in a folder.")
         parent_apkf = find_parent_apkf_for_anim(anim_path)
         return anim_path, askl_path, parent_apkf
 
@@ -2758,7 +3120,7 @@ class NewAnimationSwapperTab(ttk.Frame):
                         "The selected T4 HSAM is only the RAW_TRACKS fallback; select an ASKL file or scan a folder for one."
                     )
                 askl_path = validate_matching_sm3_askl_path(anim_path, askl_path)
-                decoder = SM3AnimPoseDecoder(anim_path.read_bytes(), askl_path.read_bytes(), parent_data)
+                decoder = SM3AnimPoseDecoder(read_anim_payload(anim_path), askl_path.read_bytes(), parent_data)
                 animation = decoder.decode_all_frames()
                 summary = format_anim_timeline_summary(decoder, animation)
                 self._decoder_worker_queue.put((
@@ -3062,14 +3424,14 @@ class NewAnimationSwapperTab(ttk.Frame):
             style="Muted.TLabel", wraplength=1120,
         ).grid(row=1, column=0, columnspan=6, sticky="w", pady=(0, 10))
 
-        ttk.Label(page, text="1) Rebuilt ANIM", style="CardLabel.TLabel").grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        ttk.Label(page, text="1) Rebuilt ANIM / WRAP.ANIM", style="CardLabel.TLabel").grid(row=2, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(page, textvariable=self.anim_mod_output_anim_var).grid(row=2, column=1, columnspan=3, sticky="ew", padx=4, pady=4)
         ttk.Button(page, text="Browse ANIM", command=self.browse_anim_mod_output_anim).grid(row=2, column=4, sticky="ew", padx=4, pady=4)
         ttk.Button(page, text="Use Rebuilt / Replacement IN", command=self.use_replacement_in_for_mod_output).grid(row=2, column=5, sticky="ew", padx=4, pady=4)
 
-        ttk.Label(page, text="2) Extracted pack folder", style="CardLabel.TLabel").grid(row=3, column=0, sticky="w", padx=4, pady=4)
+        ttk.Label(page, text="2) MOD LOADER READY / extracted pack folder", style="CardLabel.TLabel").grid(row=3, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(page, textvariable=self.extracted_character_folder_var).grid(row=3, column=1, columnspan=3, sticky="ew", padx=4, pady=4)
-        ttk.Button(page, text="Browse Extracted", command=self.browse_extracted_character_folder).grid(row=3, column=4, columnspan=2, sticky="ew", padx=4, pady=4)
+        ttk.Button(page, text="Browse Owner Folder", command=self.browse_extracted_character_folder).grid(row=3, column=4, columnspan=2, sticky="ew", padx=4, pady=4)
 
         ttk.Label(page, text="3) Mod name", style="CardLabel.TLabel").grid(row=4, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(page, textvariable=self.anim_mod_name_var).grid(row=4, column=1, columnspan=2, sticky="ew", padx=4, pady=4)
@@ -3078,9 +3440,12 @@ class NewAnimationSwapperTab(ttk.Frame):
         ttk.Button(page, text="Browse Output", command=self.browse_out_dir).grid(row=4, column=5, sticky="ew", padx=4, pady=4)
 
         ttk.Button(
-            page, text="4) BUILD ONE-CLICK XESM3 ANIM MOD", command=self.build_one_click_anim_mod,
+            page, text="4A) BUILD ONE-CLICK .ANIM MOD", command=self.build_one_click_anim_mod,
+        ).grid(row=5, column=0, columnspan=2, sticky="ew", padx=4, pady=(10, 4))
+        ttk.Button(
+            page, text="4B) BUILD ONE-CLICK WRAP.ANIM MOD", command=self.build_one_click_wrap_anim_mod,
             style="Accent.TButton",
-        ).grid(row=5, column=0, columnspan=5, sticky="ew", padx=4, pady=(10, 4))
+        ).grid(row=5, column=2, columnspan=3, sticky="ew", padx=4, pady=(10, 4))
         ttk.Button(page, text="Open Output", command=self.open_anim_mod_output).grid(row=5, column=5, sticky="ew", padx=4, pady=(10, 4))
 
         ttk.Label(page, textvariable=self.anim_mod_status_var, style="Muted.TLabel", wraplength=1120).grid(row=6, column=0, columnspan=6, sticky="w", padx=4, pady=(4, 8))
@@ -3106,12 +3471,18 @@ class NewAnimationSwapperTab(ttk.Frame):
             pass
 
     def browse_anim_mod_output_anim(self):
-        path = filedialog.askopenfilename(title="Select rebuilt ANIM", filetypes=[("SM3 ANIM", "*.anim"), ("All files", "*.*")])
+        path = filedialog.askopenfilename(title="Select rebuilt ANIM / WRAP.ANIM", filetypes=[("SM3 ANIM / WRAP.ANIM", "*.anim"), ("All files", "*.*")])
         if path:
             self.anim_mod_output_anim_var.set(path)
             try:
-                h, _v, a = inspect_mod_output_anim_identity(Path(path))
-                self.anim_mod_status_var.set(f"ANIM 0x{h:08X} selected — ASKL 0x{a:08X}, {Path(path).stat().st_size} bytes.")
+                p = Path(path)
+                if p.name.lower().endswith('.wrap.anim'):
+                    m = re.search(r'0x([0-9A-Fa-f]{8})', p.name)
+                    h = int(m.group(1), 16) if m else 0
+                    self.anim_mod_status_var.set(f"WRAP.ANIM 0x{h:08X} selected — {p.stat().st_size} bytes. Use the WRAP button.")
+                else:
+                    h, _v, a = inspect_mod_output_anim_identity(p)
+                    self.anim_mod_status_var.set(f"ANIM 0x{h:08X} selected — ASKL 0x{a:08X}, {p.stat().st_size} bytes.")
             except Exception as exc:
                 self.anim_mod_status_var.set(str(exc))
 
@@ -3172,6 +3543,53 @@ class NewAnimationSwapperTab(ttk.Frame):
             messagebox.showerror("XESM3 Mod Output", str(exc))
             self.log(f"XESM3 Mod Output failed: {exc}")
 
+    def build_one_click_wrap_anim_mod(self):
+        """v5.2.184 WRAP button for rebuilt/same-identity ANIM output."""
+        try:
+            anim = Path(self.anim_mod_output_anim_var.get().strip().strip('"'))
+            extracted = Path(self.extracted_character_folder_var.get().strip().strip('"'))
+            out_raw = self.out_dir_var.get().strip().strip('"')
+            if not anim.is_file():
+                raise FileNotFoundError("Select the rebuilt .anim or .wrap.anim first.")
+            if not extracted.is_dir():
+                raise FileNotFoundError("Select Slot 2: the MOD LOADER READY / extracted pack folder containing WRAP_EXTRACTS.")
+            if not out_raw:
+                raise FileNotFoundError("Choose an output folder first.")
+            out = Path(out_raw); out.mkdir(parents=True, exist_ok=True)
+            result = build_wrap_anim_xesm3_output(
+                target_anim=anim,
+                donor_anim=anim,
+                extracted_pack_root=extracted,
+                output_root=out,
+                mod_name=self.anim_mod_name_var.get(),
+                make_zip=True,
+            )
+            self._last_anim_mod_output = Path(result.mod_root)
+            self.anim_mod_status_var.set(
+                f"WRAP BUILD PASS — 0x{result.target_hash:08X} | {result.donor_mode} | {Path(result.zip_path).name}"
+            )
+            text = (
+                "ONE-CLICK WRAP.ANIM MOD BUILD PASS\n"
+                "==================================\n\n"
+                f"Source: {anim.name}\n"
+                f"Target hash: 0x{result.target_hash:08X}\n"
+                f"Owner: {result.pack}/{result.archive}\n"
+                f"Output: {result.output_wrap_anim}\n"
+                f"Donor mode: {result.donor_mode}\n"
+                f"Ready ZIP: {result.zip_path}\n"
+            )
+            self.anim_mod_report.delete("1.0", "end")
+            self.anim_mod_report.insert("1.0", text)
+            self.log(f"One-click WRAP.ANIM output PASS: {result.output_wrap_anim}")
+            try:
+                open_path(Path(result.mod_root))
+            except Exception:
+                pass
+        except Exception as exc:
+            self.anim_mod_status_var.set(f"WRAP BUILD FAILED — {exc}")
+            messagebox.showerror("WRAP.ANIM Mod Output", str(exc))
+            self.log(f"WRAP.ANIM Mod Output failed: {exc}")
+
     def open_anim_mod_output(self):
         path = getattr(self, "_last_anim_mod_output", None)
         if path and Path(path).exists():
@@ -3189,10 +3607,10 @@ class NewAnimationSwapperTab(ttk.Frame):
             return
         page=ttk.Frame(self.workbook,style="Body.TFrame",padding=10)
         page.columnconfigure(1,weight=1); page.columnconfigure(4,weight=1); page.rowconfigure(7,weight=1)
-        self.workbook.add(page,text="Spider-Man Named Tracks")
+        self.workbook.add(page,text="Character Named Tracks")
         self.named_profile_page=page
-        ttk.Label(page,text="CH_SPIDERMAN 0xCFB154CD — NAMED MOTION TRACK MAP",style="SectionTitle.TLabel").grid(row=0,column=0,columnspan=6,sticky="w",pady=(0,4))
-        ttk.Label(page,text="Runtime-proven 85-node ch_spiderman skeleton profile. Converts compressed RAW TRACK numbers into FK field + real Spider-Man node + component. No raw Spider-Man ASKL file is required for this naming map.",style="Muted.TLabel",wraplength=1120).grid(row=1,column=0,columnspan=6,sticky="w",pady=(0,8))
+        ttk.Label(page,text="BUILT-IN CHARACTER NAMED MOTION TRACK MAP",style="SectionTitle.TLabel").grid(row=0,column=0,columnspan=6,sticky="w",pady=(0,4))
+        ttk.Label(page,text="Built-in named profiles: Spider-Man / Black Suit / Peter share 0xCFB154CD; Player Goblin uses 0x900E49A5. Converts compressed RAW TRACK numbers into FK field + real bone + component. .anim and .wrap.anim are supported.",style="Muted.TLabel",wraplength=1120).grid(row=1,column=0,columnspan=6,sticky="w",pady=(0,8))
         ttk.Label(page,text="ANIM",style="CardLabel.TLabel").grid(row=2,column=0,sticky="w",padx=4,pady=4)
         ttk.Entry(page,textvariable=self.named_profile_anim_var).grid(row=2,column=1,columnspan=3,sticky="ew",padx=4,pady=4)
         ttk.Button(page,text="Browse ANIM",command=self.browse_named_profile_anim).grid(row=2,column=4,sticky="ew",padx=4,pady=4)
@@ -3215,29 +3633,36 @@ class NewAnimationSwapperTab(ttk.Frame):
         self.named_profile_search_var.trace_add("write",lambda *_:self.refresh_spiderman_named_track_tree())
 
     def browse_named_profile_anim(self):
-        path=filedialog.askopenfilename(title="Select SM3 Spider-Man ANIM",filetypes=[("SM3 ANIM","*.anim"),("All files","*.*")])
+        path=filedialog.askopenfilename(title="Select SM3 Character ANIM / WRAP.ANIM",filetypes=[("SM3 ANIM / WRAP.ANIM","*.anim *.wrap.anim"),("All files","*.*")])
         if path:
             self.named_profile_anim_var.set(path); self._named_profile_rows=[]
             try:
-                h,a,_v,t=inspect_named_profile_anim_identity(Path(path).read_bytes())
-                if a==0xCFB154CD: self.named_profile_status_var.set(f"ANIM 0x{h:08X} — CFB154CD PROFILE MATCH — {t} compressed tracks. Click BUILD NAMED TRACK MAP.")
-                else: self.named_profile_status_var.set(f"ANIM 0x{h:08X} expects ASKL 0x{a:08X}; this profile only supports 0xCFB154CD.")
+                payload = read_anim_payload(Path(path))
+                h,a,_v,t=inspect_named_profile_anim_identity(payload)
+                if has_builtin_profile(a):
+                    label = identify_character(path, a)
+                    self.named_profile_status_var.set(f"ANIM 0x{h:08X} — {label} / 0x{a:08X} PROFILE MATCH — {t} compressed tracks. Click BUILD NAMED TRACK MAP.")
+                else:
+                    self.named_profile_status_var.set(f"ANIM 0x{h:08X} expects ASKL 0x{a:08X}; no built-in named profile exists for this skeleton.")
             except Exception as exc: self.named_profile_status_var.set(str(exc))
 
     def use_decoder_anim_for_named_profile(self):
         raw=self.decoder_anim_var.get().strip().strip('"') if hasattr(self,'decoder_anim_var') else ''
-        if not raw or not Path(raw).is_file(): messagebox.showwarning("Spider-Man Named Tracks","Select an ANIM on the decoder/editor first."); return
+        if not raw or not Path(raw).is_file(): messagebox.showwarning("Character Named Tracks","Select an ANIM / WRAP.ANIM on the decoder/editor first."); return
         self.named_profile_anim_var.set(raw); self.build_spiderman_named_track_map()
 
     def build_spiderman_named_track_map(self):
         try:
             path=Path(self.named_profile_anim_var.get().strip().strip('"'))
-            if not path.is_file(): raise FileNotFoundError("Select a valid .anim first.")
-            rows=build_named_track_map(path.read_bytes()); self._named_profile_rows=list(rows); self.refresh_spiderman_named_track_tree()
-            self.named_profile_status_var.set(f"NAMED PROFILE PASS — {len(rows)} compressed tracks mapped with 0xCFB154CD / 85-node ch_spiderman profile.")
-            if hasattr(self,'log'): self.log(f"CFB154CD Named Track Map PASS: {path.name} -> {len(rows)} tracks")
+            if not path.is_file(): raise FileNotFoundError("Select a valid .anim or .wrap.anim first.")
+            payload = read_anim_payload(path)
+            _h, askl_hash, _v, _t = inspect_named_profile_anim_identity(payload)
+            rows=build_named_track_map(payload); self._named_profile_rows=list(rows); self.refresh_spiderman_named_track_tree()
+            label = identify_character(path, askl_hash)
+            self.named_profile_status_var.set(f"NAMED PROFILE PASS — {label} / 0x{askl_hash:08X} — {len(rows)} compressed tracks mapped.")
+            if hasattr(self,'log'): self.log(f"Character Named Track Map PASS: {label} {path.name} -> {len(rows)} tracks")
         except Exception as exc:
-            self.named_profile_status_var.set(f"NAMED PROFILE FAILED — {exc}"); messagebox.showerror("Spider-Man Named Tracks",str(exc))
+            self.named_profile_status_var.set(f"NAMED PROFILE FAILED — {exc}"); messagebox.showerror("Character Named Tracks",str(exc))
 
     def refresh_spiderman_named_track_tree(self):
         if not hasattr(self,'named_profile_tree'): return
@@ -3261,7 +3686,7 @@ class NewAnimationSwapperTab(ttk.Frame):
     def send_named_track_to_quick_editor(self):
         row = self._selected_spiderman_named_track()
         if row is None:
-            messagebox.showinfo("Spider-Man Named Tracks", "Select a track row first.")
+            messagebox.showinfo("Character Named Tracks", "Select a track row first.")
             return
         named = f"Track {row.track_index}: {row.field_name} / {row.bone_name} / {row.component_name}"
         if not hasattr(self, 'editor_quick_track_var'):

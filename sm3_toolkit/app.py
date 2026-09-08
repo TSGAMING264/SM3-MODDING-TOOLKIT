@@ -32,7 +32,7 @@ from sm3_toolkit.tabs.about_tab import AboutInfoTab
 
 
 APP_NAME = "SM3 MODDING TOOLKIT"
-APP_VERSION = "v5.2.182 BUILT-IN HOW TO"
+APP_VERSION = "v5.2.196 FINAL ABOUT CREDIT"
 
 
 MAIN_TAB_X_PADDING = 4

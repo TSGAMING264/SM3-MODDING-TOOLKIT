@@ -1,0 +1,36 @@
+{
+  "format": "SM3_MOTION_EDITOR_CHARACTER_PROFILES_V1",
+  "profiles": [
+    {
+      "character": "Spider-Man",
+      "path_markers": ["CH_SPIDERMAN"],
+      "askl_hash": "0xCFB154CD",
+      "mode": "BUILT_IN_NAMED_PROFILE",
+      "profile_file": "ch_spiderman_0xCFB154CD_named_profile_v1.json"
+    },
+    {
+      "character": "Black Suit",
+      "path_markers": ["CH_BLACKSUIT"],
+      "askl_hash": "0xCFB154CD",
+      "mode": "SHARED_BUILT_IN_NAMED_PROFILE",
+      "profile_file": "ch_spiderman_0xCFB154CD_named_profile_v1.json",
+      "note": "User-supplied CH_BLACKSUIT old-route archive contained 774/774 ANIMs referencing 0xCFB154CD."
+    },
+    {
+      "character": "Peter Parker",
+      "path_markers": ["CH_PETER"],
+      "askl_hash": "0xCFB154CD",
+      "mode": "SHARED_BUILT_IN_NAMED_PROFILE",
+      "profile_file": "ch_spiderman_0xCFB154CD_named_profile_v1.json",
+      "note": "747/748 supplied CH_PETER ANIMs reference 0xCFB154CD; one special sm3toa_dan1horcrtwhl animation references 0xCD54B1CF and remains generic/manual skeleton territory."
+    },
+    {
+      "character": "Player Goblin",
+      "path_markers": ["CH_PLAYERGOBLIN"],
+      "askl_hash": "0x900E49A5",
+      "mode": "WRAP_ASKL_PREFERRED_BUILT_IN_FALLBACK",
+      "profile_file": "ch_playergoblin_0x900E49A5_named_profile_v1.json",
+      "note": "35/35 supplied Goblin ANIMs reference 0x900E49A5 ch_goblin. MOD LOADER READY sibling WRAP.ASKL is preferred; built-in 74-bone named profile supplies a fallback and missing WRAP string-table names."
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+SM3 Toolkit v5.2.187 — WRAP Model Viewer + WRAP MAT validation
+
+RESULT: 26/26 PASS
+
+PASS | v5.2.187 version
+PASS | Model Viewer WRAP.MESH UI filter
+PASS | Model Viewer WRAP.MESH loader
+PASS | Model Viewer reconstructs component0+component1
+PASS | Model Viewer legacy .mesh remains
+PASS | MAT Editor WRAP.MAT UI filter
+PASS | MAT loader accepts WRAP.MAT
+PASS | MAT loader extracts component0
+PASS | MAT keeps wrapper shell in document
+PASS | MAT Save Changes wraps exact component0
+PASS | MAT loaded WRAP shell reused by SAVE WRAP MAT
+PASS | MAT legacy .mat remains
+PASS | Pack extractor order retains 2) MOD LOADER READY
+PASS | New animation swapper WRAP.ANIM retained
+PASS | Old animation swapper WRAP.ANIM retained
+PASS | Tex Swapper WRAP.TEX parser retained
+PASS | Texture Folder Viewer reuses WRAP-capable parser
+PASS | unchanged: sm3_toolkit/tabs/pack_extractor_tab.py
+PASS | unchanged: sm3_toolkit/tabs/new_animation_swapper_tab.py
+PASS | unchanged: sm3_toolkit/tabs/old_animation_swapper_tab.py
+PASS | unchanged: sm3_toolkit/tabs/tex_swapper_tab.py
+PASS | unchanged: sm3_toolkit/services/tex_preview_core.py
+PASS | unchanged: sm3_toolkit/tabs/texture_folder_viewer_tab.py
+PASS | unchanged: sm3_toolkit/services/xbox_pack_extract_service.py
+PASS | unchanged: sm3_toolkit/services/pcpack_rebuild_service.py
+PASS | unchanged: sm3_toolkit/tabs/pcpack_rebuild_lab_tab.py
+
+Runtime corpus tests:
+PASS | STORY_MOVIE_4_PHASE3 WRAP.MESH = 80/80 decoded
+PASS | reconstructed legacy raw MESH still decoded
+PASS | MEGACITY WRAP.MAT = 2663/2663 opened
+PASS | WRAP.MAT edit/save preserved wrapper size + component table and created original .bak
+PASS | legacy raw MAT still opened
+
+Next step: full user regression testing before Nexus upload.

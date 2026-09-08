@@ -13,7 +13,7 @@ The two applications are intentionally kept separate. They can run independently
 
 ## Current Source Versions
 
-- SM3 Toolkit: **v5.2.182**
+- SM3 Modding Toolkit: **v5.2.196 FINAL ABOUT CREDIT**
 - SM3 Audio Separator: **v1.0.3**
 
 This repository contains source code and build instructions. It does not contain the compiled release EXEs, game packs, extracted game assets, or Demucs model weights.
@@ -35,6 +35,17 @@ This repository contains source code and build instructions. It does not contain
 13. About / Info
 
 Home is selected on startup. The release UI uses one Tk root and one integrated notebook.
+
+## v5.2.196 Highlights
+
+- Motion Editor accepts `.anim` / `.wrap.anim` and `.askl` / `.wrap.askl` resources.
+- Guided character mapping includes Spider-Man, Black Suit, Peter Parker, and the 74-bone Player Goblin profile.
+- BUILD + VERIFY re-decodes rebuilt motion and requires the requested scalar frames to match.
+- AUTO-GROW + RELOCATE safely handles edited compressed motion that exceeds the original payload allocation.
+- WRAP output retains parent/archive ownership, internal/external patch relationships, and resource identity checks.
+- XESM3 Slot 2 can recover and verify the original PACK/APKF/WRAP owner for external Motion Editor output.
+- How To documents the final Motion Editor and WRAP workflows inside the application.
+- About / Info includes the final Bread credit and supplied avatar after AkyrosXD.
 
 ## Safety
 
@@ -99,7 +110,9 @@ py -3 -m PyInstaller SM3_AUDIO_SEPARATOR.spec --clean --noconfirm
 Pop-Location
 ```
 
-See [BUILD_FROM_SOURCE.md](BUILD_FROM_SOURCE.md) for the complete two-EXE packaging procedure.
+The main build produces `dist/SM3 Modding Toolkit.exe`. See [BUILD_FROM_SOURCE.md](BUILD_FROM_SOURCE.md) for the complete two-EXE packaging procedure.
+
+See [RELEASE_NOTES_v5_2_196.md](RELEASE_NOTES_v5_2_196.md) for the source changes and verification scope.
 
 ## Antivirus False Positives
 

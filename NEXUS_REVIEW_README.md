@@ -4,7 +4,7 @@ SM3 Modding Toolkit is an unofficial fan-made Spider-Man 3 PC modding toolkit cr
 
 This repository provides the full reviewable source for:
 
-- SM3 Toolkit v5.2.182
+- SM3 Modding Toolkit v5.2.196 FINAL ABOUT CREDIT
 - SM3 Audio Separator v1.0.3, shipped as a separate companion application
 
 ## Why The Windows Build May Be Flagged

@@ -200,6 +200,59 @@ def resolve_anim_owner(
     return chosen
 
 
+
+
+def resolve_anim_owner_by_hash(
+    resource_hash: int,
+    extracted_pack_root: str | Path,
+) -> AnimIdentity:
+    """Resolve an ANIM owner from Slot 2 using only the resource hash.
+
+    This is the WRAP-friendly counterpart to :func:`resolve_anim_owner`. It is
+    used when the rebuilt/edited .wrap.anim lives outside WRAP_EXTRACTS, where
+    the path itself no longer carries PACK/APKF ownership. The selected
+    extracted-pack folder remains authoritative and ambiguous ownership fails
+    closed instead of guessing.
+    """
+    root = Path(extracted_pack_root)
+    if not root.is_dir():
+        raise FileNotFoundError(f"Extracted pack folder not found: {root}")
+    resource_hash = int(resource_hash) & 0xFFFFFFFF
+    catalogs = _candidate_catalogs(root)
+    if not catalogs:
+        raise AnimModOutputError(
+            "No filelist.apkf.txt was found from the selected extraction path. "
+            "Choose the MOD LOADER READY pack/root in Slot 2."
+        )
+
+    matches: list[AnimIdentity] = []
+    for catalog in catalogs:
+        try:
+            with catalog.open("r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    row = _parse_catalog_line(line, catalog)
+                    if row and row.resource_hash == resource_hash:
+                        matches.append(row)
+        except OSError:
+            continue
+
+    if not matches:
+        raise AnimModOutputError(
+            f"ANIM 0x{resource_hash:08X} was not found in Slot 2's filelist.apkf.txt catalog(s) under {root}."
+        )
+
+    # Collapse duplicate catalog sightings of the same actual owner first.
+    unique: dict[tuple[str, str, str], AnimIdentity] = {}
+    for m in matches:
+        unique.setdefault((m.pack, m.archive, m.resource_name), m)
+    owners = list(unique.values())
+    if len(owners) != 1:
+        raise AnimModOutputError(
+            f"ANIM 0x{resource_hash:08X} has multiple ownership records in Slot 2: "
+            + ", ".join(f"{m.pack}/{m.archive}/{m.resource_name}" for m in sorted(owners, key=lambda x:(x.pack.lower(),x.archive.lower(),x.resource_name.lower())))
+        )
+    return owners[0]
+
 def _resolved(path: Path) -> Path:
     try:
         return path.expanduser().resolve(strict=False)
@@ -480,8 +533,10 @@ def build_anim_swap_xesm3_output(
 
     v5.2.141 intentionally does *not* enforce donor compatibility. The target ANIM
     is used to resolve the stock resource identity and PACK/APKF owner. The donor
-    file is copied byte-for-byte under the target filename/path. This gives users
-    the same freedom-first selection model as the WoS-style swap workflow.
+    file keeps the donor motion/layout bytes but ANIM +0x04 is retargeted to
+    the target resource hash before writing under the target filename/path. This
+    gives users the same freedom-first motion selection while keeping XESM3
+    runtime identity internally consistent.
 
     XESM3/the game still decides what actually works at runtime. A mismatched or
     malformed donor can fail, be ignored, animate incorrectly, or crash; the
@@ -519,18 +574,28 @@ def build_anim_swap_xesm3_output(
     target_dir = build_root / identity.pack / identity.archive
     target_dir.mkdir(parents=True, exist_ok=True)
     output_anim = target_dir / identity.target_filename
-    shutil.copy2(donor_anim, output_anim)
 
-    # Freedom mode verification checks only that the donor bytes were copied exactly.
+    # v5.2.189: XESM3 routes this file as the TARGET resource, so the embedded
+    # ANIM +0x04 resource hash must also be the target hash.  Preserve every
+    # donor byte except that single identity DWORD.
+    if len(donor_bytes) < 8:
+        raise AnimModOutputError("Swap-IN ANIM is too small to retarget its embedded identity.")
+    retargeted_donor = bytearray(donor_bytes)
+    struct.pack_into("<I", retargeted_donor, 0x04, target_hash)
+    retargeted_donor = bytes(retargeted_donor)
+    output_anim.write_bytes(retargeted_donor)
+
     copied_bytes = output_anim.read_bytes()
-    if copied_bytes != donor_bytes:
-        raise AnimModOutputError("Post-copy donor byte-identity verification failed.")
+    if copied_bytes != retargeted_donor:
+        raise AnimModOutputError("Post-write retargeted donor verification failed.")
+    if _u32_loose(copied_bytes, 0x04) != target_hash:
+        raise AnimModOutputError("Post-write loose ANIM inner hash does not match target identity.")
 
     manifest_path = build_root / "ANIM_SWAP_IDENTITY.json"
     manifest = {
-        "format": "XESM3_SM3_ANIM_SWAP_V2_UNRESTRICTED",
+        "format": "XESM3_SM3_ANIM_SWAP_V3_TARGET_IDENTITY_RETARGET",
         "mod_name": mod_name,
-        "mode": "UNRESTRICTED_FREEDOM",
+        "mode": "UNRESTRICTED_FREEDOM_TARGET_HASH_RETARGET",
         "target": {
             "hash": f"0x{target_hash:08X}",
             "name": identity.resource_name,
@@ -569,7 +634,8 @@ def build_anim_swap_xesm3_output(
         },
         "install_relative_path": f"{mod_name}/{identity.pack}/{identity.archive}/{identity.target_filename}",
         "xesm3_runtime_identity_note": (
-            "The loose file is named/routed as the TARGET resource while the SWAP-IN donor bytes are copied unchanged. "
+            "The loose file is named/routed as the TARGET resource and its embedded ANIM +0x04 hash is retargeted "
+            "to the TARGET. All other donor motion/layout bytes remain donor-authored. "
             "The Toolkit does not make a compatibility decision for the donor."
         ),
     }
@@ -587,7 +653,7 @@ def build_anim_swap_xesm3_output(
         f"APKF: {identity.archive}\n\n"
         "This is an XESM3 loose-file swap. The original PCPACK is not modified.\n"
         "The Toolkit intentionally performs NO donor compatibility gate in this mode.\n"
-        "Any .anim selected as SWAP IN is copied byte-for-byte under the SWAP OUT target path.\n"
+        "Any .anim selected as SWAP IN keeps its donor motion/layout bytes, but ANIM +0x04 is retargeted to the SWAP OUT target hash.\n"
         "Incompatible or malformed animation data may fail, be ignored, animate incorrectly, or crash at runtime.\n\n"
         "Enable the mod in Spider-Man 3\\Mods\\mods.config.ini:\n"
         "[EnabledMods]\n"
@@ -636,4 +702,318 @@ def build_anim_swap_xesm3_output(
         manifest_json=str(manifest_path),
         install_readme=str(readme_path),
         zip_path=str(zip_path) if str(zip_path) else "",
+    )
+
+# ---------------------------------------------------------------------------
+# v5.2.184 NativeWRAP ANIM output buttons
+# ---------------------------------------------------------------------------
+
+@dataclass
+class WrapAnimModBuildResult:
+    target_source: str
+    donor_source: str
+    target_wrap_source: str
+    donor_wrap_source: str
+    target_hash: int
+    donor_hash: int
+    pack: str
+    archive: str
+    mod_name: str
+    mod_root: str
+    output_wrap_anim: str
+    output_size: int
+    manifest_json: str
+    install_readme: str
+    zip_path: str
+    donor_mode: str
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def _is_wrap_anim(path: Path) -> bool:
+    return path.is_file() and path.name.lower().endswith('.wrap.anim')
+
+
+def _wrap_anim_name_parts(path: Path) -> tuple[int, str]:
+    m = re.match(r'^0x([0-9A-Fa-f]{8})\.(.+)\.wrap\.anim$', path.name, flags=re.I)
+    if not m:
+        raise AnimModOutputError(f'WRAP.ANIM filename must start with 0xHASH.resource_name: {path.name}')
+    name = m.group(2)
+    # A rebuilt WRAP may have been saved more than once by older UI routes.
+    # Never let transport suffixes become part of the actual ANIM resource name.
+    while name.lower().endswith('.wrap.anim'):
+        name = name[:-10]
+    while name.lower().endswith('.anim'):
+        name = name[:-5]
+    return int(m.group(1), 16), name
+
+
+def _resolve_target_wrap_anim(target_anim: Path, extracted_root: Path):
+    from sm3_toolkit.services.wrap_output_service import derive_wrap_owner_from_path, find_matching_wrap_resource
+    if _is_wrap_anim(target_anim):
+        target_hash, fallback_name = _wrap_anim_name_parts(target_anim)
+
+        # Canonical WRAP_EXTRACTS paths already encode PACK/APKF ownership.
+        # Motion Editor output normally lives elsewhere, so when that path
+        # metadata is absent Slot 2 (the selected extracted pack folder) becomes
+        # authoritative and resolves the owner from filelist.apkf.txt.
+        try:
+            path_owner = derive_wrap_owner_from_path(target_anim)
+        except Exception:
+            path_owner = None
+
+        if path_owner is not None:
+            target_name = fallback_name
+            try:
+                identity = resolve_anim_owner_by_hash(target_hash, extracted_root)
+            except Exception:
+                identity = None
+            if identity is not None:
+                if (str(path_owner['pack']).lower(), str(path_owner['archive']).lower()) != (identity.pack.lower(), identity.archive.lower()):
+                    raise AnimModOutputError(
+                        f"WRAP path owner {path_owner['pack']}/{path_owner['archive']} disagrees with Slot 2 owner "
+                        f"{identity.pack}/{identity.archive} for 0x{target_hash:08X}."
+                    )
+                target_name = identity.resource_name
+            return target_anim, target_hash, target_name, path_owner
+
+        identity = resolve_anim_owner_by_hash(target_hash, extracted_root)
+        owner = {
+            'pack': identity.pack,
+            'archive': identity.archive,
+            'archive_index': identity.archive_index,
+            'archive_hash': identity.archive_hash,
+            'archive_type': identity.archive_type,
+        }
+        # Require Slot 2 to contain the authoritative stock shell for the exact
+        # owner/hash. This both proves the owner and catches a wrong folder.
+        find_matching_wrap_resource(
+            extracted_root,
+            target_hash,
+            'anim',
+            pack=identity.pack,
+            archive=identity.archive,
+        )
+        return target_anim, target_hash, identity.resource_name, owner
+
+    target_hash, _version, _askl = inspect_anim_identity(target_anim)
+    identity = resolve_anim_owner(target_anim, extracted_root)
+    shell = find_matching_wrap_resource(
+        extracted_root,
+        target_hash,
+        'anim',
+        pack=identity.pack,
+        archive=identity.archive,
+    )
+    owner = {
+        'pack': identity.pack,
+        'archive': identity.archive,
+        'archive_index': identity.archive_index,
+        'archive_hash': identity.archive_hash,
+        'archive_type': identity.archive_type,
+    }
+    return shell, target_hash, identity.resource_name, owner
+
+
+def build_wrap_anim_xesm3_output(
+    target_anim: str | Path,
+    donor_anim: str | Path,
+    extracted_pack_root: str | Path,
+    output_root: str | Path,
+    mod_name: str = 'SM3 WRAP ANIM Mod',
+    make_zip: bool = True,
+) -> WrapAnimModBuildResult:
+    """Build a target <- donor NativeWRAP ANIM mod without replacing legacy .anim output.
+
+    Preferred route is WRAP target + WRAP donor from MOD LOADER READY. Raw donor
+    ANIM is accepted only when it exactly fits target WRAP component0, in which
+    case the target shell is preserved and component0 is replaced byte-for-byte.
+    Different-size raw donors must use their .wrap.anim form so the donor's own
+    patch table/layout is retained. The output WRAP parent identity and embedded
+    ANIM +0x04 identity are both retargeted to the selected target.
+    """
+    from sm3_toolkit.services.wrap_output_service import (
+        WrapOutputError,
+        find_matching_wrap_resource,
+        inspect_wrap_bytes,
+        parse_wrap_resource_hash,
+        replace_wrap_component0_exact,
+        rebuild_wrap_anim_from_shell,
+        retarget_wrap_archive_hash,
+        retarget_wrap_anim_resource_hash,
+        read_wrap_anim_resource_hash,
+    )
+
+    target_anim = Path(target_anim)
+    donor_anim = Path(donor_anim)
+    extracted_root = Path(extracted_pack_root)
+    output_root = Path(output_root)
+    if not target_anim.is_file():
+        raise FileNotFoundError(f'Target animation not found: {target_anim}')
+    if not donor_anim.is_file():
+        raise FileNotFoundError(f'Donor animation not found: {donor_anim}')
+    if not extracted_root.is_dir():
+        raise FileNotFoundError(f'Extracted pack folder not found: {extracted_root}')
+    _validate_swap_output_location(extracted_root, output_root)
+
+    target_wrap, target_hash, target_name, owner = _resolve_target_wrap_anim(target_anim, extracted_root)
+    target_wrap_bytes = target_wrap.read_bytes()
+    target_wrap_info = inspect_wrap_bytes(target_wrap_bytes)
+    target_inner_hash = read_wrap_anim_resource_hash(target_wrap_bytes)
+    if target_inner_hash != target_hash:
+        raise AnimModOutputError(
+            f'Target WRAP.ANIM is internally inconsistent before swap: filename=0x{target_hash:08X} '
+            f'inner=0x{target_inner_hash:08X}. Re-extract the target with MOD LOADER READY.'
+        )
+
+    donor_mode = 'DONOR_WRAP_DIRECT'
+    donor_wrap_path: Path | None = None
+    donor_hash = 0
+    if _is_wrap_anim(donor_anim):
+        donor_wrap_path = donor_anim
+        donor_hash = parse_wrap_resource_hash(donor_anim) or 0
+        donor_wrap_bytes = donor_anim.read_bytes()
+        inspect_wrap_bytes(donor_wrap_bytes)
+        donor_inner_hash = read_wrap_anim_resource_hash(donor_wrap_bytes)
+        if donor_hash and donor_inner_hash != donor_hash:
+            raise AnimModOutputError(
+                f'Donor WRAP.ANIM is internally inconsistent before swap: filename=0x{donor_hash:08X} '
+                f'inner=0x{donor_inner_hash:08X}. Re-extract or rebuild the donor first.'
+            )
+    else:
+        try:
+            donor_hash, _donor_version, _donor_askl = inspect_anim_identity(donor_anim)
+        except Exception:
+            donor_hash = _u32_loose(donor_anim.read_bytes(), 0x04)
+        raw_donor = donor_anim.read_bytes()
+        if donor_hash == target_hash:
+            # Motion Editor output keeps the target identity. Rebuild the
+            # authoritative target WRAP around the *edited* raw ANIM so a
+            # resized payload is not accidentally replaced by the old stock
+            # matching WRAP from the extraction tree.
+            donor_wrap_bytes, _motion_stats = rebuild_wrap_anim_from_shell(target_wrap_bytes, raw_donor)
+            donor_mode = 'RAW_SAME_IDENTITY_MOTION_EDITOR_WRAP_REBUILD'
+        else:
+            # Normal target <- donor swap: prefer the donor's own authoritative
+            # wrapper. If unavailable, retain the legacy exact-size fallback.
+            try:
+                donor_wrap_path = find_matching_wrap_resource(extracted_root, donor_hash, 'anim')
+                donor_wrap_bytes = donor_wrap_path.read_bytes()
+                inspect_wrap_bytes(donor_wrap_bytes)
+                matched_inner_hash = read_wrap_anim_resource_hash(donor_wrap_bytes)
+                if matched_inner_hash != donor_hash:
+                    raise AnimModOutputError(
+                        f'Matched donor WRAP.ANIM inner hash 0x{matched_inner_hash:08X} does not match donor 0x{donor_hash:08X}.'
+                    )
+                donor_mode = 'RAW_DONOR_MATCHED_TO_DONOR_WRAP'
+            except Exception:
+                donor_wrap_bytes = replace_wrap_component0_exact(target_wrap_bytes, raw_donor)
+                donor_mode = 'RAW_DONOR_EXACT_SIZE_TARGET_SHELL'
+
+    # NativeWRAP header +0x04 carries the parent archive hash. The embedded ANIM
+    # component +0x04 independently carries the resource hash. Both identities
+    # must match the target route while donor motion/layout remains intact.
+    final_wrap = retarget_wrap_archive_hash(donor_wrap_bytes, int(owner['archive_hash']))
+    final_wrap = retarget_wrap_anim_resource_hash(final_wrap, target_hash)
+    final_info = inspect_wrap_bytes(final_wrap)
+    final_inner_hash = read_wrap_anim_resource_hash(final_wrap)
+    if final_inner_hash != target_hash:
+        raise AnimModOutputError(
+            f'WRAP.ANIM inner identity mismatch after retarget: inner=0x{final_inner_hash:08X} target=0x{target_hash:08X}'
+        )
+
+    mod_name = _clean_mod_name(mod_name)
+    build_root = output_root / 'XESM3_MOD_READY' / mod_name
+    target_dir = build_root / str(owner['pack']) / str(owner['archive'])
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_filename = f'0x{target_hash:08X}.{target_name}.wrap.anim'
+    output_wrap = target_dir / target_filename
+    output_wrap.write_bytes(final_wrap)
+    if output_wrap.read_bytes() != final_wrap:
+        raise AnimModOutputError('Post-write WRAP.ANIM byte verification failed.')
+
+    manifest_path = build_root / 'WRAP_ANIM_MOD_IDENTITY.json'
+    manifest = {
+        'format': 'XESM3_SM3_NATIVEWRAP_ANIM_V2_TARGET_IDENTITY_RETARGET',
+        'mod_name': mod_name,
+        'target': {
+            'hash': f'0x{target_hash:08X}',
+            'name': target_name,
+            'target_source': str(target_anim),
+            'target_wrap_shell': str(target_wrap),
+        },
+        'donor': {
+            'hash_raw': f'0x{donor_hash:08X}',
+            'source': str(donor_anim),
+            'resolved_wrap_source': str(donor_wrap_path) if donor_wrap_path else '',
+            'mode': donor_mode,
+        },
+        'owner': {
+            'pack': owner['pack'],
+            'archive': owner['archive'],
+            'archive_index': owner['archive_index'],
+            'archive_hash': f"0x{int(owner['archive_hash']):08X}",
+            'archive_type': f"0x{int(owner['archive_type']):X}",
+        },
+        'wrap': {
+            'component_count': final_info.component_count,
+            'component_sizes': list(final_info.component_sizes),
+            'bytes': len(final_wrap),
+            'inner_anim_hash': f'0x{final_inner_hash:08X}',
+            'inner_anim_hash_matches_target': final_inner_hash == target_hash,
+        },
+        'install_relative_path': f"{mod_name}/{owner['pack']}/{owner['archive']}/{target_filename}",
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+
+    readme_path = build_root / 'README_INSTALL.txt'
+    readme_path.write_text(
+        'XESM3 SM3 NativeWRAP ANIM Mod\n'
+        '==============================\n\n'
+        'Copy this entire mod folder into Spider-Man 3\\Mods\\.\n\n'
+        f'Mod folder: {mod_name}\n'
+        f'Pack: {owner["pack"]}\n'
+        f'APKF: {owner["archive"]}\n'
+        f'WRAP.ANIM: {target_filename}\n'
+        f'Donor mode: {donor_mode}\n\n'
+        'This is the new WRAP output route. Legacy .anim buttons remain available separately.\n\n'
+        '[EnabledMods]\n'
+        f'{mod_name}=100\n',
+        encoding='utf-8',
+    )
+
+    zip_path = output_root / f"{mod_name.replace(' ', '_')}_NATIVEWRAP_READY.zip"
+    if make_zip:
+        if zip_path.exists():
+            zip_path.unlink()
+        with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+            for p in sorted(build_root.rglob('*')):
+                if p.is_file():
+                    arc = Path(mod_name) / p.relative_to(build_root)
+                    zf.write(p, arc.as_posix())
+        with zipfile.ZipFile(zip_path, 'r') as zf:
+            bad = zf.testzip()
+            if bad:
+                raise AnimModOutputError(f'ZIP verification failed at {bad}')
+    else:
+        zip_path = Path('')
+
+    return WrapAnimModBuildResult(
+        target_source=str(target_anim),
+        donor_source=str(donor_anim),
+        target_wrap_source=str(target_wrap),
+        donor_wrap_source=str(donor_wrap_path) if donor_wrap_path else '',
+        target_hash=target_hash,
+        donor_hash=donor_hash,
+        pack=str(owner['pack']),
+        archive=str(owner['archive']),
+        mod_name=mod_name,
+        mod_root=str(build_root),
+        output_wrap_anim=str(output_wrap),
+        output_size=len(final_wrap),
+        manifest_json=str(manifest_path),
+        install_readme=str(readme_path),
+        zip_path=str(zip_path) if str(zip_path) else '',
+        donor_mode=donor_mode,
     )

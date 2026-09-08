@@ -1,0 +1,29 @@
+SM3 MODDING TOOLKIT v5.2.196 — FINAL ABOUT CREDIT
+==================================================
+
+This is a presentation/credit update on top of the tested v5.2.195 source.
+
+ABOUT PAGE
+----------
+Added the final community credit card:
+
+Bread
+IDA coding for SM3
+
+The user-supplied Bread avatar is bundled as:
+sm3_toolkit/assets/credits/bread_avatar.png
+
+The credit text intentionally uses uppercase "SM3" exactly as requested.
+
+VERSION
+-------
+Displayed toolkit version:
+v5.2.196 FINAL ABOUT CREDIT
+
+NO WORKFLOW CHANGES
+-------------------
+No Motion Editor, WRAP, Pack Extractor, Tex Swapper, MAT Editor, Model Viewer,
+Animation Swapper, Sound Editor, PCPACK Rebuild Lab, localization workflow, or
+How To behavior was changed by this update.
+
+Use v5.2.196 as the final source handoff for the Windows EXE build.

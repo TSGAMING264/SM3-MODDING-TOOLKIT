@@ -1,0 +1,43 @@
+SM3 MODDING TOOLKIT v5.2.191
+CHARACTER MOTION PROFILES + CLASSIC / WRAP OUTPUT
+==================================================
+
+MOTION EDITOR CHARACTER SUPPORT
+- Spider-Man: built-in 0xCFB154CD named profile.
+- Black Suit: shares the proven 0xCFB154CD Spider-Man named profile.
+- Peter Parker: normal 0xCFB154CD animations share the same named profile.
+- Peter special animation 0xBCA542B7 / ASKL 0xCD54B1CF remains fail-closed/generic instead of being mislabeled.
+- Player Goblin: 0x900E49A5 ch_goblin; MOD LOADER READY sibling WRAP.ASKL is preferred and a built-in 74-bone named profile is available as fallback.
+- Other characters continue to use matching .askl / .wrap.askl selection or folder scanning.
+
+WRAP INPUT
+- Motion Editor accepts .anim and .wrap.anim directly.
+- Skeleton mapping accepts .askl and .wrap.askl directly.
+- MOD LOADER READY / WRAP_EXTRACTS sibling ASKL discovery is supported.
+- WRAP.ANIM / WRAP.ASKL pointer normalization is read-only in memory; source files are not changed while loading.
+
+MOTION EDITOR STEP 7 — DUAL OUTPUT
+- 7A) SAVE CLASSIC .ANIM
+  Saves the verified rebuilt loose ANIM and re-checks resource + ASKL identity.
+- 7B) SAVE WRAP.ANIM
+  Reuses the original target WRAP shell/patch map, inserts the verified edited ANIM, preserves parent archive identity, and verifies the inner ANIM hash.
+- 7C) GO TO XESM3 MOD OUTPUT
+  Keeps the existing one-click .ANIM and WRAP.ANIM mod builders.
+
+REAL USER-PACK FINDINGS
+- CH_BLACKSUIT old/raw route: 774/774 normal ANIMs use ASKL 0xCFB154CD.
+- CH_PETER old/raw route: 747/748 use 0xCFB154CD; one special legacy animation uses 0xCD54B1CF/version 0x16010200 and is not forced into the shared profile.
+- CH_PLAYERGOBLIN: 35/35 normal ANIMs use 0x900E49A5 ch_goblin.
+- Player Goblin profile contains 74 named bones.
+
+UNCHANGED
+- Animation Swapper v5.2.189 identity fix.
+- Pack Extractor order: 1) LIST CONTENTS / 2) MOD LOADER READY / 3) CLASSIC EXTRACT.
+- WRAP.TEX preview/output.
+- WRAP.MESH Model Viewer.
+- WRAP.MAT MAT Editor.
+- Xbox Extractor.
+- PC Pack Rebuild Lab.
+
+NEXT STEP
+- User runtime test: Spider-Man Motion Editor edit -> BUILD + VERIFY -> SAVE WRAP.ANIM or XESM3 4B -> in-game test.

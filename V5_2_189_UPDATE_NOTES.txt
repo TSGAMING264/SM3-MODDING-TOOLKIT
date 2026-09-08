@@ -1,0 +1,55 @@
+SM3 Toolkit v5.2.189 — Animation Identity Fix
+================================================
+
+WHY THIS BUILD EXISTS
+---------------------
+A real RaimiHook runtime log exposed a WRAP.ANIM output bug:
+
+  runtime/target hash = 0x623E1C4C
+  generated inner ANIM hash = 0xFF686056
+
+RaimiHook correctly rejected the file with stockFallback=YES.  The swap never
+actually reached the animation runtime, so that crash could not be used to judge
+animation compatibility.
+
+FIXES
+-----
+NEW ANIMATION SWAPPER
+- Loose .ANIM mod output now preserves donor motion/layout but rewrites embedded
+  ANIM +0x04 resource hash to the SWAP-OUT target hash.
+- WRAP.ANIM output now retargets BOTH:
+    * WRAP parent archive identity
+    * embedded ANIM +0x04 resource identity
+- Target and donor WRAP.ANIM inputs are preflight-checked for filename/inner-hash
+  consistency before output.
+- Guided and one-click outputs share the same fixed services.
+
+OLD ANIMATION SWAPPER
+- NEW ANIM COPY now retargets embedded ANIM +0x04 to target identity.
+- NEW WRAP.ANIM COPY now retargets embedded ANIM +0x04 to target identity and
+  verifies the finished wrapper before reporting success.
+- Standalone .wrap.anim can now be selected directly.
+- Extracted folders/ZIPs containing .wrap.anim now unwrap component0 before
+  comparison/swapping instead of treating the full WRAP container as ANIM bytes.
+- A directly selected/extracted target .wrap.anim can supply its own WRAP shell
+  for exact-layout output.
+
+UNCHANGED
+---------
+- Direct legacy PCPACK animation patching.
+- Pack Extractor order:
+    1) LIST CONTENTS
+    2) MOD LOADER READY
+    3) CLASSIC EXTRACT
+- WRAP.TEX preview/identity buttons.
+- WRAP.MESH Model Viewer.
+- WRAP.MAT MAT Editor.
+- Xbox Extractor.
+- PC Pack Rebuild Lab.
+
+TESTING
+-------
+Offline/structural validation is not an in-game compatibility guarantee.
+Animation pairs can still be incompatible because of skeleton, ASKL, track,
+root-motion, state, or gameplay expectations.  A valid runtime test should now
+show RaimiHook APPLY for the WRAP.ANIM before any animation-pair crash is judged.

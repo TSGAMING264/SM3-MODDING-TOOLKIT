@@ -26,7 +26,7 @@ Example request: "I want to replace one Spider-Man texture without risking my cl
 1. MAKE A BACKUP
    Copy the clean PCPACK somewhere safe before editing anything.
 2. FIND / EXTRACT THE RESOURCE IF NEEDED
-   Open Pack Extractor, select the clean pack, LIST CONTENTS, then CLASSIC EXTRACT.
+   Open Pack Extractor, select the clean pack, use LIST CONTENTS (#1), MOD LOADER READY (#2) for WRAP extraction, or CLASSIC EXTRACT (#3).
 3. OPEN TEX SWAPPER
    Select the clean PCPACK, Build Preview, choose the texture, and export the edit-ready DDS.
 4. EDIT THE DDS
@@ -44,9 +44,10 @@ WHICH TAB DO I USE?
 I want to extract a pack                 -> Pack Extractor
 I want to replace/edit textures          -> Tex Swapper
 I only want to browse texture folders    -> Texture Folder Viewer
-I want to edit an extracted .mat         -> MAT Editor
-I want to view an extracted .mesh        -> Model Viewer
+I want to edit a .mat / .wrap.mat        -> MAT Editor
+I want to view a .mesh / .wrap.mesh       -> Model Viewer
 I want a normal XESM3 animation swap     -> New Animation Swapper
+I want to edit motion inside an ANIM     -> New Animation Swapper -> ANIM Motion Editor
 I want the older PC/Xbox pack workflow   -> Old Animation Swapper
 I want to replace game audio             -> Sound Editor
 I want to rebuild/verify a PCPACK        -> PCPACK Rebuild Lab
@@ -60,10 +61,11 @@ Example: "I want to extract CH_SPIDERMAN.PCPACK so I can look through its files.
 1. Open Pack Extractor.
 2. Choose one supported pack.
 3. Choose an output folder.
-4. Use LIST CONTENTS if you want to inspect before extracting.
-5. Choose CLASSIC EXTRACT for normal editing/browsing folders.
-6. Choose MOD LOADER READY when you specifically want the XESM3-ready loose-resource structure.
-7. Open the output folder and continue with the tool that matches the resource you want to edit.
+4. LIST CONTENTS is button #1 for inspection.
+5. MOD LOADER READY is button #2 and creates ownership-preserving WRAP_EXTRACTS.
+6. CLASSIC EXTRACT is button #3 for the legacy/raw editing folders.
+7. In Tex Swapper and both Animation Swappers, use the WRAP buttons when you want NativeWRAP mod-loader output; the classic .TEX/.ANIM routes remain available.
+8. Open the output folder and continue with the tool that matches the resource you want to edit.
 
 Xbox packs use the Xbox extraction route when applicable. Extraction is for getting source resources out; it does not patch an Xbox pack.
 
@@ -104,7 +106,7 @@ MAT EDITOR
 ================================================================================
 Example: "I want to test one material value without changing the MAT layout."
 
-1. Extract the .mat first.
+1. Extract the material first. Classic .mat and MOD LOADER READY .wrap.mat are supported.
 2. Open MAT Editor and click OPEN MAT.
 3. Select an editable shader_float row.
 4. Change one value at a time.
@@ -122,7 +124,7 @@ Example: "I extracted ch_spiderman000.mesh and want to see which sections are in
 
 1. Open Model Viewer.
 2. Click OPEN SM3 MESH.
-3. Choose the extracted SM3 .mesh.
+3. Choose an extracted SM3 .mesh or .wrap.mesh.
 4. Left-drag to rotate.
 5. Mouse wheel zooms.
 6. Use Front / Back / Left / Right / Fit for quick views.
@@ -147,6 +149,41 @@ Normal XESM3 route:
 7. Install/test that output through XESM3.
 
 Motion Editor is for changing motion data inside an ANIM rather than simply replacing one animation with another.
+
+MOTION EDITOR - FINAL GUIDED WORKFLOW
+1. BROWSE ANIM and choose a classic .anim or MOD LOADER READY .wrap.anim.
+2. Click START FRESH + AUTO-MAP CHARACTER / ASKL.
+   - Spider-Man / Black Suit / Peter Parker use the shared built-in 0xCFB154CD named profile when applicable.
+   - Player Goblin uses 0x900E49A5 ch_goblin; sibling .wrap.askl is auto-detected when present and the built-in 74-bone profile is available as a fallback.
+   - Other characters can use PICK ONE EXACT ASKL / WRAP.ASKL FILE or AUTO-FIND MATCHING ASKL IN A FOLDER.
+3. Choose Motion Type, Bone / Element, and Axis / Component.
+4. Enter Start Frame and End Frame. Every frame in that inclusive range is edited.
+5. Enter Change Amount and click APPLY CHANGE TO SELECTED FRAME RANGE.
+6. Click BUILD + VERIFY ANIMATION.
+   - AUTO-GROW + RELOCATE is enabled by default. If the edited compressed bitstream no longer fits the original ANIM allocation, the editor automatically grows the ANIM, relocates affected pointers, re-decodes it, and verifies the edited values.
+   - A larger rebuilt ANIM is normal when AUTO-GROW was required; you do not need to reduce the edit just to fit the old compressed capacity.
+   - Advanced contains the strict/codec controls, editable JSON route, and bit-identical roundtrip tools for research or manual testing.
+7. After BUILD + VERIFY PASS, choose the output you need:
+   - SAVE CLASSIC .ANIM = verified loose ANIM.
+   - SAVE WRAP.ANIM = rebuilds the verified edit into the original target WRAP shell/patch map.
+   - GO TO XESM3 MOD OUTPUT = opens the ready-mod builder.
+
+MOTION EDITOR -> XESM3 WRAP.ANIM OUTPUT (4B)
+1. Slot 1 - Rebuilt ANIM / WRAP.ANIM:
+   Select the verified Motion Editor .anim OR .wrap.anim. It may be anywhere on disk.
+2. Slot 2 - MOD LOADER READY / extracted pack folder:
+   Select the character/pack extraction folder that contains WRAP_EXTRACTS and filelist.apkf.txt.
+   Slot 2 is the ownership source used to recover the original PACK/APKF/WRAP route when Slot 1 is outside WRAP_EXTRACTS.
+3. Select the output folder / mod name.
+4. Click 4B) BUILD ONE-CLICK WRAP.ANIM MOD.
+   The toolkit reads Slot 1's resource hash, finds and verifies the matching stock WRAP through Slot 2, preserves the correct parent archive identity, and writes a canonical 0xHASH.name.wrap.anim output.
+5. Test the new mod by itself first. If you use RaimiHook diagnostics, verify ANIM-UNWRAP/APPLY and no target-specific REJECT or inner-hash mismatch.
+
+IMPORTANT:
+- Slot 1 does NOT have to live inside MOD LOADER READY / WRAP_EXTRACTS anymore.
+- Slot 2 is required for 4B when ownership must be recovered from an external edited .anim/.wrap.anim.
+- Repeated transport suffixes such as .wrap.anim.wrap.anim are normalized to one final .wrap.anim name.
+- .wrap.anim and .wrap.askl are supported directly; old/raw extraction is not required for the WRAP Motion Editor route.
 
 OPTIONAL CSV BATCH FORMAT
 If you use the optional CSV route, the columns are:
@@ -251,7 +288,9 @@ Texture replacement is blocked:
 - Make sure you selected the correct target and that the edited DDS still matches the required target layout.
 
 Animation output is blocked:
-- Re-check the target/donor selection and use the preview/validation shown by that animation tool.
+- For swaps, re-check the target/donor selection and use the preview/validation shown by that animation tool.
+- For Motion Editor BUILD + VERIFY, leave AUTO-GROW + RELOCATE enabled unless you intentionally want strict fixed-capacity testing. AUTO-GROW handles edits whose recompressed bitstream exceeds the original allocation.
+- For 4B WRAP.ANIM output, Slot 1 may be an edited .anim/.wrap.anim anywhere; Slot 2 must point to the matching MOD LOADER READY / extracted pack folder so the original WRAP owner can be resolved.
 
 Sound replacement is blocked:
 - Re-check the selected slot and replacement audio. Use VALIDATE REPLACEMENT before building.

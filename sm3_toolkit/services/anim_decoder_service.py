@@ -278,6 +278,124 @@ class AnimHeader:
         return ANIM_HEADER_SIZE + (token - self.bitstream_ptr_token) * 4
 
 
+@dataclass(frozen=True)
+class AnimInputInfo:
+    data: bytes
+    container: str
+    archive_hash: Optional[int] = None
+    component_count: int = 1
+
+
+def _normalize_anim_input(data: bytes) -> AnimInputInfo:
+    """Normalize a loose SM3 ANIM or standalone NativeWRAP ``*.wrap.anim``.
+
+    Motion Editor/decoder code historically consumed the classic extractor's
+    loose ``*.anim`` bytes directly.  MOD LOADER READY now exposes the same
+    resource as a standalone WRAP container, so unwrap the serialized ANIM
+    component before any header/codec/skeleton work.
+    """
+    if data[:4] != b"WRAP":
+        # Let the normal ANIM parser provide detailed validation later.
+        return AnimInputInfo(data=data, container="RAW_ANIM")
+    if len(data) < 0x14:
+        raise DecodeError("WRAP ANIM is too small for the 0x14-byte WRAP header")
+    archive_hash = _u32(data, 0x04)
+    component_count = _u32(data, 0x0C)
+    if component_count < 1 or component_count > 2:
+        raise DecodeError(f"WRAP ANIM has unsupported component count: {component_count}")
+    table_rel = struct.unpack_from("<i", data, 0x10)[0]
+    table = 0x10 + table_rel
+    if table < 0 or table + component_count * 8 > len(data):
+        raise DecodeError("WRAP ANIM component table is outside the file")
+
+    components = []
+    starts = []
+    for i in range(component_count):
+        entry = table + i * 8
+        size = _u32(data, entry)
+        ptr_field = entry + 4
+        rel = struct.unpack_from("<i", data, ptr_field)[0]
+        start = ptr_field + rel
+        end = start + size
+        if start < 0 or size <= 0 or end > len(data):
+            raise DecodeError(
+                f"WRAP ANIM component {i} range is invalid: ptr=0x{start:X} size=0x{size:X}"
+            )
+        starts.append(start)
+        components.append(bytearray(data[start:end]))
+
+    # NativeWRAP stores internal pointer fields as byte-relative offsets so the
+    # runtime can fix them directly.  The offline ANIM codec uses the original
+    # APKF word-token convention instead.  Reconstruct an equivalent canonical
+    # token space from the WRAP internal patch list.  Only pointer fields change;
+    # animation identity, compressed motion bytes and external references stay
+    # untouched.
+    patch_rel = struct.unpack_from("<i", data, 0x08)[0]
+    patch = 0x08 + patch_rel
+    if patch < 0 or patch + 24 > len(data):
+        raise DecodeError("WRAP ANIM patch table is outside the file")
+    internal_count = _u32(data, patch + 8)
+    internal_list_rel = struct.unpack_from("<i", data, patch + 12)[0]
+    internal_list = (patch + 12) + internal_list_rel
+    if internal_list < 0 or internal_list + internal_count * 4 > len(data):
+        raise DecodeError("WRAP ANIM internal patch list is outside the file")
+
+    canonical_base_token = 0x00100000
+    comp0 = components[0]
+    comp0_start = starts[0]
+    for i in range(internal_count):
+        field = internal_list + i * 4
+        target_abs = field + struct.unpack_from("<i", data, field)[0]
+        target_off = target_abs - comp0_start
+        if target_off < 0 or target_off + 4 > len(comp0):
+            # ANIM should be one-component.  Refuse to silently rewrite a patch
+            # target owned by a different component.
+            raise DecodeError(
+                f"WRAP ANIM internal patch target is outside component0: 0x{target_abs:X}"
+            )
+        rel_value = struct.unpack_from("<i", comp0, target_off)[0]
+        ref_off = target_off + rel_value
+        if ref_off < 0 or ref_off >= len(comp0):
+            raise DecodeError(
+                f"WRAP ANIM internal reference +0x{target_off:X} resolves outside component0: +0x{ref_off:X}"
+            )
+        if ref_off & 3:
+            raise DecodeError(
+                f"WRAP ANIM internal reference +0x{target_off:X} is not dword-aligned: +0x{ref_off:X}"
+            )
+        token = canonical_base_token + (ref_off // 4)
+        struct.pack_into("<I", comp0, target_off, token & 0xFFFFFFFF)
+
+    component = bytes(comp0)
+    try:
+        hdr = AnimHeader.parse(component)
+    except Exception as exc:
+        raise DecodeError(f"WRAP component0 is not a supported SM3 ANIM: {exc}") from exc
+    if int(hdr.version) != ANIM_VERSION:
+        raise DecodeError(
+            f"WRAP ANIM version 0x{int(hdr.version):08X} is unsupported; expected 0x{ANIM_VERSION:08X}"
+        )
+    return AnimInputInfo(
+        data=component,
+        container="WRAP_ANIM",
+        archive_hash=archive_hash,
+        component_count=component_count,
+    )
+
+
+def normalize_anim_bytes(data: bytes) -> bytes:
+    """Return canonical loose-ANIM bytes from raw ANIM or standalone WRAP.ANIM bytes."""
+    return _normalize_anim_input(bytes(data)).data
+
+
+def read_anim_payload(anim_path: str | os.PathLike[str]) -> bytes:
+    """Return the serialized inner ANIM bytes from loose or WRAP input."""
+    path = Path(anim_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"ANIM not found: {path}")
+    return normalize_anim_bytes(path.read_bytes())
+
+
 @dataclass
 class AsklBoneRecord:
     index: int
@@ -299,67 +417,90 @@ class AsklInputInfo:
 
 
 def _normalize_askl_input(data: bytes) -> AsklInputInfo:
-    """Normalize raw ASKL bytes or a supported one-component WRAP ASKL.
+    """Normalize raw ASKL bytes or a standalone NativeWRAP ``*.wrap.askl``.
 
-    The NAS decoder originally only accepted the raw extracted ASKL layout
-    (resource object at local +0x60 using APKF word tokens). Some extracted
-    trees also expose the same resource as ``*.wrap.askl``. In that container
-    +0x0C is the WRAP component count, not the ASKL resource-object token,
-    which caused the misleading token mismatch seen in v5.2.123.
-
-    For WRAP input the decoder pulls the matching standalone component and
-    parses relocated byte-relative pointers. v5.2.129 validates the normalized
-    resource hash/layout and does not reject a file because of its folder/name.
+    Classic extractor ASKLs use APKF word tokens.  MOD LOADER READY WRAPs
+    store internal pointers as field-relative byte offsets plus a WRAP patch
+    list.  Convert only those internal pointer fields into component-local byte
+    offsets so the existing ASKL layout parser can consume the skeleton safely.
     """
     if len(data) < 4 or data[:4] != b"WRAP":
         return AsklInputInfo(data=data, container="RAW_ASKL", pointer_mode="apfk_word_token")
 
     if len(data) < 20:
         raise DecodeError("WRAP ASKL is too small for the 0x14-byte WRAP header")
-    archive_hash, patch_ptr, component_count, component_table_ptr = struct.unpack_from("<4I", data, 4)
-    if component_count <= 0 or component_count > 64:
+    component_count = _u32(data, 0x0C)
+    if component_count <= 0 or component_count > 2:
         raise DecodeError(f"WRAP ASKL has invalid component count: {component_count}")
-    table_end = component_table_ptr + component_count * 8
-    if component_table_ptr < 20 or table_end > len(data):
+    table = 0x10 + struct.unpack_from("<i", data, 0x10)[0]
+    if table < 0 or table + component_count * 8 > len(data):
         raise DecodeError(
-            f"WRAP ASKL component table is outside file: 0x{component_table_ptr:X}..0x{table_end:X}"
+            f"WRAP ASKL component table is outside file: 0x{table:X}..0x{table + component_count * 8:X}"
         )
 
-    components: List[Tuple[int, bytes]] = []
+    starts: List[int] = []
+    components: List[bytearray] = []
     for i in range(component_count):
-        size, ptr = struct.unpack_from("<2I", data, component_table_ptr + i * 8)
-        if size <= 0 or ptr >= len(data) or ptr + size > len(data):
+        entry = table + i * 8
+        size = _u32(data, entry)
+        ptr_field = entry + 4
+        start = ptr_field + struct.unpack_from("<i", data, ptr_field)[0]
+        if size <= 0 or start < 0 or start + size > len(data):
             raise DecodeError(
-                f"WRAP ASKL component {i} range is invalid: ptr=0x{ptr:X} size=0x{size:X}"
+                f"WRAP ASKL component {i} range is invalid: ptr=0x{start:X} size=0x{size:X}"
             )
-        components.append((i, data[ptr:ptr + size]))
+        starts.append(start)
+        components.append(bytearray(data[start:start + size]))
 
-    # ASKL WRAPs observed by the toolkit are one-component resources. Keep a
-    # small candidate loop so a future wrapper with metadata components can
-    # still succeed if exactly one component contains a valid skeleton object.
-    failures: List[str] = []
-    for i, component in components:
-        try:
-            AsklLayout._parse_layout(
-                component,
-                pointer_mode="byte_relative",
-                resource_hash_override=archive_hash,
-                allow_scan=True,
-            )
-            return AsklInputInfo(
-                data=component,
-                container="WRAP_ASKL",
-                pointer_mode="byte_relative",
-                resource_hash_override=archive_hash,
-                component_index=i,
-            )
-        except Exception as exc:
-            failures.append(f"component {i}: {exc}")
+    patch = 0x08 + struct.unpack_from("<i", data, 0x08)[0]
+    if patch < 0 or patch + 24 > len(data):
+        raise DecodeError("WRAP ASKL patch table is outside the file")
+    internal_count = _u32(data, patch + 8)
+    internal_list = (patch + 12) + struct.unpack_from("<i", data, patch + 12)[0]
+    if internal_list < 0 or internal_list + internal_count * 4 > len(data):
+        raise DecodeError("WRAP ASKL internal patch list is outside the file")
 
-    detail = "; ".join(failures[:3])
-    raise DecodeError(
-        "WRAP ASKL was detected, but no component contained a supported ASKL skeleton layout"
-        + (f" ({detail})" if detail else "")
+    # ASKL WRAPs in the current corpus are one-component.  Convert the WRAP
+    # field-relative internal references to component-local byte offsets.
+    comp0 = components[0]
+    comp0_start = starts[0]
+    for i in range(internal_count):
+        field = internal_list + i * 4
+        target_abs = field + struct.unpack_from("<i", data, field)[0]
+        target_off = target_abs - comp0_start
+        if target_off < 0 or target_off + 4 > len(comp0):
+            raise DecodeError(
+                f"WRAP ASKL internal patch target is outside component0: 0x{target_abs:X}"
+            )
+        rel_value = struct.unpack_from("<i", comp0, target_off)[0]
+        ref_off = target_off + rel_value
+        if ref_off < 0 or ref_off >= len(comp0):
+            raise DecodeError(
+                f"WRAP ASKL internal reference +0x{target_off:X} resolves outside component0: +0x{ref_off:X}"
+            )
+        struct.pack_into("<I", comp0, target_off, ref_off & 0xFFFFFFFF)
+
+    component = bytes(comp0)
+    resource_hash = _u32(component, 0x04) if len(component) >= 8 else None
+    if resource_hash is None:
+        raise DecodeError("WRAP ASKL component is too small to contain its resource hash")
+    try:
+        AsklLayout._parse_layout(
+            component,
+            pointer_mode="byte_relative",
+            resource_hash_override=resource_hash,
+            allow_scan=True,
+        )
+    except Exception as exc:
+        raise DecodeError(
+            f"WRAP ASKL was detected, but component0 did not contain a supported skeleton layout: {exc}"
+        ) from exc
+    return AsklInputInfo(
+        data=component,
+        container="WRAP_ASKL",
+        pointer_mode="byte_relative",
+        resource_hash_override=resource_hash,
+        component_index=0,
     )
 
 
@@ -534,7 +675,12 @@ class AsklLayout:
 
         # ASKL +0x08 points at a linked list. SkeletonPose_BuildBoneMatrices receives
         # FUN_008BDB70(resolvedASKL, 0), so key==0 is the bone-map node.
-        bone_head_token = _u32(data, object_local + 0x08) if pointer_mode == "byte_relative" else _u32(data, 0x08)
+        # v5.2.191: raw ASKL and NativeWRAP ASKL both retain the ASKL resource
+        # header at component +0.  The key-node list head is header +0x08, not
+        # object_local +0x08.  The old WRAP branch happened to parse pose fields
+        # but dropped named bone records for layouts whose object starts at +0x60
+        # (for example CH_PLAYERGOBLIN / 0x900E49A5).
+        bone_head_token = _u32(data, 0x08)
         bone_node_local = resolve(bone_head_token) if bone_head_token else None
         seen_nodes = set()
         while bone_node_local is not None:
@@ -893,6 +1039,21 @@ class SM3AnimPoseDecoder:
                 )
                 if name:
                     self.bone_names[bone.index] = name
+
+        # MOD LOADER READY WRAP.ASKL intentionally carries relocation metadata,
+        # not the APKF filename string table.  For known playable-character
+        # skeletons, fill any missing names from the built-in profile recovered
+        # from the user's old/raw route.  The actual WRAP.ASKL layout/maps/scales
+        # still remain authoritative; this fallback supplies names only.
+        if len(self.bone_names) < len(self.askl.bone_records):
+            try:
+                from sm3_toolkit.services.spiderman_named_profile_service import profile_bone_names
+                builtin_names = profile_bone_names(self.askl.resource_hash)
+                for bone in self.askl.bone_records:
+                    if bone.index not in self.bone_names and bone.index in builtin_names:
+                        self.bone_names[bone.index] = builtin_names[bone.index]
+            except Exception:
+                pass
 
         self.reference_indices: List[List[int]] = []
         self.compressed_indices: List[List[int]] = []
@@ -1687,7 +1848,7 @@ def find_parent_apkf_for_anim(anim_path: str | os.PathLike[str]) -> Optional[Pat
 
 def inspect_anim_header(anim_path: str | os.PathLike[str]) -> AnimHeader:
     """Read only the serialized SM3 ANIM header from an extracted .anim file."""
-    return AnimHeader.parse(Path(anim_path).read_bytes())
+    return AnimHeader.parse(read_anim_payload(anim_path))
 
 
 def _nearest_sm3_extract_pack_root(path: Path) -> Optional[Path]:
@@ -1772,7 +1933,7 @@ def classify_sm3_skeleton_source(
     """
     anim_path = Path(anim_path)
     source_path = Path(source_path)
-    header = AnimHeader.parse(anim_path.read_bytes())
+    header = inspect_anim_header(anim_path)
     if source_path.suffix.lower() == ".hsam":
         if _looks_like_sm3_t4_hsam_source(source_path, header.askl_hash):
             return "SM3_T4_HSAM"
@@ -1839,7 +2000,7 @@ def find_matching_skeleton_source(
     search_root = Path(search_root)
     if not anim_path.is_file() or not search_root.exists() or not search_root.is_dir():
         return None
-    header = AnimHeader.parse(anim_path.read_bytes())
+    header = inspect_anim_header(anim_path)
     token = _expected_hash_token(header.askl_hash)
 
     askl_files = [p for p in search_root.rglob("*.askl") if p.is_file()]

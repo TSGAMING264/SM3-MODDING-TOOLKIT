@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import struct
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from sm3_toolkit.theme import COLORS
+from sm3_toolkit.services.wrap_output_service import find_matching_wrap_resource, replace_wrap_component0_exact
 from sm3_toolkit.widgets import open_path
 from sm3_toolkit.services.mat_editor_service import (
     MATDocument,
@@ -50,7 +52,7 @@ class MATEditorTab(ttk.Frame):
         self.search_var = tk.StringVar()
         self.show_zeros_var = tk.BooleanVar(value=True)
         self.show_raw_var = tk.BooleanVar(value=False)
-        self.status_var = tk.StringVar(value="Open an extracted Spider-Man 3 .mat file to begin.")
+        self.status_var = tk.StringVar(value="Open a Spider-Man 3 .mat or .wrap.mat file to begin.")
         self.value_var = tk.StringVar()
         self.slider_var = tk.DoubleVar(value=0.0)
 
@@ -95,7 +97,8 @@ class MATEditorTab(ttk.Frame):
         ttk.Entry(top, textvariable=self.path_var, state="readonly").grid(row=0, column=1, columnspan=4, sticky="ew", padx=4)
         ttk.Button(top, text="OPEN FOLDER", command=self._open_folder).grid(row=1, column=0, padx=(0, 6), pady=(7, 0), sticky="w")
         ttk.Button(top, text="SAVE MODIFIED MAT", command=self._save_copy).grid(row=1, column=1, padx=4, pady=(7, 0), sticky="w")
-        ttk.Button(top, text="SAVE CHANGES", command=self._save_changes).grid(row=1, column=2, padx=4, pady=(7, 0), sticky="w")
+        ttk.Button(top, text="SAVE WRAP MAT", command=self._save_wrap_copy, style="Accent.TButton").grid(row=1, column=2, padx=4, pady=(7, 0), sticky="w")
+        ttk.Button(top, text="SAVE CHANGES", command=self._save_changes).grid(row=1, column=3, padx=4, pady=(7, 0), sticky="w")
 
         # Filters wrap to two rows instead of forcing the tab wider than the
         # screen. This was the main source of clipped controls on 1366x768.
@@ -261,7 +264,15 @@ class MATEditorTab(ttk.Frame):
         ttk.Label(parent, textvariable=variable, wraplength=390, justify="left").grid(row=row, column=1, sticky="nw", pady=2)
 
     def _open_mat(self):
-        path = filedialog.askopenfilename(title="Open Spider-Man 3 MAT", filetypes=[("Spider-Man 3 MAT", "*.mat"), ("All files", "*.*")])
+        path = filedialog.askopenfilename(
+            title="Open Spider-Man 3 MAT / WRAP.MAT",
+            filetypes=[
+                ("Spider-Man 3 MAT / NativeWRAP MAT", "*.mat *.wrap.mat"),
+                ("NativeWRAP MAT", "*.wrap.mat"),
+                ("Spider-Man 3 MAT", "*.mat"),
+                ("All files", "*.*"),
+            ],
+        )
         if not path:
             return
         try:
@@ -271,7 +282,7 @@ class MATEditorTab(ttk.Frame):
             self._update_info()
             self._refresh_table()
             self._clear_selection_panel()
-            self._set_status(f"Loaded {self.doc.path.name} ({len(self.doc.data)} bytes).")
+            self._set_status(f"Loaded {self.doc.path.name} ({len(self.doc.data)} MAT bytes){' from NativeWRAP' if self.doc.is_wrap else ''}.")
         except Exception as exc:
             messagebox.showerror("MAT Editor", str(exc))
             self._set_status(f"Load failed: {exc}")
@@ -428,7 +439,8 @@ class MATEditorTab(ttk.Frame):
         if not self.doc:
             messagebox.showinfo("MAT Editor", "Open a MAT file first.")
             return
-        default = self.doc.path.with_name(self.doc.path.stem + "_EDITED.mat")
+        base = re.sub(r'(?:\.wrap)?\.mat$', '', self.doc.path.name, flags=re.I)
+        default = self.doc.path.with_name(base + "_EDITED.mat")
         out = filedialog.asksaveasfilename(
             title="Save Modified MAT",
             initialdir=str(default.parent),
@@ -445,6 +457,65 @@ class MATEditorTab(ttk.Frame):
         except Exception as exc:
             messagebox.showerror("MAT Editor", str(exc))
 
+    def _save_wrap_copy(self):
+        """v5.2.184: save current MAT edits inside an exact-size NativeWRAP MAT shell."""
+        if not self.doc:
+            messagebox.showinfo("MAT Editor", "Open a MAT file first.")
+            return
+        try:
+            shell = None
+            shell_bytes = self.doc.wrap_shell
+            h = self.doc.filename_material_hash
+            # If a WRAP.MAT is loaded directly, it is already the authoritative shell.
+            if shell_bytes is None and h is not None:
+                cur = self.doc.path.parent
+                for _ in range(7):
+                    try:
+                        shell = find_matching_wrap_resource(cur, h, 'mat')
+                        if shell:
+                            break
+                    except Exception:
+                        pass
+                    if cur.parent == cur:
+                        break
+                    cur = cur.parent
+            if shell_bytes is None and shell is None:
+                chosen = filedialog.askopenfilename(
+                    title="Select matching original WRAP.MAT shell",
+                    initialdir=str(self.doc.path.parent),
+                    filetypes=[("SM3 NativeWRAP MAT", "*.wrap.mat"), ("All files", "*.*")],
+                )
+                if not chosen:
+                    return
+                shell = Path(chosen)
+            if shell_bytes is None:
+                shell_bytes = shell.read_bytes()
+            wrapped = replace_wrap_component0_exact(shell_bytes, bytes(self.doc.data))
+            default_hash = h if h is not None else self.doc.material_hash
+            base_name = self.doc.path.name
+            clean = re.sub(r'^0x[0-9A-Fa-f]{8}\.', '', base_name)
+            clean = re.sub(r'(?:\.wrap)?\.mat$', '', clean, flags=re.I)
+            out = filedialog.asksaveasfilename(
+                title="Save Modified WRAP.MAT",
+                initialdir=str(self.doc.path.parent),
+                initialfile=f"0x{default_hash:08X}.{clean}.wrap.mat",
+                defaultextension=".wrap.mat",
+                filetypes=[("SM3 NativeWRAP MAT", "*.wrap.mat"), ("All files", "*.*")],
+            )
+            if not out:
+                return
+            outp = Path(out)
+            outp.parent.mkdir(parents=True, exist_ok=True)
+            outp.write_bytes(wrapped)
+            self._set_status(f"Saved WRAP MAT: {outp.name}")
+            messagebox.showinfo(
+                "MAT Editor",
+                f"NativeWRAP MAT saved successfully.\n\n{outp}\n\n"
+                "The original WRAP patch tables/ownership header were preserved; only exact-size MAT component0 bytes were replaced.",
+            )
+        except Exception as exc:
+            messagebox.showerror("SAVE WRAP MAT", str(exc))
+
     def _save_changes(self):
         if not self.doc:
             return
@@ -453,9 +524,9 @@ class MATEditorTab(ttk.Frame):
             return
         if not messagebox.askyesno(
             "MAT Editor — Save Changes",
-            "Write the edited bytes back to the loaded extracted MAT?\n\n"
-            "The editor will create a .mat.bak backup the first time.\n"
-            "The MAT size and identity fields are preserved.",
+            "Write the edited bytes back to the loaded MAT / WRAP.MAT?\n\n"
+            "The editor will create a .bak backup the first time.\n"
+            "For WRAP.MAT, the original WRAP shell/patch tables are preserved and only component0 is replaced exactly.",
         ):
             return
         try:

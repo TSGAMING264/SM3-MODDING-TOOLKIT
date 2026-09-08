@@ -112,11 +112,16 @@ class MATDocument:
     path: Path
     original: bytes
     data: bytearray
+    wrap_shell: bytes | None
     resource_word: int
     material_hash: int
     shader_hash: int
     header_value: int
     profile: ShaderProfile | None
+
+    @property
+    def is_wrap(self) -> bool:
+        return self.wrap_shell is not None
 
     @property
     def shader_name(self) -> str:
@@ -156,11 +161,30 @@ def load_mat(path: str | Path) -> MATDocument:
     path = Path(path)
     if not path.is_file():
         raise MATEditorError(f"MAT file not found: {path}")
-    if path.suffix.lower() != ".mat":
-        raise MATEditorError("Choose a Spider-Man 3 .mat file.")
-    raw = path.read_bytes()
+
+    lower_name = path.name.lower()
+    wrap_shell: bytes | None = None
+    if lower_name.endswith(".wrap.mat"):
+        try:
+            from sm3_toolkit.services.wrap_output_service import inspect_wrap_bytes
+            wrap_shell = path.read_bytes()
+            info = inspect_wrap_bytes(wrap_shell)
+            if info.component_count < 1:
+                raise MATEditorError("NativeWRAP MAT has no serialized MAT component.")
+            start = info.component_offsets[0]
+            size = info.component_sizes[0]
+            raw = wrap_shell[start:start + size]
+        except MATEditorError:
+            raise
+        except Exception as exc:
+            raise MATEditorError(f"Could not unwrap NativeWRAP MAT: {exc}") from exc
+    elif lower_name.endswith(".mat"):
+        raw = path.read_bytes()
+    else:
+        raise MATEditorError("Choose a Spider-Man 3 .mat or .wrap.mat file.")
+
     if len(raw) < 0x0C:
-        raise MATEditorError("MAT file is too small to contain the SM3 material header.")
+        raise MATEditorError("MAT component is too small to contain the SM3 material header.")
 
     resource_word = _u32(raw, 0x00)
     material_hash = _u32(raw, 0x04)
@@ -172,6 +196,7 @@ def load_mat(path: str | Path) -> MATDocument:
         path=path,
         original=raw,
         data=bytearray(raw),
+        wrap_shell=wrap_shell,
         resource_word=resource_word,
         material_hash=material_hash,
         shader_hash=shader_hash,
@@ -334,10 +359,16 @@ def save_copy(doc: MATDocument, output_path: str | Path) -> Path:
 def overwrite_with_backup(doc: MATDocument) -> tuple[Path, Path]:
     path = doc.path
     backup = path.with_suffix(path.suffix + ".bak")
-    if not backup.exists():
-        backup.write_bytes(doc.original)
-    path.write_bytes(bytes(doc.data))
-    # New baseline is the saved state so a later Reset All returns to what was
-    # loaded when this session started only if user reopens. Keep original in
-    # memory for explicit reset and .bak recovery.
+    if doc.wrap_shell is not None:
+        from sm3_toolkit.services.wrap_output_service import replace_wrap_component0_exact
+        if not backup.exists():
+            backup.write_bytes(doc.wrap_shell)
+        wrapped = replace_wrap_component0_exact(doc.wrap_shell, bytes(doc.data))
+        path.write_bytes(wrapped)
+        doc.wrap_shell = wrapped
+    else:
+        if not backup.exists():
+            backup.write_bytes(doc.original)
+        path.write_bytes(bytes(doc.data))
+    # Keep the session's original component bytes in memory for explicit Reset.
     return path, backup

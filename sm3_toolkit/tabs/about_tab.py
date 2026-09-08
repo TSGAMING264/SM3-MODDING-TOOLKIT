@@ -61,6 +61,16 @@ class AboutInfoTab(ttk.Frame):
             "Sound Editor inspiration through Spider-Man 3 audio mod work",
             "spiderglider_avatar.png",
         ),
+        (
+            "AkyrosXD",
+            "RaimiHook creator / Debug Recreation creator",
+            "akyrosxd_avatar.png",
+        ),
+        (
+            "Bread",
+            "IDA coding for SM3",
+            "bread_avatar.png",
+        ),
     )
 
     def __init__(self, parent, app_state=None):

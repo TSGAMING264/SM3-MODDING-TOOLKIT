@@ -1,0 +1,14 @@
+SM3 Toolkit v5.2.196 — Final About Credit validation
+=====================================================
+
+PASS | Bread community credit added
+PASS | Credit text is exactly: IDA coding for SM3
+PASS | lowercase "sm3" is not used in Bread role text
+PASS | Bread avatar bundled at 128x128
+PASS | About credit appears after AkyrosXD as the final community card
+PASS | APP_VERSION updated to v5.2.196 FINAL ABOUT CREDIT
+PASS | All 45 Python source files compile
+PASS | Existing-file delta versus v5.2.195 is limited to app.py and about_tab.py
+PASS | No v5.2.195 source/assets were removed
+
+No toolkit workflow logic was changed in this update.

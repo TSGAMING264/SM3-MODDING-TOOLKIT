@@ -1,0 +1,30 @@
+SM3 Toolkit v5.2.188 — WRAP TEX browser/identity validation
+
+RESULT: 20/20 PASS
+
+PASS | app version v5.2.188
+PASS | DDS selected loose TEX identity retained
+PASS | DDS selected WRAP TEX identity button present
+PASS | WRAP identity button uses dedicated handler
+PASS | Export selected WRAP TEX button present
+PASS | two-column action grid prevents disappearing controls
+PASS | WRAP identity requires selected wrap shell
+PASS | WRAP identity output extension is .wrap.tex
+PASS | WRAP identity rebuilds using selected shell
+PASS | WRAP shell PatchPlan helper import retained
+PASS | WRAP preview metadata retained
+PASS | WRAP preview parent archive info retained
+PASS | Pack extractor #1 LIST CONTENTS
+PASS | Pack extractor #2 MOD LOADER READY
+PASS | Pack extractor #3 CLASSIC EXTRACT
+PASS | Model Viewer WRAP.MESH support retained
+PASS | MAT Editor WRAP.MAT support retained
+PASS | New Animation Swapper WRAP.ANIM retained
+PASS | Old Animation Swapper WRAP.ANIM retained
+PASS | all sm3_toolkit Python modules compile
+
+Release focus:
+- Browse + Image action controls use a compact two-column grid so the WRAP buttons stay visible on narrower windows / DPI scaling.
+- DDS -> Selected WRAP.TEX Identity is a separate visible action beside the legacy DDS -> Selected .TEX Identity button.
+- EXPORT SELECTED WRAP.TEX is separate from loose .TEX export.
+- Pack Extractor order remains 1) LIST CONTENTS, 2) MOD LOADER READY, 3) CLASSIC EXTRACT.

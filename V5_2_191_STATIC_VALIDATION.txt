@@ -1,0 +1,50 @@
+SM3 Toolkit v5.2.191 — Character Motion Profiles + Dual Output validation
+
+RESULT: 37/37 PASS
+
+PASS | Python compileall
+PASS | App version v5.2.191 dual output
+PASS | Black Suit shared character alias
+PASS | Peter shared character alias
+PASS | Player Goblin built-in profile hash
+PASS | Goblin profile file exists
+PASS | Character profile registry exists
+PASS | WRAP ASKL bone-head parser fix retained
+PASS | WRAP ASKL built-in name fallback retained
+PASS | Peter unusual-patch fail-closed extraction retained
+PASS | Step 7 classic button
+PASS | Step 7 WRAP button
+PASS | Step 7 XESM3 button
+PASS | Classic output verifies resource identity
+PASS | WRAP output uses original shell patch map
+PASS | WRAP output verifies inner hash
+PASS | WRAP output verifies parent archive
+PASS | WRAP shell can be auto-found
+PASS | WRAP shell manual fallback
+PASS | Motion Editor .wrap.anim input retained
+PASS | Motion Editor .wrap.askl input retained
+PASS | CH_BLACKSUIT normal ANIM skeleton corpus | 774/774
+PASS | CH_PLAYERGOBLIN normal ANIM skeleton corpus | 35/35
+PASS | CH_PETER shared profile corpus | Counter({(3484505293, 131350): 747, (3444879823, 369164800): 1})
+PASS | CH_PETER special remains distinct | Counter({(3484505293, 131350): 747, (3444879823, 369164800): 1})
+PASS | Player Goblin built-in profile = 74 bones | 74
+PASS | unchanged from v5.2.190: sm3_toolkit/tabs/pack_extractor_tab.py
+PASS | unchanged from v5.2.190: sm3_toolkit/tabs/tex_swapper_tab.py
+PASS | unchanged from v5.2.190: sm3_toolkit/tabs/model_viewer_tab.py
+PASS | unchanged from v5.2.190: sm3_toolkit/tabs/mat_editor_tab.py
+PASS | unchanged from v5.2.190: sm3_toolkit/tabs/old_animation_swapper_tab.py
+PASS | unchanged from v5.2.190: sm3_toolkit/services/anim_mod_output_service.py
+PASS | unchanged from v5.2.190: sm3_toolkit/services/tex_preview_core.py
+PASS | unchanged from v5.2.190: sm3_toolkit/services/sm3_mesh_viewer_service.py
+PASS | unchanged from v5.2.190: sm3_toolkit/services/mat_editor_service.py
+PASS | unchanged from v5.2.190: sm3_toolkit/services/xbox_pack_extract_service.py
+PASS | unchanged from v5.2.190: sm3_toolkit/tabs/pcpack_rebuild_lab_tab.py
+
+Runtime/structural tests performed separately:
+PASS | Black Suit Motion Editor +1 edit -> Classic .ANIM -> re-decode
+PASS | Black Suit edited ANIM -> original WRAP shell -> WRAP.ANIM identity/archive verification
+PASS | Peter Motion Editor +1 edit -> Classic + WRAP outputs
+PASS | Player Goblin Motion Editor +1 edit -> Classic + WRAP outputs
+PASS | Player Goblin WRAP.ASKL = 74/74 bones named
+
+User runtime game test is still required before Nexus publication.
