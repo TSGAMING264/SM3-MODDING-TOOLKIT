@@ -1,0 +1,36 @@
+SM3 MODDING TOOLKIT v5.2.197 — BROWSE + IMAGE SCROLL FIX
+=========================================================
+
+This is a focused Tex Swapper UI bugfix on top of v5.2.196.
+
+TEX SWAPPER — BROWSE + IMAGE
+----------------------------
+Fixed the right-side Browse + Image preview panel when large/tall textures or
+smaller display heights caused the lower tool options to be pushed off-screen.
+
+The complete right side is now vertically scrollable:
+- Texture Preview
+- Texture metadata/details
+- DDS -> Selected .TEX Identity
+- DDS -> Selected WRAP.TEX Identity
+- EXPORT SELECTED .TEX
+- EXPORT SELECTED WRAP.TEX
+- EXPORT TO DDS
+- OPEN OUTPUT
+- REVEAL SOURCE
+
+A visible vertical scrollbar is always attached to the preview side. Mouse-wheel
+scrolling is also supported over the preview content. Selecting a different TEX
+resets the right pane to the top so the new preview is immediately visible.
+
+VERSION
+-------
+Displayed toolkit version:
+v5.2.197 BROWSE IMAGE SCROLL FIX
+
+SCOPE
+-----
+No texture decoding, TEX/WRAP conversion, DDS export, PCPACK patching, Xbox
+untile/preview logic, or other toolkit workflow behavior was intentionally
+changed. This update is limited to the Browse + Image layout/scroll behavior
+plus version labeling.

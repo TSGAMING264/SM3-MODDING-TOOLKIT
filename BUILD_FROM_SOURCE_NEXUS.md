@@ -1,6 +1,6 @@
 # Build From Source - Nexus Review
 
-This repository is the public source for SM3 Modding Toolkit v5.2.196 FINAL ABOUT CREDIT and its separate SM3 Audio Separator v1.0.3 companion application.
+This repository is the public source for SM3 Modding Toolkit v5.2.202 FINAL STABILITY RELEASE and its separate SM3 Audio Separator v1.0.3 companion application.
 
 ## Main Toolkit
 
@@ -53,4 +53,4 @@ The Audio Separator downloads the selected Demucs model on first use. Model weig
 - No compiled EXEs are committed to this source repository.
 - PyInstaller runtime bundling can trigger heuristic antivirus detections.
 - `sm3_toolkit/data/` is explicitly bundled by the main spec because Motion Editor loads its named character profiles and animation presets at runtime.
-- The exact local regression and packaged-window checks used for this source are summarized in `RELEASE_NOTES_v5_2_196.md`.
+- The exact local regression and packaged-window checks used for this source are summarized in `RELEASE_NOTES_v5_2_202.md` and `FINAL_VALIDATION_REPORT_v5_2_202.txt`.

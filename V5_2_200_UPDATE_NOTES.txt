@@ -1,0 +1,19 @@
+SM3 MODDING TOOLKIT v5.2.200 — CLASSIC SCROLL REACHABILITY FIX
+
+WHY THIS BUILD EXISTS
+---------------------
+The 1280x720 screen recording showed the Tex Swapper Classic Workflow body being vertically compressed by the fixed header/search rows and the Windows taskbar. Large preview images then left only a tiny strip for metadata, while the lower Preview Files/buttons could be pushed to the bottom edge.
+
+FIX
+---
+- The full Classic Workflow three-column work area now lives inside a vertically scrollable viewport.
+- The work area keeps a 540 px minimum internal height instead of collapsing to an unusable ~300 px body on short screens.
+- The visible body scrollbar lets users move down to metadata, Preview Files, and bottom controls.
+- Mouse wheel over the Preview Image scrolls the Classic body.
+- TEX Targets, metadata Text, action-tab canvases, and Preview Files retain their own independent scrollbars/mouse-wheel behavior.
+- The compact pack/output/search controls remain fixed at the top while the working body scrolls.
+- No TEX parsing, PCPACK patching, WRAP, Xbox, or v5.2.199 Windows path logic was changed.
+
+EXPECTED RESULT
+---------------
+At 1280x720, large 512x512/1024x1024 previews can no longer crush the metadata area or strand lower controls below the visible window. Scroll the body using the new far-right scrollbar (or the wheel while over the preview image).

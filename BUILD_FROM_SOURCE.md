@@ -2,7 +2,7 @@
 
 This guide builds the two applications included in the official SM3 Toolkit package:
 
-- SM3 Modding Toolkit v5.2.196 FINAL ABOUT CREDIT
+- SM3 Modding Toolkit v5.2.202 FINAL STABILITY RELEASE
 - SM3 Audio Separator v1.0.3
 
 They remain separate applications and must not be merged into one EXE or runtime folder.
@@ -31,7 +31,7 @@ py -3 -m venv .venv-toolkit
 .\.venv-toolkit\Scripts\python -m PyInstaller SM3_MODDING_TOOLKIT.spec --clean --noconfirm
 ```
 
-Expected output (the supplied v5.2.196 spec is a windowed one-file build):
+Expected output (the supplied v5.2.202 spec is a windowed one-file build):
 
 ```text
 dist/SM3 Modding Toolkit.exe
@@ -110,7 +110,8 @@ From the assembled release folder:
 
 The Audio Separator command should return exit code `0`. Launch
 `SM3 Modding Toolkit.exe` normally and confirm Home is selected, all 13 tabs
-open, and the Motion Editor/How To/About checks in `RELEASE_NOTES_v5_2_196.md`.
+open, and the packaging/Motion Editor/How To/About checks in
+`RELEASE_NOTES_v5_2_202.md`.
 
 ## 7. Why PyInstaller Can Flag
 

@@ -70,6 +70,10 @@ Insert safety rules:
   - v5.2.145 simplifies the Tex Swapper layout to two tabs only: Classic Workflow and Browse + Image. The loose .TEX actions remain part of Classic Workflow.
   - v5.2.146 keeps the v5.2.145 Tex Swapper UI/backend unchanged and regression-verifies Classic, Browse + Image, NativeTEX preview/export, PHYS/no-PHYS, and mip preservation while Folder Viewer is upgraded.
   - v5.2.162 adds direct SM3 Xbox/XE pack viewing in Tex Swapper: XEPACK/XEAPK -> read-only TEX extraction -> Xenos endian correction + untile -> Browse + Image preview and base-mip DDS export. PC editing/reimport is unchanged; Xbox reimport stays blocked until reverse retile/repack is proven.
+  - v5.2.197 fixes Browse + Image vertical cutoff by making the full preview/info/action side scrollable, keeping controls reachable for large/tall textures and smaller displays.
+  - v5.2.198 fixes SM3 pack recognition in Tex Swapper: Xbox routing now checks real pack bytes as well as filenames, .BIN/.DAT Xbox inputs are recognized, and failed PC probes are reported as unsupported/unrecognized instead of automatically being mislabeled as the wrong game.
+  - v5.2.199 fixes a Windows path-length regression in universal TEX preview output: A####_F#####_TEX prefixes are stripped back to the real asset name, long filesystem labels are compacted, RAW_COMPONENTS no longer repeats the asset name, and preview-write failures are no longer mislabeled as pack-recognition failures.
+  - v5.2.200 fixes Classic Workflow cutoff on 1280x720/smaller displays by placing the entire three-column work area inside a vertically scrollable viewport with a minimum working height; target list, preview/info, actions, Preview Files, and bottom buttons stay reachable without shrinking into unusable slivers.
   - Best replacement input is a raw component1 .bin or a DDS whose payload
     after the DDS header exactly matches the selected component1 size.
   - PNG insertion is intentionally limited to uncompressed exact-size cases.
@@ -993,7 +997,7 @@ def native_tex_identity_from_dds_filename(path:Path)->tuple[str,int]:
 
 APP_NAME='THE TEX SWAPPER'
 APP_AUTHOR='TSGAMING264'
-APP_BUILD='v5.2.162 PC + Xbox TEX Preview'
+APP_BUILD='v5.2.202 Final Stability Release'
 APP_TITLE=f'{APP_NAME} - Made by {APP_AUTHOR}'
 DEFAULT_OUTPUT_DIR='THE_TEX_SWAPPER_Output'
 PREVIEW_DIR_NAME='PREVIEW_OUTPUT'
@@ -1227,6 +1231,13 @@ def scan_pcpack_textures_to_chain(pcpack_path:Path, out_root:Path):
         raise ValueError('This file starts with NCH. That is Web of Shadows format, not an SM3 PC pack.')
 
     probe=pack_route_backend.probe_pack_bytes(pcpack_path.name, data)
+    # v5.2.198: always persist the probe, even if recognition fails, so a real
+    # SM3 edge-case pack leaves evidence we can inspect instead of only a popup.
+    reports=ensure_dir(out_root/'REPORTS')
+    try:
+        (reports/'PACK_DETECT.json').write_text(json.dumps(probe.to_dict(),indent=2),encoding='utf-8')
+    except Exception:
+        pass
     valid_sm3_route=bool(
         data.startswith(b'APKF')
         or data[SM3_MAGIC_OFF:SM3_MAGIC_OFF+4] == SM3_MAGIC
@@ -1245,7 +1256,6 @@ def scan_pcpack_textures_to_chain(pcpack_path:Path, out_root:Path):
 
     chain_root=ensure_dir(out_root/'_DIRECT_PCPACK_TEX_CHAIN')
     tex_root=ensure_dir(chain_root/'TEX')
-    reports=ensure_dir(out_root/'REPORTS')
     targets=[]; apkf_summaries=[]
 
     for slice_index, source in enumerate(apkf_slices):
@@ -2857,8 +2867,57 @@ class TexSwapperTab(ttk.Frame):
         ttk.Label(mid,textvariable=self.selected_target_var,style='Status.TLabel').grid(row=1,column=0,columnspan=9,sticky='ew',pady=(4,0))
         mid.columnconfigure(1,weight=1)
 
-        # Main body: left = target list, middle = preview/info, right = always-visible action panel.
-        body=ttk.PanedWindow(classic_parent,orient='horizontal'); body.pack(fill='both',expand=True,padx=8,pady=(0,8))
+        # Main body: left = target list, middle = preview/info, right = action panel.
+        # v5.2.200: on 1280x720 / taskbar-limited Windows desktops the Classic body
+        # was being compressed to roughly 300 px tall.  The 360 px preview then
+        # consumed nearly the whole center column, the metadata Text collapsed to a
+        # one-line sliver, and Preview Files / bottom buttons could be pushed below
+        # the visible page.  Keep a real minimum working height and scroll the BODY
+        # vertically when the viewport is shorter.  The compact file/search controls
+        # above remain fixed and visible.
+        classic_body_outer=ttk.Frame(classic_parent)
+        classic_body_outer.pack(fill='both',expand=True,padx=8,pady=(0,8))
+        classic_body_outer.columnconfigure(0,weight=1)
+        classic_body_outer.rowconfigure(0,weight=1)
+        self.classic_body_canvas=tk.Canvas(classic_body_outer,highlightthickness=0,borderwidth=0)
+        classic_body_y=ttk.Scrollbar(classic_body_outer,orient='vertical',command=self.classic_body_canvas.yview)
+        self.classic_body_canvas.configure(yscrollcommand=classic_body_y.set)
+        self.classic_body_canvas.grid(row=0,column=0,sticky='nsew')
+        classic_body_y.grid(row=0,column=1,sticky='ns')
+        classic_body_content=ttk.Frame(self.classic_body_canvas)
+        self.classic_body_window=self.classic_body_canvas.create_window((0,0),window=classic_body_content,anchor='nw')
+        self._classic_body_min_height=540
+
+        body=ttk.PanedWindow(classic_body_content,orient='horizontal')
+        body.pack(fill='both',expand=True)
+
+        def _sync_classic_body_scrollregion(_event=None):
+            try:
+                self.classic_body_canvas.configure(scrollregion=self.classic_body_canvas.bbox('all'))
+            except Exception:
+                pass
+
+        def _fit_classic_body_viewport(event):
+            try:
+                # Fill the available width, but never compress the body below the
+                # height needed by the 3 working columns.  If the viewport is shorter,
+                # the visible scrollbar provides the missing vertical reach.
+                wanted_h=max(int(event.height),int(self._classic_body_min_height))
+                self.classic_body_canvas.itemconfigure(
+                    self.classic_body_window,
+                    width=max(1,int(event.width)),
+                    height=wanted_h,
+                )
+            except Exception:
+                pass
+            _sync_classic_body_scrollregion()
+
+        classic_body_content.bind('<Configure>',_sync_classic_body_scrollregion)
+        self.classic_body_canvas.bind('<Configure>',_fit_classic_body_viewport)
+        self.bind_mousewheel_to_widget(self.classic_body_canvas)
+        if not hasattr(self,'_theme_widgets'):
+            self._theme_widgets=[]
+        self._theme_widgets.append(self.classic_body_canvas)
 
         left=ttk.Frame(body,padding=4); body.add(left,weight=3)
         ttk.Label(left,text='TEX Targets - Ctrl-click / Shift-click for batch selection',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
@@ -2881,6 +2940,28 @@ class TexSwapperTab(ttk.Frame):
         ttk.Label(center,text='Preview Image',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
         self.preview_label=ttk.Label(center)
         self.preview_label.pack(fill='x',expand=False,pady=(4,6))
+        # Mouse wheel over the image itself scrolls the Classic body.  Tree/Text/List
+        # widgets keep their own local scrolling behavior.
+        self.bind_mousewheel_to_widget(self.preview_label)
+        # Route the preview-label wheel specifically to the outer body canvas.
+        def _classic_preview_wheel(event):
+            try:
+                if getattr(event,'num',None)==4:
+                    self.classic_body_canvas.yview_scroll(-3,'units')
+                elif getattr(event,'num',None)==5:
+                    self.classic_body_canvas.yview_scroll(3,'units')
+                else:
+                    delta=int(-1*(event.delta/120)) if event.delta else 0
+                    if delta:
+                        self.classic_body_canvas.yview_scroll(delta*3,'units')
+            except Exception:
+                pass
+            return 'break'
+        for _seq in ('<MouseWheel>','<Button-4>','<Button-5>'):
+            try:
+                self.preview_label.bind(_seq,_classic_preview_wheel)
+            except Exception:
+                pass
         info_frame=ttk.Frame(center); info_frame.pack(fill='both',expand=True)
         self.info=tk.Text(info_frame,height=14,wrap='word')
         info_y=ttk.Scrollbar(info_frame,orient='vertical',command=self.info.yview)
@@ -3029,8 +3110,39 @@ class TexSwapperTab(ttk.Frame):
         top.columnconfigure(1,weight=1)
 
         pan=ttk.PanedWindow(page,orient='horizontal'); pan.pack(fill='both',expand=True,padx=10,pady=(0,10))
-        left=ttk.Frame(pan,padding=4); right=ttk.Frame(pan,padding=4)
-        pan.add(left,weight=5); pan.add(right,weight=5)
+        left=ttk.Frame(pan,padding=4)
+        # v5.2.197: the Browse + Image preview side must remain usable even when
+        # a selected texture has a tall/large preview.  Put the entire right-side
+        # content (preview, metadata, and action buttons) inside a scrollable canvas
+        # so the image can never push the controls below the visible window.
+        right_outer=ttk.Frame(pan)
+        pan.add(left,weight=5); pan.add(right_outer,weight=5)
+        right_outer.columnconfigure(0,weight=1); right_outer.rowconfigure(0,weight=1)
+        self.native_tex_browser_canvas=tk.Canvas(right_outer,highlightthickness=0,borderwidth=0)
+        native_browser_scroll=ttk.Scrollbar(right_outer,orient='vertical',command=self.native_tex_browser_canvas.yview)
+        self.native_tex_browser_canvas.configure(yscrollcommand=native_browser_scroll.set)
+        self.native_tex_browser_canvas.grid(row=0,column=0,sticky='nsew')
+        native_browser_scroll.grid(row=0,column=1,sticky='ns')
+        right=ttk.Frame(self.native_tex_browser_canvas,padding=4)
+        self.native_tex_browser_canvas_window=self.native_tex_browser_canvas.create_window((0,0),window=right,anchor='nw')
+
+        def _sync_native_browser_scrollregion(_event=None):
+            try:
+                self.native_tex_browser_canvas.configure(scrollregion=self.native_tex_browser_canvas.bbox('all'))
+            except Exception:
+                pass
+
+        def _fit_native_browser_width(event):
+            try:
+                self.native_tex_browser_canvas.itemconfigure(self.native_tex_browser_canvas_window,width=max(1,event.width))
+            except Exception:
+                pass
+            _sync_native_browser_scrollregion()
+
+        right.bind('<Configure>',_sync_native_browser_scrollregion)
+        self.native_tex_browser_canvas.bind('<Configure>',_fit_native_browser_width)
+        self.bind_mousewheel_to_widget(self.native_tex_browser_canvas)
+        self._theme_widgets.append(self.native_tex_browser_canvas)
 
         ttk.Label(left,text='SM3 .TEX Files',font=('TkDefaultFont',11,'bold')).pack(anchor='w')
         tf=ttk.Frame(left); tf.pack(fill='both',expand=True,pady=(4,0))
@@ -3064,13 +3176,48 @@ class TexSwapperTab(ttk.Frame):
         ttk.Button(btns,text='EXPORT TO DDS',command=self.native_tex_browser_export_selected_dds).grid(row=2,column=0,sticky='ew',padx=2,pady=2)
         ttk.Button(btns,text='OPEN OUTPUT',command=self.native_tex_browser_open_output).grid(row=2,column=1,sticky='ew',padx=2,pady=2)
         ttk.Button(btns,text='REVEAL SOURCE',command=self.native_tex_browser_reveal_selected).grid(row=3,column=0,columnspan=2,sticky='ew',padx=2,pady=2)
+        # Wheel scrolling works while the pointer is over blank preview content too;
+        # the visible scrollbar remains the primary control over buttons/labels.
+        self.bind_mousewheel_to_widget(right)
+
+    def _detect_selected_pack_platform(self, pc:Path)->tuple[str,dict]:
+        """Choose PC vs Xbox from both filename and real pack bytes.
+
+        v5.2.198: the old Tex Swapper route used only a short extension list.
+        Valid Xbox dumps named .bin/.dat (or renamed files carrying the X360
+        'mash' marker) could therefore be sent into the PC parser and rejected.
+        The byte signature is authoritative when it clearly says Xbox.
+        """
+        info={'suffix':pc.suffix.lower(),'magic_0x30':'','reason':''}
+        try:
+            with pc.open('rb') as fh:
+                head=fh.read(0x200000)
+        except OSError:
+            head=b''
+        magic30=head[0x30:0x34] if len(head)>=0x34 else b''
+        info['magic_0x30']=magic30.decode('latin1',errors='replace') if magic30 else ''
+        upper=pc.name.upper()
+        xbox_exts=set(getattr(xbox_pack_backend,'XBOX_EXTS',{'.xepack','.xeapk','.xpack','.x360','.bin','.dat'}))
+        # 'mash' is the strongest easy X360 signal in the SM3 pack family.
+        if magic30==b'mash':
+            info['reason']='x360_mash_header_at_0x30'
+            return 'XBOX',info
+        if pc.suffix.lower() in xbox_exts or 'XEPACK' in upper or 'XEAPK' in upper or 'XBOX' in upper:
+            info['reason']='xbox_filename_or_extension'
+            return 'XBOX',info
+        # Known PC signatures. Direct APKF files are also valid PC inputs.
+        if head.startswith(b'APKF') or magic30==b'hsam' or b'hsam' in head or b'APKF' in head:
+            info['reason']='pc_hsam_or_apkf_signature'
+            return 'PC',info
+        info['reason']='unknown_signature_default_pc_probe'
+        return 'PC',info
 
     def choose_pcpack(self):
         p=filedialog.askopenfilename(
             title='Select Spider-Man 3 PC or Xbox pack',
             filetypes=[
-                ('SM3 PC/Xbox packs','*.PCPACK *.pcpack *.PCAPK *.pcapk *.APKF *.apkf *.XEPACK *.xepack *.XEAPK *.xeapk *.XPACK *.xpack'),
-                ('Xbox 360 packs','*.XEPACK *.xepack *.XEAPK *.xeapk *.XPACK *.xpack'),
+                ('SM3 PC/Xbox packs','*.PCPACK *.pcpack *.PCAPK *.pcapk *.APKF *.apkf *.XEPACK *.xepack *.XEAPK *.xeapk *.XPACK *.xpack *.BIN *.bin *.DAT *.dat'),
+                ('Xbox 360 packs','*.XEPACK *.xepack *.XEAPK *.xeapk *.XPACK *.xpack *.BIN *.bin *.DAT *.dat'),
                 ('SM3 PC packs','*.PCPACK *.pcpack *.PCAPK *.pcapk *.APKF *.apkf'),
                 ('All files','*.*'),
             ],
@@ -3348,8 +3495,9 @@ class TexSwapperTab(ttk.Frame):
         # Xbox packs are extracted read-only into the Tex Swapper workspace, then
         # their combined .tex resources are opened in Browse + Image using the
         # proven Xenos endian + untile decoder.
-        xbox_exts={'.xepack','.xeapk','.xpack','.x360'}
-        is_xbox_pack=(pc.suffix.lower() in xbox_exts or 'XEPACK' in pc.name.upper() or 'XEAPK' in pc.name.upper())
+        pack_platform, pack_detect_info = self._detect_selected_pack_platform(pc)
+        is_xbox_pack=(pack_platform=='XBOX')
+        self.set_status(f"Pack route detection: {pack_platform} ({pack_detect_info.get('reason','')})")
         if is_xbox_pack:
             try:
                 out=reset_generated_build_workspace(base_out)
@@ -3387,12 +3535,14 @@ class TexSwapperTab(ttk.Frame):
             self.set_status(wrong_game_detail(pc))
             messagebox.showerror('SM3 pack route not recognized', WRONG_GAME_GUARD_MESSAGE)
             return
+        load_stage='scan'
         try:
             # v4.8 safety: never delete the user's selected output folder.
             # Only delete/rebuild our generated workspace under that folder.
             out=reset_generated_build_workspace(base_out)
             self.set_status('Scanning PCPACK and extracting TEX components...')
             chain,targets=scan_pcpack_textures_to_chain(pc,out)
+            load_stage='preview'
             self.set_status(f'Found {len(targets)} TEX files. Building previews...')
             # core.process may clear its destination, so keep it inside the generated workspace.
             preview_out=out/PREVIEW_DIR_NAME
@@ -3420,12 +3570,39 @@ class TexSwapperTab(ttk.Frame):
                 messagebox.showinfo('Valid SM3 pack - no TEX resources', 'The pack was recognized successfully, but it contains no TEX resources for the Tex Swapper to preview.')
         except Exception as e:
             traceback.print_exc()
-            if exception_suggests_wrong_game(e):
+            # v5.2.198: only an actual NCH/WoS signature should get the wrong-game
+            # guard. A legitimate SM3 pack may simply use a layout our current
+            # universal probe has not learned yet, and calling that "wrong game"
+            # hides the useful diagnostic information.
+            try:
+                with pc.open('rb') as fh:
+                    fail_head=fh.read(0x40)
+            except OSError:
+                fail_head=b''
+            if fail_head[:3] == b'NCH':
                 self.set_status(wrong_game_detail(pc))
                 messagebox.showerror('SM3 pack route not recognized', WRONG_GAME_GUARD_MESSAGE)
             else:
-                messagebox.showerror('Build failed',str(e))
-                self.set_status('Build failed.')
+                diag = out/'REPORTS'/'PACK_DETECT.json' if 'out' in locals() else None
+                diag_text = f"\n\nDetection report:\n{diag}" if diag and diag.exists() else ''
+                if load_stage == 'preview':
+                    msg=(
+                        'The SM3 pack WAS recognized and its TEX table parsed successfully, but preview generation failed.\n\n'
+                        'v5.2.199 shortens universal TEX preview paths to avoid the Windows ~260-character path limit that could make RAW_COMPONENTS/DDS preview writes fail with Errno 2.\n\n'
+                        f'Pack: {pc.name}\nRoute: {pack_platform} ({pack_detect_info.get("reason","")})\n'
+                        f'Preview error: {e}{diag_text}'
+                    )
+                    messagebox.showerror('SM3 TEX preview generation failed',msg)
+                    self.set_status(f'SM3 pack recognized, but TEX preview generation failed: {e}')
+                else:
+                    msg=(
+                        'The Tex Swapper could not parse this pack with the current SM3 route detector.\n\n'
+                        'This does NOT automatically mean the file is from the wrong game. It may be a valid SM3 pack with an unsupported/nonstandard layout.\n\n'
+                        f'Pack: {pc.name}\nRoute guess: {pack_platform} ({pack_detect_info.get("reason","")})\n'
+                        f'Parser error: {e}{diag_text}'
+                    )
+                    messagebox.showerror('SM3 pack layout not recognized',msg)
+                    self.set_status(f'SM3 pack layout not recognized: {pc.name}. See PACK_DETECT.json if available.')
     def reload_existing(self):
         out=Path(self.output_var.get())
         csvp=out/'REPORTS'/'PCPACK_DIRECT_TEX_TARGETS.csv'
@@ -3772,6 +3949,10 @@ class TexSwapperTab(ttk.Frame):
         except Exception:
             return
         self.native_tex_browser_selected=rec
+        try:
+            self.native_tex_browser_canvas.yview_moveto(0.0)
+        except Exception:
+            pass
         exp=rec.get('expected_payload_bytes')
         if str(rec.get('platform','PC')).upper()=='X360':
             self.native_tex_browser_info_var.set(

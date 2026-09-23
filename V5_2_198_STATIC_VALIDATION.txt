@@ -1,0 +1,23 @@
+SM3 Toolkit v5.2.198 — Pack Recognition Fix validation
+=======================================================
+
+PASS | v5.2.197 Browse + Image scroll fix retained
+PASS | Tex Swapper recognizes Xbox route from `mash` bytes at offset 0x30
+PASS | Tex Swapper recognizes .BIN Xbox inputs
+PASS | Tex Swapper recognizes .DAT Xbox inputs
+PASS | Normal `hsam` PC PCPACK remains on PC route
+PASS | Direct APKF input remains on PC route
+PASS | Xbox .BIN/.DAT added to Browse Pack filters
+PASS | Failed PC universal probe writes REPORTS/PACK_DETECT.json
+PASS | Non-NCH unsupported pack is not automatically mislabeled as wrong game
+PASS | NCH/Web of Shadows guard remains intact
+PASS | Toolkit version updated to v5.2.198 PACK RECOGNITION FIX
+PASS | Tex Swapper build label updated
+PASS | Python source compilation completed successfully
+
+Synthetic route regression test:
+- renamed Xbox-style .PCPACK + `mash` @ 0x30 -> XBOX PASS
+- Xbox .bin + `hsam` @ 0x30 -> XBOX PASS
+- PC .PCPACK + `hsam` @ 0x30 -> PC PASS
+- direct .APKF starting with APKF -> PC PASS
+- unresolved .PCPACK -> expected reject + PACK_DETECT.json PASS

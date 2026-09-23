@@ -1,0 +1,24 @@
+SM3 Toolkit v5.2.197 — Browse + Image Scroll Fix validation
+============================================================
+
+PASS | Browse + Image vertical canvas exists
+PASS | Visible vertical scrollbar wired to preview canvas
+PASS | Canvas yscrollcommand wired
+PASS | Preview/info/buttons are created in scrollable right frame
+PASS | Scrollable inner frame width follows viewport
+PASS | Scrollregion refresh is configured
+PASS | Mouse wheel bound to Browse + Image canvas
+PASS | New selection resets right pane to top
+PASS | Toolkit version updated to v5.2.197 BROWSE IMAGE SCROLL FIX
+PASS | Tex Swapper build label updated
+PASS | All 44 Python source files parse successfully
+PASS | Headless Tk GUI smoke test with simulated 520x900 preview
+PASS | Test viewport height: 408 px; generated scroll content height: 1140 px
+PASS | Vertical canvas scrolled from top to bottom successfully
+PASS | All seven Browse + Image action buttons remained present in scrollable content
+
+GUI smoke test used a 1100x700 toolkit window under Xvfb and intentionally
+inserted a preview taller than the available pane to reproduce the reported
+cutoff condition.
+
+No TEX decoding/reimport backend behavior was intentionally changed.

@@ -1,0 +1,34 @@
+SM3 MODDING TOOLKIT v5.2.198 — TEX SWAPPER PACK RECOGNITION FIX
+================================================================
+
+This update keeps the v5.2.197 Browse + Image scrollbar fix and repairs pack
+routing/diagnostics in Tex Swapper.
+
+TEX SWAPPER — PACK ROUTING
+--------------------------
+- PC vs Xbox selection now checks the actual pack bytes as well as the filename.
+- A real Xbox/X360 `mash` marker at 0x30 routes directly to the Xbox TEX reader.
+- Xbox .BIN and .DAT pack/dump inputs are now included in the Browse Pack filter
+  and use the Xbox route instead of accidentally falling into the PC parser.
+- Existing XEPACK/XEAPK/XPACK/X360 filename routing remains supported.
+- Normal PC hsam/APKF PCPACK/PCAPK/APKF inputs remain on the PC route.
+
+TEX SWAPPER — FAILURE DIAGNOSTICS
+---------------------------------
+- PACK_DETECT.json is now written even when the PC universal probe rejects a pack.
+- A non-NCH parse failure is no longer automatically labeled as "wrong game."
+  It is reported as an unrecognized/unsupported SM3 pack layout instead.
+- Actual NCH/Web of Shadows input still receives the existing wrong-game guard.
+
+WHY THIS WAS NEEDED
+-------------------
+v5.2.197 did not modify pack recognition; its only functional change was the
+Browse + Image scrollbar. The existing Tex Swapper route used a narrower Xbox
+extension check than the Xbox extractor service itself. That allowed legitimate
+SM3 Xbox inputs such as .BIN/.DAT files or renamed `mash`-header packs to be sent
+to the PC parser and rejected.
+
+VERSION
+-------
+Displayed toolkit version:
+v5.2.198 PACK RECOGNITION FIX

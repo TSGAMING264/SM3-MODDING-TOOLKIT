@@ -1,0 +1,25 @@
+SM3 MODDING TOOLKIT v5.2.202 - FINAL STABILITY RELEASE
+=====================================================
+
+This release is a preservation and packaging pass on v5.2.201.
+
+CHANGES
+-------
+- Added sm3_toolkit/data to the PyInstaller bundle so built-in character
+  profiles and presets are available in the packaged EXE.
+- Updated release and launcher version labels to v5.2.202.
+- Added clean source build requirements and instructions.
+- Removed packaged Python cache files from release/source outputs.
+
+PRESERVED
+---------
+- v5.2.197 Browse + Image scrolling.
+- v5.2.198 universal/content-aware SM3 pack routing.
+- v5.2.199 compact Windows preview paths and stage-specific errors.
+- v5.2.200 Classic Workflow scrolling and reachability.
+- v5.2.201 final WoS contributor layout with shotariya last.
+- WRAP ownership/identity validation, Slot 2 recovery, AUTO-GROW, BUILD +
+  VERIFY, Motion Editor codecs/math, and all established patching behavior.
+
+No parser, patcher, resource identity, codec, or output-format behavior was
+intentionally changed.

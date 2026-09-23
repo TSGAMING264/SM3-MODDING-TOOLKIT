@@ -1,0 +1,13 @@
+SM3 Toolkit v5.2.199 — TEX Preview Windows Path Fix validation
+
+PASS | Python compileall completed successfully.
+PASS | Universal folder A0000_F00068_TEX_0x66CED7A4_ch_spiderman_webbingblue_dif resolves to ch_spiderman_webbingblue_dif.
+PASS | Historical folder 00069_TEX_0x037B351C_ch_blacksuit_topweb still resolves to ch_blacksuit_topweb.
+PASS | Long asset filesystem labels are capped to <=56 characters with deterministic SHA-1 suffix.
+PASS | RAW_COMPONENTS component1 filename no longer repeats the full asset name.
+PASS | Reported-style Windows failing path measured >=260 characters before fix and <260 after fix.
+PASS | Preview-stage failures are now distinguished from scan/pack-recognition failures.
+PASS | v5.2.198 PC/Xbox content-routing changes retained.
+PASS | v5.2.197 Browse + Image scrollbar changes retained.
+PASS | WRAP services/tabs retained.
+PASS | Synthetic universal TEX chain processed successfully inside a long workspace; generated RAW/DDS/PNG paths use the real asset name and remained compact.

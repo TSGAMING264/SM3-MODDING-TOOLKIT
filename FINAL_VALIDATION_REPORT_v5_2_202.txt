@@ -1,0 +1,86 @@
+SM3 MODDING TOOLKIT v5.2.202 - FINAL VALIDATION REPORT
+=====================================================
+
+BASE
+----
+SM3_TOOLKIT_v5_2_201_FINAL_WOS_CREDIT.zip
+
+RELEASE SCOPE
+-------------
+This was a conservative preservation and packaging pass. No pack parser,
+texture patcher, PCPACK rebuild backend, WRAP ownership rule, Motion Editor
+codec/math routine, animation swapper backend, or Xbox extractor behavior was
+changed.
+
+STABILITY AND PACKAGING FIXES
+-----------------------------
+PASS - Added sm3_toolkit/data to the PyInstaller bundle. The packaged EXE now
+       contains all four built-in profile/preset JSON files.
+PASS - Added Windows file/product version 5.2.202.0.
+PASS - Updated release, launcher, and Tex Swapper display labels to v5.2.202.
+PASS - Built from a clean source stage with zero pyc files and zero
+       __pycache__ directories.
+PASS - Preserved the official two-EXE layout and separate Audio Runtime.
+PASS - Preserved the full offline VC++ x64 redistributable (18,731,856 bytes).
+
+PERFORMANCE REVIEW
+------------------
+No risky parser, codec, threading, caching, or output-generation optimization
+was applied. Existing local widget bindings, tab-resize debounce, and tested
+scroll behavior were preserved. The full source UI constructed all 13 tabs in
+8.315 seconds in the validation environment. From the assembled release
+folder, the Toolkit process became responding in 358 ms and remained stable
+through a 6-second hold; the Audio Separator became responding in 1,040 ms and
+remained stable through an 8-second hold.
+
+EXECUTED VALIDATION
+-------------------
+PASS - 45 Python source files compiled.
+PASS - SM3_TOOLS and the integrated application imported without auto-launch.
+PASS - Full application constructed 13 tabs; Home remained first and selected.
+PASS - Every tab selected successfully; zero duplicate Toplevel windows.
+PASS - PC/Xbox content routing synthetic checks: 4/4.
+PASS - Direct APKF and normal hsam PC routes retained.
+PASS - mash-at-0x30 and .bin Xbox routes retained.
+PASS - Universal and historical TEX asset names decode to compact paths.
+PASS - Long filesystem labels remain deterministic and at most 56 characters.
+PASS - Classic Workflow minimum body height remains 540 pixels.
+PASS - Classic and Browse + Image local mouse-wheel bindings remain present.
+PASS - All seven Browse + Image action controls remain present.
+PASS - WRAP build, inspect, component recovery, rebuild, and archive retarget
+       synthetic roundtrip passed.
+PASS - Spider-Man-family and Player Goblin profiles loaded; Goblin has 74 bones.
+PASS - shotariya remains the sixth/final WoS contributor with the required
+       Material Combiner creator credit and a 128x128 avatar.
+PASS - All 13 credit images are bounded; no oversized image exceeds 800 pixels.
+PASS - Critical WRAP, Motion Editor, PCPACK rebuild, pack extraction, new
+       animation swapper, and Xbox extraction backend files are byte-identical
+       to the supplied v5.2.201 source.
+PASS - PyInstaller one-file build completed.
+PASS - EXE archive contains FFmpeg, shotariya avatar, and all four data files.
+PASS - SM3 Modding Toolkit.exe launches and remains responding.
+PASS - SM3 Audio Separator.exe launches independently and remains responding.
+PASS - Both EXEs expose the same SM3 Toolkit icon.
+PASS - No startup error/log file was created.
+
+INTENTIONALLY NOT CHANGED
+-------------------------
+- TEX Swapper parsing, validation, conversion, replacement, and patching.
+- Pack Extractor and PCPACK Rebuild behavior.
+- WRAP ownership, hashes, identity rules, Slot 2 recovery, and verification.
+- Motion Editor codecs, math, AUTO-GROW, relocation, and BUILD + VERIFY.
+- New/Old Animation Swapper, Model Viewer, MAT Editor, Sound Editor, Xbox
+  extractor, themes, localization, tab order, How To, and About content.
+
+VALIDATION LIMITS
+-----------------
+No original game files are included in the source or release. Therefore, a
+real CH_SPIDERMAN.PCPACK, copyrighted DDS/TEX payload, real Slot 2 folder, and
+real ANIM/ASKL fixtures were not available for end-to-end output generation.
+Those workflows were validated by source preservation, synthetic boundary
+tests where safe, and the supplied v5.2.197 through v5.2.201 validation records.
+The report does not claim a real-game-file test that was not performed.
+
+RESULT
+------
+All executed release checks passed. No known product-test failure remains.

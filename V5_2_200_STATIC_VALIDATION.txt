@@ -1,0 +1,17 @@
+SM3 Toolkit v5.2.200 — Classic Scroll Reachability Fix validation
+
+PASS | Python compileall completed successfully.
+PASS | Full toolkit launched under a simulated 1280x720 Windows-sized display.
+PASS | Full toolkit root resolved to 1260x640 usable pixels in the simulated work area.
+PASS | Classic Workflow body viewport measured 172 px tall under that constrained layout.
+PASS | Classic Workflow internal work area retained its 540 px minimum height instead of collapsing to the viewport.
+PASS | Visible Classic body scrollbar range was active: yview 0.0000..0.3185 at top and could move to 0.6815..1.0000 at bottom.
+PASS | Synthetic 1024x1024 preview rendered at 364 px high while the metadata Text retained 132 px usable height.
+PASS | Preview Files list retained 237 px usable height with the large preview loaded.
+PASS | TEX Targets, metadata Text, action-tab canvases, and Preview Files keep their independent scrollbars.
+PASS | Mouse wheel over Preview Image routes to the new outer Classic body scroll.
+PASS | v5.2.199 Windows path-length fix source retained.
+PASS | v5.2.198 PC/Xbox content routing retained.
+PASS | v5.2.197 Browse + Image full-side scrolling retained.
+PASS | WRAP preview/export/conversion services retained.
+PASS | No PCPACK parser/patcher or DDS conversion logic changed in this UI-only reachability fix.

@@ -6,6 +6,7 @@ from PyInstaller.utils.hooks import collect_all
 block_cipher = None
 ROOT = Path.cwd()
 ICON = ROOT / "SM3_EXTRACTOR_FINAL" / "12_OLD_ANIMATION_SWAPPER" / "SM3_ANIMATION_SWAPPER.ico"
+VERSION_INFO = ROOT / "SM3_TOOLKIT_VERSION_INFO.txt"
 
 # Music Replacement Mode uses imageio-ffmpeg so reviewers/users do not need to
 # manually install a separate FFmpeg executable. collect_all includes the wheel's
@@ -19,7 +20,6 @@ a = Analysis(
     datas=[
         ("SM3_EXTRACTOR_FINAL", "SM3_EXTRACTOR_FINAL"),
         ("sm3_toolkit/assets", "sm3_toolkit/assets"),
-        # Motion Editor profiles and animation presets are loaded at runtime.
         ("sm3_toolkit/data", "sm3_toolkit/data"),
     ] + ffmpeg_datas,
     hiddenimports=[
@@ -63,4 +63,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=str(ICON),
+    version=str(VERSION_INFO),
 )

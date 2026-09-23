@@ -13,6 +13,8 @@ Before publishing or submitting for Nexus review:
 - [ ] `python -m pip install -r SM3_AUDIO_SEPARATOR/requirements.txt` works in its separate environment.
 - [ ] `python SM3_AUDIO_SEPARATOR/SM3_AUDIO_SEPARATOR.py` starts the companion application.
 - [ ] Both PyInstaller runtime checks return exit code `0`.
+- [ ] The main EXE file/product version is `5.2.202.0`.
+- [ ] The main EXE contains `sm3_toolkit/data` profile and preset JSON files.
 - [ ] The release folder contains both visible EXEs and keeps the Audio Separator's `Audio Runtime/` intact.
 - [ ] `SM3 Modding Toolkit.exe` remains the supplied one-file main build; do not merge it with `Audio Runtime/`.
 - [ ] `Dependencies/VC_redist.x64.exe` is the complete Microsoft-signed offline x64 package.

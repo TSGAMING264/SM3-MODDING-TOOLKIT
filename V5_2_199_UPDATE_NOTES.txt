@@ -1,0 +1,28 @@
+SM3 MODDING TOOLKIT v5.2.199 — TEX PREVIEW WINDOWS PATH FIX
+
+WHY THIS BUILD EXISTS
+---------------------
+The v5.2.198 screenshot proved CH_SPIDERMAN.PCPACK was already recognized and parsed far enough to reach TEX file A0000_F00068. The failure happened later while the preview service tried to create a RAW_COMPONENTS file under a very long workspace path.
+
+The failing Windows path was about 264 characters long, which can surface as Errno 2 / "No such file or directory" on systems/processes still subject to classic MAX_PATH behavior.
+
+FIXES
+-----
+- Universal scanner folder names like:
+    A0000_F00068_TEX_0x66CED7A4_ch_spiderman_webbingblue_dif
+  are now decoded back to the real asset name:
+    ch_spiderman_webbingblue_dif
+  before preview output paths are built.
+- Filesystem-only asset labels are capped/hashed when unusually long. Full asset names stay intact in CSV/JSON reports and UI metadata.
+- RAW_COMPONENTS no longer repeats the entire asset name in the component1 filename.
+- Preview-generation failures are reported separately from pack-recognition failures. A pack that parsed successfully will no longer be mislabeled "SM3 pack layout not recognized" because a preview write failed.
+- Preserves v5.2.198 content-based PC/Xbox routing, v5.2.136 universal SM3 pack routes, WRAP support, and v5.2.197 Browse + Image scrolling.
+
+EXPECTED RESULT FOR THE REPORTED CH_SPIDERMAN CASE
+--------------------------------------------------
+The formerly failing path:
+  ...\\PREVIEW_OUTPUT\\RAW_COMPONENTS\\_A0000_F00068_TEX_0x66CED7A4_ch_spiderman_webbingblue_dif\\A0000_F00068_TEX_0x66CED7A4_ch_spiderman_webbingblue_dif_component1_2744bytes.raw
+is now approximately:
+  ...\\PREVIEW_OUTPUT\\RAW_COMPONENTS\\_ch_spiderman_webbingblue_dif\\component1_2744bytes.raw
+
+That removes more than 50 characters from this one output path and keeps it below the classic Windows 260-character boundary in the reported workspace.

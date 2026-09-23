@@ -38,6 +38,11 @@ class AboutInfoTab(ttk.Frame):
             "WOSTweaks contributor",
             "arc_avatar.png",
         ),
+        (
+            "shotariya",
+            "Material Combiner creator",
+            "shotariya_avatar.png",
+        ),
     )
 
     COMMUNITY_PEOPLE = (

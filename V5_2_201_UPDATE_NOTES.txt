@@ -1,0 +1,15 @@
+SM3 MODDING TOOLKIT v5.2.201 — FINAL WOS CREDIT
+
+ABOUT / CREDITS
+===============
+- Added shotariya as the final WOS Toolkit contributor credit slot.
+- Credit: Material Combiner creator.
+- Added the supplied shotariya avatar, normalized to 128x128 so it matches the existing About-page credit cards.
+
+PRESERVED FROM v5.2.200
+=======================
+- Classic Workflow vertical scroll / reachability fix.
+- Browse + Image scrolling fix.
+- Windows long-path preview-output fix.
+- Universal SM3 pack recognition improvements.
+- WRAP.TEX support and related TEX Swapper workflows.

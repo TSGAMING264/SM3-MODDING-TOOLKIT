@@ -13,7 +13,7 @@ The two applications are intentionally kept separate. They can run independently
 
 ## Current Source Versions
 
-- SM3 Modding Toolkit: **v5.2.196 FINAL ABOUT CREDIT**
+- SM3 Modding Toolkit: **v5.2.202 FINAL STABILITY RELEASE**
 - SM3 Audio Separator: **v1.0.3**
 
 This repository contains source code and build instructions. It does not contain the compiled release EXEs, game packs, extracted game assets, or Demucs model weights.
@@ -36,7 +36,7 @@ This repository contains source code and build instructions. It does not contain
 
 Home is selected on startup. The release UI uses one Tk root and one integrated notebook.
 
-## v5.2.196 Highlights
+## v5.2.202 Highlights
 
 - Motion Editor accepts `.anim` / `.wrap.anim` and `.askl` / `.wrap.askl` resources.
 - Guided character mapping includes Spider-Man, Black Suit, Peter Parker, and the 74-bone Player Goblin profile.
@@ -45,7 +45,12 @@ Home is selected on startup. The release UI uses one Tk root and one integrated 
 - WRAP output retains parent/archive ownership, internal/external patch relationships, and resource identity checks.
 - XESM3 Slot 2 can recover and verify the original PACK/APKF/WRAP owner for external Motion Editor output.
 - How To documents the final Motion Editor and WRAP workflows inside the application.
-- About / Info includes the final Bread credit and supplied avatar after AkyrosXD.
+- Browse + Image and Classic Workflow panels remain reachable through local scrolling on smaller displays.
+- PC/Xbox pack recognition uses content-aware routing while retaining direct APKF, normal HSAM, mash-at-`0x30`, and `.bin` routes.
+- Texture previews use deterministic compact output paths and report preview-stage failures separately.
+- About / Info keeps shotariya as the final WoS contributor with the Material Combiner creator credit.
+- The PyInstaller build embeds all built-in Motion Editor profile and preset data and carries Windows version `5.2.202.0`.
+- Parser, patcher, resource-identity, codec, and output-format behavior remains unchanged from the supplied v5.2.201 source.
 
 ## Safety
 
@@ -112,7 +117,7 @@ Pop-Location
 
 The main build produces `dist/SM3 Modding Toolkit.exe`. See [BUILD_FROM_SOURCE.md](BUILD_FROM_SOURCE.md) for the complete two-EXE packaging procedure.
 
-See [RELEASE_NOTES_v5_2_196.md](RELEASE_NOTES_v5_2_196.md) for the source changes and verification scope.
+See [RELEASE_NOTES_v5_2_202.md](RELEASE_NOTES_v5_2_202.md) and [FINAL_VALIDATION_REPORT_v5_2_202.txt](FINAL_VALIDATION_REPORT_v5_2_202.txt) for the source changes and verification scope.
 
 ## Antivirus False Positives
 

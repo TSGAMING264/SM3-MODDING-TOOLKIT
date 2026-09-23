@@ -29,7 +29,7 @@ New in v1.4:
   - Format 21 research variants: BGRA/RGBA/ARGB/ABGR swizzles and enlarged strip previews
   - Cleaner contact sheet uses the best visual preview first, not always the raw RGBA decode
 """
-import os, sys, zipfile, tempfile, shutil, struct, csv, json, html, math
+import os, sys, zipfile, tempfile, shutil, struct, csv, json, html, math, re, hashlib
 from pathlib import Path
 
 try:
@@ -647,14 +647,39 @@ def find_tex_dirs(root: Path):
     return sorted(dirs)
 
 def short_asset_name(d: Path):
+    """Return the real TEX asset name without extractor bookkeeping prefixes.
+
+    Historical chain folders use e.g.::
+        00069_TEX_0x037B351C_ch_blacksuit_topweb
+
+    The universal multi-APKF scanner introduced archive/file prefixes e.g.::
+        A0000_F00068_TEX_0x66CED7A4_ch_spiderman_webbingblue_dif
+
+    v5.2.198's preview core only understood the historical form, so the whole
+    universal prefix was duplicated into several output folder/file names. On
+    Windows a normally valid SM3 pack could therefore fail during PREVIEW
+    generation once the resulting path crossed MAX_PATH (~260 chars). The pack
+    itself had already parsed successfully.
+    """
     name = d.name
-    # Examples:
-    # 00069_TEX_0x037B351C_ch_blacksuit_topweb -> ch_blacksuit_topweb
-    # 00042_TEX_0x124EC16F_ch_harry_head_nor -> ch_harry_head_nor
+    m = re.match(r'^(?:A\d+_)?(?:F)?\d+_TEX_0x[0-9A-Fa-f]{8}_(.+)$', name, re.IGNORECASE)
+    if m:
+        return m.group(1)
     parts = name.split('_')
     if len(parts) >= 4 and parts[1].upper() == 'TEX':
         return '_'.join(parts[3:])
     return name
+
+
+def compact_asset_fs_name(asset: str, max_len: int = 56) -> str:
+    """Windows-safe filename label while preserving the full asset in reports."""
+    raw = str(asset or 'texture')
+    safe = re.sub(r'[^A-Za-z0-9._-]+', '_', raw).strip('._') or 'texture'
+    if len(safe) <= max_len:
+        return safe
+    digest = hashlib.sha1(raw.encode('utf-8', errors='replace')).hexdigest()[:10]
+    keep = max(8, max_len - len(digest) - 2)
+    return f'{safe[:keep]}__{digest}'
 
 def asset_group(asset):
     low=asset.lower()
@@ -728,15 +753,18 @@ def process(input_path, output_path):
             payload = c1p.read_bytes()
             desc = parse_component0(c0)
             asset = short_asset_name(d)
+            asset_fs = compact_asset_fs_name(asset)
             group = asset_group(asset)
-            folder = previews / ('_' + asset)
+            folder = previews / ('_' + asset_fs)
             folder.mkdir(exist_ok=True)
-            png_folder = pngs / ('_' + asset)
+            png_folder = pngs / ('_' + asset_fs)
             png_folder.mkdir(exist_ok=True)
-            raw_folder = rawdir / ('_' + asset)
+            raw_folder = rawdir / ('_' + asset_fs)
             raw_folder.mkdir(exist_ok=True)
             (raw_folder / c0p.name).write_bytes(c0)
-            raw_out = raw_folder / f'{asset}_component1_{len(payload)}bytes.raw'
+            # Do not repeat the full asset in RAW_COMPONENTS; this is a research copy
+            # and repeating it was the final push over Windows MAX_PATH in long workspaces.
+            raw_out = raw_folder / f'component1_{len(payload)}bytes.raw'
             raw_out.write_bytes(payload)
             row = {"asset_folder": str(d), "asset": asset, "group": group, "component0_size": len(c0), "component1_size": len(payload)}
             if not desc:
@@ -755,10 +783,10 @@ def process(input_path, output_path):
                     note += ('; ' if note else '') + extra
                 dds_header = make_dds_dxt_header(w,h,fourcc,mips,first_mip_size(w,h,fourcc))
                 suffix = f'{w}x{h}_{kind}_mips{mips}'
-                dds_path = folder / f'{asset}_{suffix}.dds'
+                dds_path = folder / f'{asset_fs}_{suffix}.dds'
                 dds_path.write_bytes(dds_header + use_payload)
                 dds_out=str(dds_path)
-                png_path = png_folder / f'{asset}_{suffix}.png'
+                png_path = png_folder / f'{asset_fs}_{suffix}.png'
                 try:
                     if write_png_dxt_preview(use_payload,png_path,w,h,fourcc):
                         png_out=str(png_path)
@@ -772,10 +800,10 @@ def process(input_path, output_path):
                 if extra:
                     note += ('; ' if note else '') + extra
                 suffix = f'{w}x{h}_L8_mips{mips}'
-                dds_path = folder / f'{asset}_{suffix}.dds'
+                dds_path = folder / f'{asset_fs}_{suffix}.dds'
                 dds_path.write_bytes(make_dds_l8_header(w,h,mips) + use_payload)
                 dds_out=str(dds_path)
-                png_path = png_folder / f'{asset}_{suffix}.png'
+                png_path = png_folder / f'{asset_fs}_{suffix}.png'
                 try:
                     if write_png_l8(use_payload,png_path,w,h):
                         png_out=str(png_path)
@@ -789,10 +817,10 @@ def process(input_path, output_path):
                 if extra:
                     note += ('; ' if note else '') + extra
                 suffix = f'{w}x{h}_BGRA32'
-                dds_path = folder / f'{asset}_{suffix}.dds'
+                dds_path = folder / f'{asset_fs}_{suffix}.dds'
                 dds_path.write_bytes(make_dds_bgra32_header(w,h,1) + use_payload)
                 dds_out=str(dds_path)
-                png_path = png_folder / f'{asset}_{suffix}.png'
+                png_path = png_folder / f'{asset_fs}_{suffix}.png'
                 try:
                     if write_png_bgra32(use_payload,png_path,w,h):
                         png_out=str(png_path)
@@ -802,24 +830,24 @@ def process(input_path, output_path):
             row["_words"] = desc.get("words", [])
             row.update({"status":status, "width":w, "height":h, "mip_count":mips, "format_raw":fmt_raw, "format_text":fmt_text, "preview_kind":kind, "expected_size":expected, "dds":dds_out, "png":png_out, "raw":str(raw_out), "note":note})
             variant_paths=[]
-            vdir = variants / ('_' + asset)
+            vdir = variants / ('_' + asset_fs)
             vdir.mkdir(exist_ok=True)
             try:
                 if kind in ('DXT1','DXT3','DXT5','DXT5_CANDIDATE') and len(use_payload) > 0:
                     # Fast path: split the already-decoded PNG instead of decoding the full texture repeatedly.
-                    variant_paths.extend(write_channel_variants_from_png(png_out, vdir, asset))
+                    variant_paths.extend(write_channel_variants_from_png(png_out, vdir, asset_fs))
                     if fourcc == 'DXT1' and (w*h) <= 262144:
-                        p = vdir / f'{asset}__DXT1_OPAQUE_NO_1BIT_ALPHA.png'
+                        p = vdir / f'{asset_fs}__DXT1_OPAQUE_NO_1BIT_ALPHA.png'
                         if write_dxt1_opaque_png(use_payload, p, w, h): variant_paths.append(str(p))
                     # DXT5nm deep normal reconstruction is intentionally skipped in v1.4 fast mode.
                 if kind == 'DXT5_CANDIDATE' and len(use_payload) > 0:
-                    variant_paths.extend(write_format50_research_variants(use_payload, vdir, asset, w, h))
+                    variant_paths.extend(write_format50_research_variants(use_payload, vdir, asset_fs, w, h))
                 if kind == 'L8' and len(use_payload) > 0:
-                    variant_paths.extend(write_l8_variants(use_payload, vdir, asset, w, h))
+                    variant_paths.extend(write_l8_variants(use_payload, vdir, asset_fs, w, h))
                     if int(row.get('format_raw') or 0) == 50:
-                        variant_paths.extend(write_format50_research_variants(payload, vdir, asset, w, h))
+                        variant_paths.extend(write_format50_research_variants(payload, vdir, asset_fs, w, h))
                 if kind == 'BGRA32' and len(use_payload) > 0:
-                    variant_paths.extend(write_bgra_swizzle_variants(use_payload, vdir, asset, w, h))
+                    variant_paths.extend(write_bgra_swizzle_variants(use_payload, vdir, asset_fs, w, h))
             except Exception as e:
                 note += ('; ' if note else '') + f'variant generation error: {e}'
                 row['note'] = note
@@ -828,7 +856,7 @@ def process(input_path, output_path):
             row['best_png'] = best_png
             if best_png and Path(best_png).exists():
                 try:
-                    dst = bestdir / f"{group}__{asset}__BEST__{kind}.png"
+                    dst = bestdir / f"{group}__{asset_fs}__BEST__{kind}.png"
                     shutil.copy2(best_png, dst)
                     row['best_copy'] = str(dst)
                 except Exception:
@@ -840,7 +868,7 @@ def process(input_path, output_path):
     for r in rows:
         p = r.get('best_png','') or r.get('png','')
         if p and Path(p).exists() and r.get('group') in ('DIFFUSE_AO','NORMAL','SPEC_REFLECT_ENV','PPI_PPP_SPECIAL'):
-            target = openfirst / f"{r['group']}__{r['asset']}__{r.get('width')}x{r.get('height')}__{r.get('preview_kind')}__BEST.png"
+            target = openfirst / f"{r['group']}__{compact_asset_fs_name(r['asset'])}__{r.get('width')}x{r.get('height')}__{r.get('preview_kind')}__BEST.png"
             try: shutil.copy2(p,target)
             except Exception: pass
     # reports

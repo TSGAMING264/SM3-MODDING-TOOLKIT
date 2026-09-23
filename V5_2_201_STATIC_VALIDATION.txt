@@ -1,0 +1,9 @@
+SM3 Toolkit v5.2.201 — Final WOS Credit validation
+
+PASS — about_tab.py contains shotariya as the last CREDIT_PEOPLE entry.
+PASS — role text is "Material Combiner creator".
+PASS — shotariya_avatar.png exists at 128x128.
+PASS — WOS Toolkit contributor grid now has six entries, filling a 3-column layout as two complete rows on wide screens.
+PASS — app version updated to v5.2.201 FINAL WOS CREDIT.
+PASS — Python source compilation completed successfully.
+PASS — v5.2.200 TEX Swapper code is preserved unchanged.
